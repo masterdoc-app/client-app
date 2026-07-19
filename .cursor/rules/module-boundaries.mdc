@@ -1,0 +1,21 @@
+---
+description: Extract cohesive class groups into Gradle modules when actively reused
+alwaysApply: true
+---
+
+# Module boundaries
+
+If a cohesive group of classes is actively used by other classes (other layers/features), extract that group into a separate Gradle module.
+
+## Criteria
+
+- Cohesive group (package/subsystem), not a single utility class
+- Consumed by ≥2 other layers/features, or clearly shared from day one (e.g. design-system)
+- Module boundary = public API; internals stay internal
+- Do not split “just in case”: if only one feature uses the group, keep it in that module
+
+## Examples in this repo
+
+- tokens + base UI → `:design-system`
+- Paparazzi snapshots → `:design-system-paparazzi` (test consumer; not inside design-system)
+- nav models → package in `:shared` until a second consumer needs a dedicated module

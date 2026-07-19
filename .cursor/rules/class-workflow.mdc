@@ -1,0 +1,15 @@
+---
+description: Interface → models → test → implementation when creating types
+alwaysApply: true
+---
+
+# Class workflow (interface-first TDD)
+
+When creating a new type or service, follow this order:
+
+1. **Interface** — public API contract
+2. **Models** — data/value types used by the contract (request/response, state, errors)
+3. **Test** — against the interface (fake/stub or contract-driven)
+4. **Implementation** — code that makes tests pass
+
+Do not write the implementation before the interface, models, and tests exist.
