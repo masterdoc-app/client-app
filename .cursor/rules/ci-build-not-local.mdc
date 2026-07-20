@@ -1,0 +1,25 @@
+---
+description: Never build locally — push and let GitHub Actions build/deploy
+alwaysApply: true
+---
+
+# CI build, not local
+
+Do **not** run heavy local builds (`./gradlew`, Wasm/webpack, Docker image builds, full compile suites) on this machine.
+
+## Required workflow
+
+1. Commit and **push** to the remote branch
+2. Let **GitHub Actions** build (and deploy when the workflow does)
+3. Monitor CI with `gh run list` / `gh run watch` / `gh run view`
+
+## Do not
+
+- Run `./gradlew :*wasmJs*`, `wasmJsBrowserDistribution`, webpack production, or similar locally for deploy artifacts
+- Pipe long Gradle runs through `tail` and wait
+- Block on local compile when CI can do the same job
+
+## Exceptions
+
+- Tiny checks the user explicitly asked for (single unit test, lint of one file)
+- Reading/editing code and configs without compiling
