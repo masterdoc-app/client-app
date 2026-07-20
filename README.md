@@ -1,45 +1,56 @@
 # client-app
 
-KMP web/desktop/Android client for all facility roles. Primary navigation is feature-driven (max 5 items): bottom bar on compact widths, side rail otherwise.
+KMP clients for Fixaverse facility roles.
+
+## Apps (web)
+
+| Path | Module | Role |
+|------|--------|------|
+| `https://app.fixaverse.ru/` | `:portalApp` | Auth portal → OIDC → redirect by role |
+| `https://app.fixaverse.ru/technolog/` | `:technologApp` | `technologist` — Charts, Equipment, Profile |
 
 ## Modules
 
 | Module | Role |
 |--------|------|
+| `:auth` | OIDC PKCE, token store, `/me`, role→path router |
 | `:design-system` | Colors, typography, shapes, base Compose UI |
-| `:design-system-paparazzi` | Paparazzi snapshot tests for the UI kit |
-| `:shared` | Nav models, session fixtures, Decompose shell |
-| `:composeApp` | App entry (Android, Desktop, Wasm/JS) |
+| `:design-system-paparazzi` | Paparazzi snapshot tests |
+| `:shared` | Nav models, session, Decompose shell |
+| `:portalApp` | Login + callback + role redirect |
+| `:technologApp` | Technologist shell (Wasm base `/technolog/`) |
+| `:composeApp` | Legacy multi-role stub (desktop/Android/Wasm) |
 
-## Role → menu (fixtures)
+## Role → path
 
-| Role | Menu |
-|------|------|
-| engineer | Заявки, Профиль |
-| dispatcher | Доска, Карта, Профиль |
-| technologist | Графики, Оборудование, Профиль |
+| Zitadel role | Web path |
+|--------------|----------|
+| `technologist` | `/technolog/` |
+| other | portal shows «нет web-клиента» |
 
-`FeatureId.Copilot` is reserved for a future menu item (masterdoc rewrite). `masterdocapp` is not modified from this repo.
-
-## Rules
-
-See `.cursor/rules/`:
-
-- **module-boundaries** — extract cohesive reused class groups into modules
-- **class-workflow** — interface → models → test → implementation
+Production features come from `GET https://api.masterdoc.pro/me`.
 
 ## Build
 
 ```bash
-./gradlew :shared:jvmTest
-./gradlew :composeApp:run          # desktop
-./gradlew :composeApp:wasmJsBrowserDevelopmentRun
-./gradlew :design-system-paparazzi:recordPaparazziDebug
-./gradlew :design-system-paparazzi:verifyPaparazziDebug
+./gradlew :auth:jvmTest :shared:jvmTest
+./gradlew :portalApp:wasmJsBrowserDistribution
+./gradlew :technologApp:wasmJsBrowserDistribution
+
+# OIDC web client id (Zitadel terraform output web_client_id):
+./gradlew :portalApp:wasmJsBrowserDistribution -Pfixaverse.oidc.webClientId=YOUR_ID
+# or export FIXAVERSE_OIDC_WEB_CLIENT_ID=YOUR_ID
 ```
 
-Copy `local.properties.example` → `local.properties` and set `sdk.dir`.
+## Manual infra (first deploy)
+
+1. DNS: A-record `app` → `91.207.75.72`.
+2. On VPS: ensure dirs `/var/www/app.fixaverse.ru/{portal,technolog}` (install script creates them).
+3. Deploy workflow installs nginx + certbot for `app.fixaverse.ru`.
+4. api-gateway env: add `https://app.fixaverse.ru` to `CORS_ORIGINS`, reload gateway.
+5. `masterdoc-zitadel` terraform apply (role `technologist` + redirect URIs).
+6. Assign role `technologist` to a test user; set GitHub secret `FIXAVERSE_OIDC_WEB_CLIENT_ID`.
 
 ## Stack
 
-Kotlin Multiplatform, Compose Multiplatform, Decompose (`Child Pages`), Koin, Paparazzi.
+Kotlin Multiplatform, Compose Multiplatform, Decompose, Koin, Zitadel OIDC via api-gateway.

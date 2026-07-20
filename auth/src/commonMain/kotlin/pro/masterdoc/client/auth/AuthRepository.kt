@@ -1,0 +1,154 @@
+package pro.masterdoc.client.auth
+
+import kotlinx.serialization.json.Json
+
+class AuthRepository(
+    private val config: AuthConfig,
+    private val http: GatewayHttpClient,
+    private val tokenStore: TokenStore,
+    private val pkceStore: PkceSessionStore,
+    private val json: Json = defaultJson,
+) {
+    suspend fun buildAuthorizeUrl(): String {
+        val authorizeBase = fetchAuthorizeBase().trimEnd('/')
+        val verifier = Pkce.generateVerifier()
+        val state = Pkce.generateState()
+        pkceStore.save(verifier = verifier, state = state)
+        val challenge = Pkce.challengeS256(verifier)
+        return buildString {
+            append(authorizeBase)
+            append("?response_type=code")
+            append("&client_id=").append(encodeQuery(config.clientId))
+            append("&redirect_uri=").append(encodeQuery(config.redirectUri))
+            append("&scope=").append(encodeQuery(config.scopes))
+            append("&code_challenge=").append(encodeQuery(challenge))
+            append("&code_challenge_method=S256")
+            append("&state=").append(encodeQuery(state))
+        }
+    }
+
+    suspend fun exchangeCode(
+        code: String,
+        returnedState: String?,
+    ): AuthTokens {
+        val expectedState = pkceStore.readState()
+        if (expectedState != null && returnedState != null && expectedState != returnedState) {
+            throw GatewayHttpException(400, "OIDC state mismatch")
+        }
+        val verifier =
+            pkceStore.readVerifier()
+                ?: throw GatewayHttpException(400, "Missing PKCE verifier")
+        val form =
+            buildString {
+                append("grant_type=authorization_code")
+                append("&code=").append(encodeForm(code))
+                append("&redirect_uri=").append(encodeForm(config.redirectUri))
+                append("&client_id=").append(encodeForm(config.clientId))
+                append("&code_verifier=").append(encodeForm(verifier))
+            }
+        val response =
+            http.postForm(
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/auth/token",
+                body = form,
+                headers = mapOf("Content-Type" to "application/x-www-form-urlencoded"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "Token exchange failed: ${response.body}")
+        }
+        val tokens = AuthTokens.from(json.decodeFromString<TokenResponse>(response.body))
+        tokenStore.write(tokens)
+        pkceStore.clear()
+        return tokens
+    }
+
+    suspend fun refresh(): AuthTokens {
+        val refresh =
+            tokenStore.read()?.refreshToken
+                ?: throw GatewayHttpException(401, "No refresh token")
+        val form =
+            buildString {
+                append("grant_type=refresh_token")
+                append("&refresh_token=").append(encodeForm(refresh))
+                append("&client_id=").append(encodeForm(config.clientId))
+            }
+        val response =
+            http.postForm(
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/auth/token",
+                body = form,
+                headers = mapOf("Content-Type" to "application/x-www-form-urlencoded"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "Refresh failed: ${response.body}")
+        }
+        val tokens = AuthTokens.from(json.decodeFromString<TokenResponse>(response.body))
+        tokenStore.write(tokens)
+        return tokens
+    }
+
+    fun logout() {
+        tokenStore.clear()
+        pkceStore.clear()
+    }
+
+    fun currentTokens(): AuthTokens? = tokenStore.read()
+
+    private suspend fun fetchAuthorizeBase(): String {
+        val response = http.get("${config.gatewayBaseUrl.trimEnd('/')}/auth/url")
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "auth/url failed: ${response.body}")
+        }
+        return json.decodeFromString<AuthUrlResponse>(response.body).authUrl
+    }
+
+    companion object {
+        val defaultJson: Json =
+            Json {
+                ignoreUnknownKeys = true
+                isLenient = true
+            }
+    }
+}
+
+class MeRepository(
+    private val config: AuthConfig,
+    private val http: GatewayHttpClient,
+    private val tokenStore: TokenStore,
+    private val json: Json = AuthRepository.defaultJson,
+) {
+    suspend fun getMe(): MeResponse {
+        val access =
+            tokenStore.read()?.accessToken
+                ?: throw GatewayHttpException(401, "Not authenticated")
+        val response =
+            http.get(
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/me",
+                headers = mapOf("Authorization" to "Bearer $access"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "GET /me failed: ${response.body}")
+        }
+        return json.decodeFromString(response.body)
+    }
+}
+
+internal fun encodeQuery(value: String): String = encodeForm(value)
+
+internal fun encodeForm(value: String): String =
+    buildString(value.length) {
+        for (ch in value) {
+            when {
+                ch.isLetterOrDigit() || ch in "-._~" -> append(ch)
+                ch == ' ' -> append('+')
+                else -> {
+                    val bytes = ch.toString().encodeToByteArray()
+                    for (b in bytes) {
+                        append('%')
+                        append(hex[(b.toInt() shr 4) and 0xF])
+                        append(hex[b.toInt() and 0xF])
+                    }
+                }
+            }
+        }
+    }
+
+private val hex = "0123456789ABCDEF".toCharArray()

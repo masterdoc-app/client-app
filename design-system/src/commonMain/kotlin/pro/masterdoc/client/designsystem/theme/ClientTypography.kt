@@ -10,40 +10,39 @@ val ClientFontFamily: FontFamily = FontFamily.SansSerif
 
 val ClientTypography: Typography =
     Typography(
-        displayLarge = TextStyle(
-            fontFamily = ClientFontFamily,
-            fontWeight = FontWeight.Bold,
-            fontSize = 40.sp,
-            lineHeight = 48.sp,
-        ),
-        headlineMedium = TextStyle(
-            fontFamily = ClientFontFamily,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 24.sp,
-            lineHeight = 32.sp,
-        ),
-        titleLarge = TextStyle(
-            fontFamily = ClientFontFamily,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 20.sp,
-            lineHeight = 28.sp,
-        ),
-        bodyLarge = TextStyle(
-            fontFamily = ClientFontFamily,
-            fontWeight = FontWeight.Normal,
-            fontSize = 16.sp,
-            lineHeight = 24.sp,
-        ),
-        bodyMedium = TextStyle(
-            fontFamily = ClientFontFamily,
-            fontWeight = FontWeight.Normal,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-        ),
-        labelLarge = TextStyle(
-            fontFamily = ClientFontFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-        ),
+        displayLarge =
+            TextStyle(
+                fontFamily = ClientFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp,
+                lineHeight = 40.sp,
+            ),
+        titleLarge =
+            TextStyle(
+                fontFamily = ClientFontFamily,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 20.sp,
+                lineHeight = 28.sp,
+            ),
+        bodyLarge =
+            TextStyle(
+                fontFamily = ClientFontFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 16.sp,
+                lineHeight = 24.sp,
+            ),
+        bodyMedium =
+            TextStyle(
+                fontFamily = ClientFontFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+            ),
+        labelLarge =
+            TextStyle(
+                fontFamily = ClientFontFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+            ),
     )

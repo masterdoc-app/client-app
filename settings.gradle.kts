@@ -30,5 +30,8 @@ dependencyResolutionManagement {
 
 include(":design-system")
 include(":design-system-paparazzi")
+include(":auth")
 include(":shared")
 include(":composeApp")
+include(":portalApp")
+include(":technologApp")

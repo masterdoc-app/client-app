@@ -1,9 +1,11 @@
 package pro.masterdoc.client.session
 
+import pro.masterdoc.client.auth.MeResponse
 import pro.masterdoc.client.navigation.FeatureId
 
 /**
- * Stub role → feature sets until gateway GET /me is wired.
+ * Local-only fixtures for composeApp / unit tests.
+ * Production apps take features from gateway GET /me.
  */
 object RoleFeatureFixtures {
     fun featuresForRole(role: String): Set<FeatureId> =
@@ -16,7 +18,7 @@ object RoleFeatureFixtures {
 }
 
 /**
- * Minimal session used by the shell until auth is integrated.
+ * Session used by role shells (nav assembly).
  */
 data class ClientSession(
     val role: String,
@@ -25,5 +27,15 @@ data class ClientSession(
     companion object {
         fun stub(role: String): ClientSession =
             ClientSession(role = role, features = RoleFeatureFixtures.featuresForRole(role))
+
+        fun fromMe(me: MeResponse): ClientSession {
+            val role = me.userInfo.roles.firstOrNull() ?: "unknown"
+            val features =
+                me.features
+                    .mapNotNull { FeatureId.fromWire(it) }
+                    .toMutableSet()
+                    .apply { add(FeatureId.Profile) }
+            return ClientSession(role = role, features = features)
+        }
     }
 }

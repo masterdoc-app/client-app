@@ -1,2 +1,5 @@
 # Android SDK path — copy to local.properties (gitignored)
 # sdk.dir=/path/to/Android/sdk
+
+# Zitadel web OIDC client id (terraform output web_client_id)
+# fixaverse.oidc.webClientId=YOUR_WEB_CLIENT_ID
