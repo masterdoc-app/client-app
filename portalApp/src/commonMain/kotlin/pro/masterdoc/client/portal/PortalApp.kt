@@ -28,8 +28,6 @@ import pro.masterdoc.client.designsystem.theme.ClientTheme
 private sealed interface PortalUiState {
     data object Loading : PortalUiState
 
-    data object Login : PortalUiState
-
     data class NoWebApp(val roles: List<String>) : PortalUiState
 
     data class Error(val message: String) : PortalUiState
@@ -51,30 +49,6 @@ fun PortalApp(coordinator: AuthCoordinator) {
         ) {
             when (val s = state) {
                 PortalUiState.Loading -> CircularProgressIndicator()
-                PortalUiState.Login ->
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        AppText(text = "Fixaverse")
-                        AppText(text = "Войдите, чтобы открыть клиент по роли")
-                        AppButton(
-                            text = "Войти",
-                            onClick = {
-                                scope.launch {
-                                    state = PortalUiState.Loading
-                                    runCatching { coordinator.startLogin() }
-                                        .onSuccess { BrowserNav.navigateTo(it) }
-                                        .onFailure {
-                                            state =
-                                                PortalUiState.Error(
-                                                    it.message ?: "Не удалось начать вход",
-                                                )
-                                        }
-                                }
-                            },
-                        )
-                    }
                 is PortalUiState.NoWebApp ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -85,8 +59,11 @@ fun PortalApp(coordinator: AuthCoordinator) {
                         AppButton(
                             text = "Выйти",
                             onClick = {
-                                coordinator.logout()
-                                state = PortalUiState.Login
+                                scope.launch {
+                                    coordinator.logout()
+                                    state = PortalUiState.Loading
+                                    state = startLoginOrError(coordinator)
+                                }
                             },
                         )
                     }
@@ -97,8 +74,13 @@ fun PortalApp(coordinator: AuthCoordinator) {
                     ) {
                         AppText(text = s.message)
                         AppButton(
-                            text = "Назад",
-                            onClick = { state = PortalUiState.Login },
+                            text = "Повторить",
+                            onClick = {
+                                scope.launch {
+                                    state = PortalUiState.Loading
+                                    state = startLoginOrError(coordinator)
+                                }
+                            },
                         )
                     }
             }
@@ -130,7 +112,7 @@ private suspend fun bootstrap(coordinator: AuthCoordinator): PortalUiState {
     }
 
     if (!coordinator.hasSession()) {
-        return PortalUiState.Login
+        return startLoginOrError(coordinator)
     }
 
     return try {
@@ -143,6 +125,14 @@ private suspend fun bootstrap(coordinator: AuthCoordinator): PortalUiState {
         }
     } catch (e: Exception) {
         coordinator.logout()
-        PortalUiState.Error(e.message ?: "Сессия недействительна")
+        startLoginOrError(coordinator)
     }
 }
+
+private suspend fun startLoginOrError(coordinator: AuthCoordinator): PortalUiState =
+    runCatching { coordinator.startLogin() }
+        .onSuccess { BrowserNav.navigateTo(it) }
+        .fold(
+            onSuccess = { PortalUiState.Loading },
+            onFailure = { PortalUiState.Error(it.message ?: "Не удалось начать вход") },
+        )
