@@ -1,32 +1,28 @@
 # client-app
 
-KMP clients for Fixaverse facility roles.
+KMP clients for Fixaverse. The **client does not know roles** — only product **features** from `GET /me`.
 
-## Apps (web)
+Roles live in Zitadel (grants/invite). `feature-service` maps roles → union of features. The shell assembles nav and DI from that feature set.
 
-| Path | Module | Role |
-|------|--------|------|
-| `https://app.fixaverse.ru/` | `:portalApp` | Auth portal → OIDC → redirect by role |
-| `https://app.fixaverse.ru/technolog/` | `:technologApp` | `technologist` — Charts, Equipment, Profile |
+## App (web)
+
+| Path | Module | Behavior |
+|------|--------|----------|
+| `https://app.fixaverse.ru/` | `:composeApp` | OIDC login → `/me` → feature shell |
 
 ## Modules
 
-| Module | Role |
-|--------|------|
-| `:auth` | OIDC PKCE, token store, `/me`, role→path router |
+| Module | Purpose |
+|--------|---------|
+| `:auth` | OIDC PKCE, token store, `/me` |
 | `:design-system` | Colors, typography, shapes, base Compose UI |
 | `:design-system-paparazzi` | Paparazzi snapshot tests |
-| `:shared` | Nav models, session, Decompose shell |
-| `:portalApp` | Login + callback + role redirect |
-| `:technologApp` | Technologist shell (Wasm base `/technolog/`) |
-| `:composeApp` | Legacy multi-role stub (desktop/Android/Wasm) |
+| `:shared` | Feature nav models, session, Decompose shell |
+| `:composeApp` | Single entry (Wasm / Desktop / Android) |
 
-## Role → path
+## Features
 
-| Zitadel role | Web path |
-|--------------|----------|
-| `technologist` | `/technolog/` |
-| other | portal shows «нет web-клиента» |
+Wire strings align with feature-service (`board`, `user_invite`, `charts`, …). Nav is filtered by `ClientSession.features` (`FeatureId` + `NavCatalog`).
 
 Production features come from `GET https://api.masterdoc.pro/me`.
 
@@ -34,22 +30,21 @@ Production features come from `GET https://api.masterdoc.pro/me`.
 
 ```bash
 ./gradlew :auth:jvmTest :shared:jvmTest
-./gradlew :portalApp:wasmJsBrowserDistribution
-./gradlew :technologApp:wasmJsBrowserDistribution
+./gradlew :composeApp:wasmJsBrowserDistribution
 
 # OIDC web client id (Zitadel terraform output web_client_id):
-./gradlew :portalApp:wasmJsBrowserDistribution -Pfixaverse.oidc.webClientId=YOUR_ID
+./gradlew :composeApp:wasmJsBrowserDistribution -Pfixaverse.oidc.webClientId=YOUR_ID
 # or export FIXAVERSE_OIDC_WEB_CLIENT_ID=YOUR_ID
 ```
 
 ## Manual infra (first deploy)
 
 1. DNS: A-record `app` → `91.207.75.72`.
-2. On VPS: ensure dirs `/var/www/app.fixaverse.ru/{portal,technolog}` (install script creates them).
+2. On VPS: ensure dir `/var/www/app.fixaverse.ru` (install script creates it).
 3. Deploy workflow installs nginx + certbot for `app.fixaverse.ru`.
 4. api-gateway env: add `https://app.fixaverse.ru` to `CORS_ORIGINS`, reload gateway.
-5. `masterdoc-zitadel` terraform apply (role `technologist` + redirect URIs).
-6. Assign role `technologist` to a test user; set GitHub secret `FIXAVERSE_OIDC_WEB_CLIENT_ID`.
+5. `masterdoc-zitadel` terraform apply (roles + redirect URI `https://app.fixaverse.ru/auth/callback`).
+6. Assign product roles to a test user; set GitHub secret `FIXAVERSE_OIDC_WEB_CLIENT_ID`.
 
 ## Stack
 

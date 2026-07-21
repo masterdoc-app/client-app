@@ -10,7 +10,7 @@ class NavMenuBuilderTest {
     private val builder: NavMenuBuilder = DefaultNavMenuBuilder()
 
     @Test
-    fun engineerMenu_hasTicketsAndProfile_atMostFive() {
+    fun engineerMenu_hasTicketsAndProfile() {
         val items = builder.build(RoleFeatureFixtures.featuresForRole("engineer"))
         assertEquals(
             listOf(NavDestinationId.Tickets, NavDestinationId.Profile),
@@ -38,6 +38,35 @@ class NavMenuBuilderTest {
     }
 
     @Test
+    fun adminMenu_hasUsersAndProfile() {
+        val items = builder.build(RoleFeatureFixtures.featuresForRole("admin"))
+        assertEquals(
+            listOf(NavDestinationId.Users, NavDestinationId.Profile),
+            items.map { it.destination },
+        )
+    }
+
+    @Test
+    fun multiFeatureUnion_includesAllMatchingNavItems() {
+        val features =
+            RoleFeatureFixtures.featuresForRole("technologist") +
+                RoleFeatureFixtures.featuresForRole("admin") +
+                RoleFeatureFixtures.featuresForRole("dispatcher")
+        val items = builder.build(features)
+        assertEquals(
+            listOf(
+                NavDestinationId.Board,
+                NavDestinationId.Map,
+                NavDestinationId.Charts,
+                NavDestinationId.Equipment,
+                NavDestinationId.Users,
+                NavDestinationId.Profile,
+            ),
+            items.map { it.destination },
+        )
+    }
+
+    @Test
     fun alwaysIncludesProfileWhenPresentInFeatures() {
         val items = builder.build(setOf(FeatureId.Profile))
         assertEquals(listOf(NavDestinationId.Profile), items.map { it.destination })
@@ -45,10 +74,19 @@ class NavMenuBuilderTest {
 
     @Test
     fun rejectsMoreThanMaxItems() {
-        val tooMany = FeatureId.entries.toSet()
-        assertTrue(tooMany.size > NavMenuBuilder.MAX_ITEMS)
+        val oversized =
+            (0..NavMenuBuilder.MAX_ITEMS).map { index ->
+                NavItemSpec(
+                    destination = NavDestinationId.Profile,
+                    featureId = FeatureId.Profile,
+                    titleKey = "nav.$index",
+                    iconKey = "profile",
+                    order = index,
+                )
+            }
+        val limited = DefaultNavMenuBuilder(catalog = oversized)
         assertFailsWith<IllegalArgumentException> {
-            builder.build(tooMany)
+            limited.build(setOf(FeatureId.Profile))
         }
     }
 

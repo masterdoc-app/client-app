@@ -3,7 +3,7 @@ name: client-deploy
 description: >-
   Деплой client-app через git→CI: добавить файлы, коммит, пуш в main, дождаться
   тестов и деплоя, затем мок/smoke тесты нового и регрессии. Триггер: /client-deploy,
-  client-deploy, задеплой клиент, выкати portal/technolog.
+  client-deploy, задеплой клиент, выкати app.
 ---
 
 # /client-deploy
@@ -53,7 +53,7 @@ gh run view <run-id> --log-failed
 Workflow: `.github/workflows/deploy-app-fixaverse.yml`  
 Triggers: push на `main` / `trunk`, `workflow_dispatch`.
 
-Jobs: `Build portal + technolog Wasm` → `Deploy to app.fixaverse.ru`.
+Jobs: `Build composeApp Wasm` → `Deploy to app.fixaverse.ru`.
 
 ```bash
 gh run list --workflow=deploy-app-fixaverse.yml --branch main --limit 3
@@ -63,23 +63,24 @@ gh run watch <run-id>
 Успех = оба job зелёные.  
 Типичные блокеры deploy: нет secrets `DEPLOY_SSH_PRIVATE_KEY`, `DEPLOY_USER`, `FIXAVERSE_OIDC_WEB_CLIENT_ID`.
 
-Прод: `https://app.fixaverse.ru/` (portal), `https://app.fixaverse.ru/technolog/` (technolog).
+Прод: `https://app.fixaverse.ru/` (единый feature shell).
 
 ## 4. Мок / smoke тесты после деплоя
 
 По **diff этого коммита** (и связанных коммитов до merge в main):
 
 1. Список нового поведения из коммита
-2. Список соседнего функционала, который могли сломать (auth, redirect по ролям, portal login, technolog shell/навигация, API calls через gateway)
+2. Список соседнего функционала, который могли сломать (auth, `/me`, feature nav)
 
 Прогнать в браузере (Playwright / cursor-ide-browser) против прода:
 
 | Зона | Smoke |
 |------|--------|
-| Portal | `/` грузится, UI login виден |
-| Auth | OIDC redirect / callback не 500; после логина роль technologist → `/technolog/` |
-| Technolog | `/technolog/` shell, разделы Charts / Equipment / Profile открываются |
-| Регрессия | то, что трогали косвенно (CORS, `/me`, feature flags) |
+| App | `/` грузится, OIDC login стартует |
+| Auth | OIDC redirect / callback не 500; после логина shell по features из `/me` |
+| Shell | nav пункты соответствуют features (не ролям) |
+| Legacy | `/technolog/` → `/` |
+| Регрессия | CORS, `/me`, feature flags |
 
 «Мок» = без полной E2E-инфры: ручной/browser сценарий с тестовым юзером или заглушками там, где секреты/пароль недоступны; зафиксировать что проверено и что заблокировано (например нет пароля).
 

@@ -7,9 +7,7 @@ SITE_HOST="${SITE_HOST:-app.fixaverse.ru}"
 SITE="/etc/nginx/sites-available/${SITE_HOST}"
 WEB_ROOT="/var/www/${SITE_HOST}"
 
-mkdir -p /var/www/certbot \
-  "${WEB_ROOT}/portal" \
-  "${WEB_ROOT}/technolog"
+mkdir -p /var/www/certbot "${WEB_ROOT}"
 
 if [[ -f "/etc/letsencrypt/live/${SITE_HOST}/fullchain.pem" ]]; then
   cp "${DEPLOY_PATH}/app.fixaverse.ru.nginx.conf" "${SITE}"
@@ -30,4 +28,4 @@ if [[ ! -f "/etc/letsencrypt/live/${SITE_HOST}/fullchain.pem" ]]; then
   systemctl reload nginx
 fi
 
-echo "OK: https://${SITE_HOST}/ and https://${SITE_HOST}/technolog/"
+echo "OK: https://${SITE_HOST}/"

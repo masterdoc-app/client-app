@@ -1,7 +1,8 @@
 package pro.masterdoc.client.auth
 
 /**
- * Portal-facing auth orchestration: login redirect, callback exchange, role routing.
+ * Auth orchestration: login redirect, callback exchange, load /me.
+ * Does not interpret roles — callers use [MeResponse.features].
  */
 class AuthCoordinator(
     private val authRepository: AuthRepository,
@@ -14,15 +15,9 @@ class AuthCoordinator(
     suspend fun completeCallback(
         code: String,
         state: String?,
-    ): RoleRoute {
+    ): MeResponse {
         authRepository.exchangeCode(code = code, returnedState = state)
-        val me = meRepository.getMe()
-        return RoleRouter.resolve(me.userInfo.roles)
-    }
-
-    suspend fun resolveRouteForCurrentSession(): RoleRoute {
-        val me = meRepository.getMe()
-        return RoleRouter.resolve(me.userInfo.roles)
+        return meRepository.getMe()
     }
 
     suspend fun loadMe(): MeResponse = meRepository.getMe()

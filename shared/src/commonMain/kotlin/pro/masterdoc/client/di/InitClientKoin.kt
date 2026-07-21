@@ -4,7 +4,7 @@ import org.koin.core.context.startKoin
 import org.koin.mp.KoinPlatformTools
 import pro.masterdoc.client.session.ClientSession
 
-fun initClientKoin(session: ClientSession = ClientSession.stub("engineer")) {
+fun initClientKoin(session: ClientSession = ClientSession.stub()) {
     if (KoinPlatformTools.defaultContext().getOrNull() != null) return
     startKoin {
         modules(clientAppModule(session))

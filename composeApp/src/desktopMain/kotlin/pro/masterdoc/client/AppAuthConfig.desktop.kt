@@ -1,3 +1,3 @@
-package pro.masterdoc.client.technolog
+package pro.masterdoc.client
 
 actual fun currentHostname(): String = "localhost"

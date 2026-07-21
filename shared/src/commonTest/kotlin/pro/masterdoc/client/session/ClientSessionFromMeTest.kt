@@ -16,14 +16,27 @@ class ClientSessionFromMeTest {
                     userInfo =
                         UserInfoDto(
                             id = "u1",
-                            roles = listOf("technologist"),
+                            roles = listOf("technologist", "admin"),
                         ),
-                    features = listOf("charts", "equipment"),
+                    features = listOf("charts", "equipment", "user_invite"),
                 ),
             )
-        assertEquals("technologist", session.role)
-        assertTrue(FeatureId.Charts in session.features)
-        assertTrue(FeatureId.Equipment in session.features)
-        assertTrue(FeatureId.Profile in session.features)
+        assertEquals(
+            setOf(FeatureId.Charts, FeatureId.Equipment, FeatureId.Users, FeatureId.Profile),
+            session.features,
+        )
+        assertTrue(FeatureId.Users in session.features)
+    }
+
+    @Test
+    fun fromMe_ignoresUnknownWireFeatures() {
+        val session =
+            ClientSession.fromMe(
+                MeResponse(
+                    userInfo = UserInfoDto(id = "u1", roles = emptyList()),
+                    features = listOf("unknown_feature", "board"),
+                ),
+            )
+        assertEquals(setOf(FeatureId.Board, FeatureId.Profile), session.features)
     }
 }

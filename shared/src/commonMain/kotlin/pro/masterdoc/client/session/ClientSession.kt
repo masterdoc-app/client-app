@@ -4,7 +4,7 @@ import pro.masterdoc.client.auth.MeResponse
 import pro.masterdoc.client.navigation.FeatureId
 
 /**
- * Local-only fixtures for composeApp / unit tests.
+ * Local-only fixtures for previews / unit tests.
  * Production apps take features from gateway GET /me.
  */
 object RoleFeatureFixtures {
@@ -13,29 +13,28 @@ object RoleFeatureFixtures {
             "engineer" -> setOf(FeatureId.Tickets, FeatureId.Profile)
             "dispatcher" -> setOf(FeatureId.Board, FeatureId.Map, FeatureId.Profile)
             "technologist" -> setOf(FeatureId.Charts, FeatureId.Equipment, FeatureId.Profile)
+            "admin" -> setOf(FeatureId.Users, FeatureId.Profile)
             else -> setOf(FeatureId.Profile)
         }
 }
 
 /**
- * Session used by role shells (nav assembly).
+ * Session used by the feature shell (nav assembly). No roles — only capabilities.
  */
 data class ClientSession(
-    val role: String,
     val features: Set<FeatureId>,
 ) {
     companion object {
-        fun stub(role: String): ClientSession =
-            ClientSession(role = role, features = RoleFeatureFixtures.featuresForRole(role))
+        fun stub(features: Set<FeatureId> = setOf(FeatureId.Tickets, FeatureId.Profile)): ClientSession =
+            ClientSession(features = features)
 
         fun fromMe(me: MeResponse): ClientSession {
-            val role = me.userInfo.roles.firstOrNull() ?: "unknown"
             val features =
                 me.features
                     .mapNotNull { FeatureId.fromWire(it) }
                     .toMutableSet()
                     .apply { add(FeatureId.Profile) }
-            return ClientSession(role = role, features = features)
+            return ClientSession(features = features)
         }
     }
 }

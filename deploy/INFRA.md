@@ -6,9 +6,9 @@ Create A-record: `app.fixaverse.ru` → `91.207.75.72` (web VPS).
 
 ## Zitadel (masterdoc-zitadel)
 
-1. Apply terraform (adds role `technologist` + redirect URIs for `https://app.fixaverse.ru/auth/callback`).
+1. Apply terraform (roles + redirect URI `https://app.fixaverse.ru/auth/callback`).
 2. Note output `web_client_id` → GitHub secret `FIXAVERSE_OIDC_WEB_CLIENT_ID` on `client-app`.
-3. Grant a test user the `technologist` project role.
+3. Grant product roles to a test user (features come from feature-service union).
 
 ## api-gateway
 
@@ -22,19 +22,18 @@ Redeploy / restart gateway so CORS picks up the origin.
 
 ## feature-service
 
-Deploy build that maps `technologist` → `charts`, `equipment`.
+Deploy build that maps roles → features (`technologist` → `charts`/`equipment`, `admin` → `user_invite`, …).
 
 ## Web deploy
 
-GitHub Actions workflow `.github/workflows/deploy-app-fixaverse.yml` builds `:portalApp` + `:technologApp` and rsyncs to:
+GitHub Actions workflow `.github/workflows/deploy-app-fixaverse.yml` builds `:composeApp` and rsyncs to:
 
-- `/var/www/app.fixaverse.ru/portal/`
-- `/var/www/app.fixaverse.ru/technolog/`
+- `/var/www/app.fixaverse.ru/`
 
 Install script enables nginx + certbot for `app.fixaverse.ru`.
 
 ## Smoke
 
-1. Open `https://app.fixaverse.ru/` → Войти.
-2. After login as technologist → redirect to `/technolog/`.
-3. Shell shows Графики / Оборудование / Профиль.
+1. Open `https://app.fixaverse.ru/` → OIDC login.
+2. After login → shell with nav items for features from `/me` (e.g. Графики / Оборудование / Профиль).
+3. Legacy `/technolog/` redirects to `/`.

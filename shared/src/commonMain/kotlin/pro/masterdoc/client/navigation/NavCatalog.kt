@@ -48,6 +48,13 @@ object NavCatalog {
             order = 60,
         ),
         NavItemSpec(
+            destination = NavDestinationId.Users,
+            featureId = FeatureId.Users,
+            titleKey = "nav.users",
+            iconKey = "users",
+            order = 70,
+        ),
+        NavItemSpec(
             destination = NavDestinationId.Profile,
             featureId = FeatureId.Profile,
             titleKey = "nav.profile",

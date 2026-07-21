@@ -3,12 +3,24 @@ package pro.masterdoc.client
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.document
-import pro.masterdoc.client.di.initClientKoin
+import org.koin.core.context.startKoin
+import pro.masterdoc.client.auth.AuthCoordinator
+import pro.masterdoc.client.auth.authModule
+import pro.masterdoc.client.auth.createDefaultGatewayHttpClient
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
-    initClientKoin()
+    val koinApp =
+        startKoin {
+            modules(
+                authModule(
+                    config = appAuthConfig(),
+                    http = createDefaultGatewayHttpClient(),
+                ),
+            )
+        }
+    val coordinator = koinApp.koin.get<AuthCoordinator>()
     ComposeViewport(document.body!!) {
-        App()
+        AuthenticatedApp(coordinator = coordinator)
     }
 }

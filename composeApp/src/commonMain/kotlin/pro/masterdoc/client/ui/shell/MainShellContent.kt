@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PrecisionManufacturing
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Scaffold
@@ -97,4 +98,5 @@ private fun iconFor(destination: NavDestinationId): ImageVector =
         NavDestinationId.Equipment -> Icons.Filled.PrecisionManufacturing
         NavDestinationId.Profile -> Icons.Filled.Person
         NavDestinationId.Copilot -> Icons.Filled.SmartToy
+        NavDestinationId.Users -> Icons.Filled.PersonAdd
     }

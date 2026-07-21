@@ -10,6 +10,11 @@ plugins {
     alias(libs.plugins.androidApplication)
 }
 
+val oidcWebClientId: String =
+    (findProperty("fixaverse.oidc.webClientId") as String?)
+        ?: System.getenv("FIXAVERSE_OIDC_WEB_CLIENT_ID")
+        ?: "unset-web-client-id"
+
 kotlin {
     applyDefaultHierarchyTemplate()
 
@@ -36,10 +41,13 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
 
+            implementation(projects.auth)
             implementation(projects.shared)
             implementation(projects.designSystem)
+            implementation(libs.kotlinx.coroutines.core)
             implementation(libs.decompose)
             implementation(libs.decompose.compose)
+            implementation(libs.essenty.lifecycle)
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
         }
@@ -52,6 +60,11 @@ kotlin {
         val desktopMain by getting
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
+        }
+
+        val wasmJsMain by getting
+        wasmJsMain.dependencies {
+            implementation(libs.kotlinx.browser)
         }
     }
 }
@@ -90,6 +103,33 @@ compose.desktop {
             packageVersion = "1.0.0"
         }
     }
+}
+
+tasks.register("generateAuthDefaults") {
+    val outputDir = layout.buildDirectory.dir("generated/authDefaults/kotlin")
+    inputs.property("oidcWebClientId", oidcWebClientId)
+    outputs.dir(outputDir)
+    doLast {
+        val dir = outputDir.get().asFile.resolve("pro/masterdoc/client")
+        dir.mkdirs()
+        dir.resolve("GeneratedAuthDefaults.kt").writeText(
+            """
+            package pro.masterdoc.client
+
+            internal object GeneratedAuthDefaults {
+                const val WEB_CLIENT_ID: String = "$oidcWebClientId"
+            }
+            """.trimIndent() + "\n",
+        )
+    }
+}
+
+kotlin.sourceSets.getByName("commonMain").kotlin.srcDir(
+    layout.buildDirectory.dir("generated/authDefaults/kotlin"),
+)
+
+tasks.matching { it.name.startsWith("compile") }.configureEach {
+    dependsOn("generateAuthDefaults")
 }
 
 dependencies {

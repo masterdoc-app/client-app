@@ -7,7 +7,7 @@ import pro.masterdoc.client.navigation.NavMenuBuilder
 import pro.masterdoc.client.session.ClientSession
 
 fun clientAppModule(
-    session: ClientSession = ClientSession.stub("engineer"),
+    session: ClientSession = ClientSession.stub(),
 ): Module =
     module {
         single<NavMenuBuilder> { DefaultNavMenuBuilder() }

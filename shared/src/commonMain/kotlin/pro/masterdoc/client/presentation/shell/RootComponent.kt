@@ -11,7 +11,7 @@ interface RootComponent {
 
 class DefaultRootComponent(
     componentContext: ComponentContext,
-    session: ClientSession = ClientSession.stub("engineer"),
+    session: ClientSession = ClientSession.stub(),
     navMenuBuilder: NavMenuBuilder = DefaultNavMenuBuilder(),
 ) : RootComponent, ComponentContext by componentContext {
     override val shell: MainShellComponent =

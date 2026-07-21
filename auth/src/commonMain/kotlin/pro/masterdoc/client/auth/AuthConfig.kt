@@ -1,7 +1,7 @@
 package pro.masterdoc.client.auth
 
 /**
- * OIDC / gateway settings for web portal and role apps.
+ * OIDC / gateway settings for the feature shell (:composeApp).
  *
  * [clientId] comes from Zitadel `masterdoc-kmp-web` (terraform output `web_client_id`).
  */

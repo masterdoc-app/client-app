@@ -1,8 +1,8 @@
-package pro.masterdoc.client.technolog
+package pro.masterdoc.client
 
 import pro.masterdoc.client.auth.AuthConfig
 
-fun technologAuthConfig(): AuthConfig {
+fun appAuthConfig(): AuthConfig {
     val host = currentHostname()
     val local = host.contains("localhost") || host.startsWith("127.")
     return AuthConfig(

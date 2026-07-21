@@ -1,4 +1,4 @@
-package pro.masterdoc.client.technolog
+package pro.masterdoc.client
 
 import kotlinx.browser.window
 
