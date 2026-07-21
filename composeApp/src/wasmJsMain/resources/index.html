@@ -13,7 +13,8 @@
             overflow: hidden;
         }
     </style>
-    <script type="application/javascript" src="composeApp.js"></script>
+    <!-- Absolute path: relative src breaks on /auth/callback (loads /auth/composeApp.js → HTML). -->
+    <script type="application/javascript" src="/composeApp.js"></script>
 </head>
 <body></body>
 </html>

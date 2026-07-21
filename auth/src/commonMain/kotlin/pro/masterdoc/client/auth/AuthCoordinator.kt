@@ -17,10 +17,14 @@ class AuthCoordinator(
         state: String?,
     ): MeResponse {
         authRepository.exchangeCode(code = code, returnedState = state)
+        println("[auth] token exchange ok — loading /me")
         return meRepository.getMe()
     }
 
-    suspend fun loadMe(): MeResponse = meRepository.getMe()
+    suspend fun loadMe(): MeResponse {
+        println("[auth] session present — loading /me")
+        return meRepository.getMe()
+    }
 
     fun logout() {
         authRepository.logout()

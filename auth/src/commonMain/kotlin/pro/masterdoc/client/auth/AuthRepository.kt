@@ -125,9 +125,15 @@ class MeRepository(
                 headers = mapOf("Authorization" to "Bearer $access"),
             )
         if (!response.isSuccessful) {
+            println("[auth] GET /me failed status=${response.status} body=${response.body}")
             throw GatewayHttpException(response.status, "GET /me failed: ${response.body}")
         }
-        return json.decodeFromString(response.body)
+        val me = json.decodeFromString<MeResponse>(response.body)
+        println(
+            "[auth] GET /me ok id=${me.userInfo.id} email=${me.userInfo.email} " +
+                "roles=${me.userInfo.roles} features=${me.features} raw=${response.body}",
+        )
+        return me
     }
 }
 
