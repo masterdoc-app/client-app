@@ -28,6 +28,7 @@ import pro.masterdoc.client.designsystem.components.AppNavRail
 import pro.masterdoc.client.navigation.NavDestinationId
 import pro.masterdoc.client.navigation.NavItemSpec
 import pro.masterdoc.client.presentation.shell.MainShellComponent
+import pro.masterdoc.client.ui.screens.ProfileScreen
 import pro.masterdoc.client.ui.screens.StubDestinationScreen
 import pro.masterdoc.client.ui.screens.destinationTitle
 
@@ -37,6 +38,7 @@ private val CompactWidthBreakpoint = 600.dp
 fun MainShellContent(
     component: MainShellComponent,
     modifier: Modifier = Modifier,
+    onLogout: () -> Unit = {},
 ) {
     val pages by component.pages.subscribeAsState()
     val navUiItems = component.navItems.toAppNavItems(pages) { index ->
@@ -49,7 +51,7 @@ fun MainShellContent(
             Row(modifier = Modifier.fillMaxSize()) {
                 AppNavRail(items = navUiItems)
                 Box(modifier = Modifier.weight(1f).fillMaxSize()) {
-                    ActivePage(pages)
+                    ActivePage(pages = pages, onLogout = onLogout)
                 }
             }
         } else {
@@ -58,7 +60,7 @@ fun MainShellContent(
                 bottomBar = { AppNavBar(items = navUiItems) },
             ) { padding ->
                 Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-                    ActivePage(pages)
+                    ActivePage(pages = pages, onLogout = onLogout)
                 }
             }
         }
@@ -68,10 +70,16 @@ fun MainShellContent(
 @Composable
 private fun ActivePage(
     pages: ChildPages<MainShellComponent.PageConfig, MainShellComponent.PageChild>,
+    onLogout: () -> Unit,
 ) {
     val active = pages.items.getOrNull(pages.selectedIndex)?.instance ?: return
     when (active) {
-        is MainShellComponent.PageChild.Stub -> StubDestinationScreen(active.destination)
+        is MainShellComponent.PageChild.Stub ->
+            if (active.destination == NavDestinationId.Profile) {
+                ProfileScreen(onLogout = onLogout)
+            } else {
+                StubDestinationScreen(active.destination)
+            }
     }
 }
 

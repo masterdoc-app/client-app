@@ -59,6 +59,14 @@ fun AuthenticatedApp(coordinator: AuthCoordinator) {
         var state by remember { mutableStateOf<ShellUiState>(ShellUiState.Loading) }
         val scope = rememberCoroutineScope()
 
+        fun logoutAndRestart() {
+            scope.launch {
+                coordinator.logout()
+                state = ShellUiState.Loading
+                state = bootstrap(coordinator)
+            }
+        }
+
         LaunchedEffect(coordinator) {
             state = bootstrap(coordinator)
         }
@@ -68,7 +76,11 @@ fun AuthenticatedApp(coordinator: AuthCoordinator) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-            is ShellUiState.Ready -> MainShellContent(component = s.root.shell)
+            is ShellUiState.Ready ->
+                MainShellContent(
+                    component = s.root.shell,
+                    onLogout = ::logoutAndRestart,
+                )
             is ShellUiState.Error ->
                 Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -87,13 +99,7 @@ fun AuthenticatedApp(coordinator: AuthCoordinator) {
                     )
                     AppButton(
                         text = "Выйти",
-                        onClick = {
-                            scope.launch {
-                                coordinator.logout()
-                                state = ShellUiState.Loading
-                                state = bootstrap(coordinator)
-                            }
-                        },
+                        onClick = ::logoutAndRestart,
                     )
                 }
         }
