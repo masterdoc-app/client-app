@@ -125,5 +125,5 @@ jobs:
             "set -euo pipefail
              code=\$(curl -fsS -o /tmp/app-index.html -w '%{http_code}' https://${SITE_HOST}/)
              echo \"HTTP \$code\"
-             grep -q 'composeApp.js' /tmp/app-index.html
+             grep -q 'src="/composeApp.js"' /tmp/app-index.html
              curl -fsS -o /dev/null -w 'js=%{http_code}\n' https://${SITE_HOST}/composeApp.js"
