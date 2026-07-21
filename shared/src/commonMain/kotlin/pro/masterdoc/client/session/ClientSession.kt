@@ -7,19 +7,19 @@ import pro.masterdoc.client.navigation.FeatureId
  * Local-only fixtures for previews / unit tests.
  * Production apps take features from gateway GET /me.
  */
-object RoleFeatureFixtures {
-    fun featuresForRole(role: String): Set<FeatureId> =
-        when (role.lowercase()) {
-            "engineer" -> setOf(FeatureId.Tickets, FeatureId.Profile)
-            "dispatcher" -> setOf(FeatureId.Board, FeatureId.Map, FeatureId.Profile)
-            "technologist" -> setOf(FeatureId.Charts, FeatureId.Equipment, FeatureId.Profile)
-            "admin" -> setOf(FeatureId.Users, FeatureId.Profile)
-            else -> setOf(FeatureId.Profile)
-        }
+object FeatureSetFixtures {
+    fun board(): Set<FeatureId> = setOf(FeatureId.Board, FeatureId.Profile)
+
+    fun copilot(): Set<FeatureId> = setOf(FeatureId.Tickets, FeatureId.Profile)
+
+    fun chartsEquipment(): Set<FeatureId> =
+        setOf(FeatureId.Charts, FeatureId.Equipment, FeatureId.Profile)
+
+    fun usersAdmin(): Set<FeatureId> = setOf(FeatureId.Users, FeatureId.Profile)
 }
 
 /**
- * Session used by the feature shell (nav assembly). No roles — only capabilities.
+ * Session used by the feature shell (nav assembly). No IdP grants — only capabilities.
  */
 data class ClientSession(
     val features: Set<FeatureId>,

@@ -2,7 +2,7 @@ package pro.masterdoc.client.auth
 
 /**
  * Auth orchestration: login redirect, callback exchange, load /me.
- * Does not interpret roles — callers use [MeResponse.features].
+ * Does not interpret IdP grants — callers use [MeResponse.features].
  */
 class AuthCoordinator(
     private val authRepository: AuthRepository,

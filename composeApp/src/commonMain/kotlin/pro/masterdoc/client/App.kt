@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlinx.coroutines.launch
+import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.parseQueryParams
@@ -51,10 +52,13 @@ fun App() {
 }
 
 /**
- * Production entry: OIDC → GET /me → feature shell. Client never branches on roles.
+ * Production entry: OIDC → GET /me → feature shell. Client never branches on IdP grants.
  */
 @Composable
-fun AuthenticatedApp(coordinator: AuthCoordinator) {
+fun AuthenticatedApp(
+    coordinator: AuthCoordinator,
+    adminUsersRepository: AdminUsersRepository,
+) {
     ClientTheme {
         var state by remember { mutableStateOf<ShellUiState>(ShellUiState.Loading) }
         val scope = rememberCoroutineScope()
@@ -80,6 +84,7 @@ fun AuthenticatedApp(coordinator: AuthCoordinator) {
                 MainShellContent(
                     component = s.root.shell,
                     onLogout = ::logoutAndRestart,
+                    adminUsersRepository = adminUsersRepository,
                 )
             is ShellUiState.Error ->
                 Column(

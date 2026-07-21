@@ -30,6 +30,13 @@ fun authModule(
             )
         }
         single {
+            AdminUsersRepository(
+                config = get(),
+                http = get(),
+                tokenStore = get(),
+            )
+        }
+        single {
             AuthCoordinator(
                 authRepository = get(),
                 meRepository = get(),
