@@ -122,8 +122,9 @@ jobs:
         run: |
           ssh -i "$HOME/.ssh/deploy_ed25519" -o IdentitiesOnly=yes \
             "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "set -euo pipefail
-             code=\$(curl -fsS -o /tmp/app-index.html -w '%{http_code}' https://${SITE_HOST}/)
-             echo \"HTTP \$code\"
-             grep -q 'src="/composeApp.js"' /tmp/app-index.html
-             curl -fsS -o /dev/null -w 'js=%{http_code}\n' https://${SITE_HOST}/composeApp.js"
+            'set -euo pipefail
+             code=$(curl -fsS -o /tmp/app-index.html -w "%{http_code}" https://'"${SITE_HOST}"'/)
+             echo "HTTP $code"
+             grep -F "src=\"/composeApp.js\"" /tmp/app-index.html
+             curl -fsS -o /dev/null -w "js=%{http_code}\n" https://'"${SITE_HOST}"'/composeApp.js'
+
