@@ -35,5 +35,5 @@ Install script enables nginx + certbot for `app.fixaverse.ru`.
 ## Smoke
 
 1. Open `https://app.fixaverse.ru/` → OIDC login.
-2. After login → shell with nav items for features from `/me` (e.g. Графики / Оборудование / Профиль).
+2. After login → shell with nav items for features from `/me` (e.g. ППР / Оборудование / Профиль).
 3. Legacy `/technolog/` redirects to `/`.

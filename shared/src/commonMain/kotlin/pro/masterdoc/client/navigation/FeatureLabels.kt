@@ -6,7 +6,7 @@ fun FeatureId.titleRu(): String =
         FeatureId.Tickets -> "Заявки"
         FeatureId.Board -> "Доска"
         FeatureId.Map -> "Карта"
-        FeatureId.Charts -> "Графики"
+        FeatureId.Charts -> "ППР"
         FeatureId.Equipment -> "Оборудование"
         FeatureId.Profile -> "Профиль"
         FeatureId.Copilot -> "Наставник"
