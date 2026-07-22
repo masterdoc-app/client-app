@@ -26,9 +26,10 @@ fun AppButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     variant: AppButtonVariant = AppButtonVariant.Primary,
+    fillMaxWidth: Boolean = true,
 ) {
     val contentPadding = PaddingValues(horizontal = ClientSpacing.md, vertical = 12.dp)
-    val buttonModifier = modifier.fillMaxWidth()
+    val buttonModifier = if (fillMaxWidth) modifier.fillMaxWidth() else modifier
 
     when (variant) {
         AppButtonVariant.Primary ->

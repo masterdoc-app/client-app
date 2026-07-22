@@ -1,0 +1,17 @@
+---
+description: Fix clear bugs and smoke FAILs without asking for confirmation
+alwaysApply: true
+---
+
+# Fix without asking
+
+When smoke-test, review, or the session finds a clear bug/regression with an obvious fix:
+
+1. **Do not ask** whether to fix, how to approach, or whether to proceed.
+2. Implement the fix immediately.
+3. Then follow `commit-push-immediately` (commit, push, watch CI).
+
+## Exceptions
+
+- Ambiguous product decisions (behavior choice, not a bug) — ask once.
+- Destructive/irreversible ops outside the usual commit/push flow — confirm first.

@@ -182,7 +182,7 @@ fun UsersScreen(
                     users.forEach { user ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(ClientSpacing.md),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
@@ -200,6 +200,7 @@ fun UsersScreen(
                                 AppButton(
                                     text = if (deletingId == user.id) "…" else "Удалить",
                                     enabled = deletingId == null,
+                                    fillMaxWidth = false,
                                     onClick = {
                                         scope.launch {
                                             deletingId = user.id
