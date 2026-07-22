@@ -22,6 +22,11 @@ class JvmGatewayHttpClient : GatewayHttpClient {
         headers: Map<String, String>,
     ): GatewayHttpResponse = execute("POST", url, headers, body)
 
+    override suspend fun delete(
+        url: String,
+        headers: Map<String, String>,
+    ): GatewayHttpResponse = execute("DELETE", url, headers, null)
+
     private fun execute(
         method: String,
         url: String,

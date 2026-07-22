@@ -116,6 +116,11 @@ class WasmGatewayHttpClient : GatewayHttpClient {
             bodyBase64 = Base64Std.encode(body),
         )
 
+    override suspend fun delete(
+        url: String,
+        headers: Map<String, String>,
+    ): GatewayHttpResponse = request(method = "DELETE", url = url, headers = headers, bodyBase64 = null)
+
     private suspend fun request(
         method: String,
         url: String,

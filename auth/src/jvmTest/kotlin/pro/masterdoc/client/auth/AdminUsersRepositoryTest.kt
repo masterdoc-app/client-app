@@ -136,4 +136,9 @@ internal class RecordingGatewayHttpClient(
         body: ByteArray,
         headers: Map<String, String>,
     ): GatewayHttpResponse = handler("POST", url, headers, "<bytes:${body.size}>")
+
+    override suspend fun delete(
+        url: String,
+        headers: Map<String, String>,
+    ): GatewayHttpResponse = handler("DELETE", url, headers, null)
 }

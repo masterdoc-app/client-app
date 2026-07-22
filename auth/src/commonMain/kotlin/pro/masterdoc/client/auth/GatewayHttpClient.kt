@@ -20,6 +20,11 @@ interface GatewayHttpClient {
         body: ByteArray,
         headers: Map<String, String> = emptyMap(),
     ): GatewayHttpResponse
+
+    suspend fun delete(
+        url: String,
+        headers: Map<String, String> = emptyMap(),
+    ): GatewayHttpResponse
 }
 
 data class GatewayHttpResponse(
