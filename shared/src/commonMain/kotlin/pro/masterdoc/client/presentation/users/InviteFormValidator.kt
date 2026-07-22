@@ -21,5 +21,3 @@ enum class InviteFormError {
     FamilyNameRequired,
     FeaturesRequired,
 }
-
-val GrantableFeatures = listOf("board", "copilot", "charts", "equipment", "user_invite")

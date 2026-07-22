@@ -58,6 +58,34 @@ class AdminUsersRepositoryTest {
             assertEquals(listOf("board"), user.features)
         }
 
+
+    @Test
+    fun listFeatures_getsCatalogWithRussianTitles() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, headers, _ ->
+                    assertEquals("GET", method)
+                    assertTrue(url.endsWith("/features"))
+                    assertEquals("Bearer at", headers["Authorization"])
+                    GatewayHttpResponse(
+                        200,
+                        """{"items":[{"id":"board","titleRu":"Доска"},{"id":"user_invite","titleRu":"Пользователи"}]}""",
+                    )
+                }
+            val repo =
+                AdminUsersRepository(
+                    config = AuthConfig(clientId = "web"),
+                    http = http,
+                    tokenStore = tokens,
+                )
+            val catalog = repo.listFeatures()
+            assertEquals(2, catalog.items.size)
+            assertEquals("board", catalog.items[0].id)
+            assertEquals("Доска", catalog.items[0].titleRu)
+        }
+
     @Test
     fun listUsers_getsItems() =
         runBlocking {

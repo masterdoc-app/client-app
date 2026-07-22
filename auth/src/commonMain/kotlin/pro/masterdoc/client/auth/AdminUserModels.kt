@@ -29,12 +29,38 @@ data class AdminUserList(
     val total: Int,
 )
 
+@Serializable
+data class FeatureDefinitionDto(
+    val id: String,
+    val titleRu: String,
+)
+
+@Serializable
+data class FeaturesCatalog(
+    val items: List<FeatureDefinitionDto>,
+)
+
 class AdminUsersRepository(
     private val config: AuthConfig,
     private val http: GatewayHttpClient,
     private val tokenStore: TokenStore,
     private val json: Json = AuthRepository.defaultJson,
 ) {
+    suspend fun listFeatures(): FeaturesCatalog {
+        val access =
+            tokenStore.read()?.accessToken
+                ?: throw GatewayHttpException(401, "Not authenticated")
+        val response =
+            http.get(
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/features",
+                headers = mapOf("Authorization" to "Bearer $access"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "GET /features failed: ${response.body}")
+        }
+        return json.decodeFromString(FeaturesCatalog.serializer(), response.body)
+    }
+
     suspend fun listUsers(
         limit: Int = 50,
         offset: Int = 0,

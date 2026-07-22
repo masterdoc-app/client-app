@@ -26,13 +26,13 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.FeatureDefinitionDto
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.InviteUserRequest
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
-import pro.masterdoc.client.presentation.users.GrantableFeatures
 import pro.masterdoc.client.presentation.users.InviteFormError
 import pro.masterdoc.client.presentation.users.InviteFormValidator
 
@@ -42,6 +42,7 @@ fun UsersScreen(
     modifier: Modifier = Modifier,
 ) {
     var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
+    var featureCatalog by remember { mutableStateOf<List<FeatureDefinitionDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var email by remember { mutableStateOf("") }
@@ -50,12 +51,14 @@ fun UsersScreen(
     var selected by remember { mutableStateOf(setOf<String>()) }
     var inviting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val titleById = remember(featureCatalog) { featureCatalog.associate { it.id to it.titleRu } }
 
     fun reload() {
         scope.launch {
             loading = true
             error = null
             try {
+                featureCatalog = repository.listFeatures().items
                 users = repository.listUsers().items
             } catch (e: GatewayHttpException) {
                 error = humanAdminError(e)
@@ -102,29 +105,39 @@ fun UsersScreen(
                 singleLine = true,
             )
             AppText(text = "Фичи")
-            GrantableFeatures.forEach { feature ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                selected =
-                                    if (feature in selected) selected - feature else selected + feature
-                            },
-                ) {
-                    Checkbox(
-                        checked = feature in selected,
-                        onCheckedChange = { checked ->
-                            selected = if (checked) selected + feature else selected - feature
-                        },
-                    )
-                    AppText(text = feature)
-                }
+            when {
+                loading && featureCatalog.isEmpty() -> CircularProgressIndicator()
+                featureCatalog.isEmpty() -> AppText(text = "Каталог фич недоступен")
+                else ->
+                    featureCatalog.forEach { feature ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selected =
+                                            if (feature.id in selected) {
+                                                selected - feature.id
+                                            } else {
+                                                selected + feature.id
+                                            }
+                                    },
+                        ) {
+                            Checkbox(
+                                checked = feature.id in selected,
+                                onCheckedChange = { checked ->
+                                    selected =
+                                        if (checked) selected + feature.id else selected - feature.id
+                                },
+                            )
+                            AppText(text = feature.titleRu)
+                        }
+                    }
             }
             AppButton(
                 text = if (inviting) "Отправка…" else "Пригласить",
-                enabled = !inviting,
+                enabled = !inviting && featureCatalog.isNotEmpty(),
                 onClick = {
                     val validation =
                         InviteFormValidator.validate(email, givenName, familyName, selected)
@@ -166,7 +179,13 @@ fun UsersScreen(
                 else ->
                     users.forEach { user ->
                         AppText(text = "${user.givenName} ${user.familyName} · ${user.email}")
-                        AppText(text = user.features.joinToString(", ").ifEmpty { "-" })
+                        AppText(
+                            text =
+                                user.features
+                                    .map { id -> titleById[id] ?: id }
+                                    .joinToString(", ")
+                                    .ifEmpty { "-" },
+                        )
                         AppText(text = user.state)
                     }
             }
