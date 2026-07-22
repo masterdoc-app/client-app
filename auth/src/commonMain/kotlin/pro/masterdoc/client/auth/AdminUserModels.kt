@@ -98,4 +98,18 @@ class AdminUsersRepository(
         }
         return json.decodeFromString(AdminUser.serializer(), response.body)
     }
+
+    suspend fun revokeInvite(userId: String) {
+        val access =
+            tokenStore.read()?.accessToken
+                ?: throw GatewayHttpException(401, "Not authenticated")
+        val response =
+            http.delete(
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/admin/users/$userId",
+                headers = mapOf("Authorization" to "Bearer $access"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "DELETE /admin/users/$userId failed: ${response.body}")
+        }
+    }
 }

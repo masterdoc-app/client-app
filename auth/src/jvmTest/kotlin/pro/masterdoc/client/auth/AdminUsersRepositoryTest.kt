@@ -110,6 +110,28 @@ class AdminUsersRepositoryTest {
             assertEquals(1, list.total)
             assertEquals("a@b.com", list.items[0].email)
         }
+
+    @Test
+    fun revokeInvite_deletesUser() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, headers, body ->
+                    assertEquals("DELETE", method)
+                    assertTrue(url.endsWith("/admin/users/u-1"))
+                    assertEquals("Bearer at", headers["Authorization"])
+                    assertEquals(null, body)
+                    GatewayHttpResponse(204, "")
+                }
+            val repo =
+                AdminUsersRepository(
+                    config = AuthConfig(clientId = "web"),
+                    http = http,
+                    tokenStore = tokens,
+                )
+            repo.revokeInvite("u-1")
+        }
 }
 
 internal class RecordingGatewayHttpClient(
