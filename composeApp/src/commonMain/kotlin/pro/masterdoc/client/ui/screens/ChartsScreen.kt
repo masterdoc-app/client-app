@@ -148,16 +148,17 @@ private fun MapDraftRow(
 private fun MapSummary(map: MaintenanceMapDto) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         AppText(
-            text = "${map.title} · ${map.status} · ${map.source}",
+            text = "${map.title} · ${ruStatus(map.status)} · ${ruSource(map.source)}",
             style = AppTextStyle.Body,
         )
         AppText(
-            text = "Asset: ${map.assetId} · пунктов: ${map.items.size}",
+            text = "Оборудование: ${map.assetId} · пунктов: ${map.items.size}",
             style = AppTextStyle.Label,
         )
         map.items.take(5).forEach { item ->
             AppText(
-                text = "• ${item.title} (${item.kind}, каждые ${item.interval.every} ${item.interval.unit})",
+                text =
+                    "• ${item.title} (${ruKind(item.kind)}, каждые ${item.interval.every} ${ruIntervalUnit(item.interval.every, item.interval.unit)})",
                 style = AppTextStyle.Label,
             )
         }
@@ -165,4 +166,53 @@ private fun MapSummary(map: MaintenanceMapDto) {
             AppText(text = "… ещё ${map.items.size - 5}", style = AppTextStyle.Label)
         }
     }
+}
+
+internal fun ruStatus(status: String): String =
+    when (status.lowercase()) {
+        "draft" -> "черновик"
+        "active" -> "активна"
+        "rejected" -> "отклонена"
+        else -> status
+    }
+
+internal fun ruSource(source: String): String =
+    when (source.lowercase()) {
+        "ai_generated" -> "ИИ"
+        "manual" -> "вручную"
+        else -> source
+    }
+
+internal fun ruKind(kind: String): String =
+    when (kind.lowercase()) {
+        "inspection" -> "осмотр"
+        "service" -> "обслуживание"
+        "repair" -> "ремонт"
+        "replacement" -> "замена"
+        "calibration" -> "калибровка"
+        else -> kind
+    }
+
+internal fun ruIntervalUnit(every: Int, unit: String): String =
+    when (unit.lowercase()) {
+        "days", "day" -> russianPlural(every, "день", "дня", "дней")
+        "weeks", "week" -> russianPlural(every, "неделя", "недели", "недель")
+        "months", "month" -> russianPlural(every, "месяц", "месяца", "месяцев")
+        "hours", "hour" -> russianPlural(every, "час", "часа", "часов")
+        "years", "year" -> russianPlural(every, "год", "года", "лет")
+        else -> unit
+    }
+
+internal fun russianPlural(n: Int, one: String, few: String, many: String): String {
+    val abs = kotlin.math.abs(n)
+    val mod100 = abs % 100
+    val mod10 = abs % 10
+    val form =
+        when {
+            mod100 in 11..14 -> many
+            mod10 == 1 -> one
+            mod10 in 2..4 -> few
+            else -> many
+        }
+    return form
 }

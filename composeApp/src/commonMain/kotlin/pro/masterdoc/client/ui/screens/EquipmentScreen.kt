@@ -217,7 +217,7 @@ fun EquipmentScreen(
                 else ->
                     active.forEach { asset ->
                         AppText(
-                            text = "${asset.name} · ${asset.source}${asset.inventoryNo?.let { " · №$it" } ?: ""}",
+                            text = "${asset.name} · ${ruSource(asset.source)}${asset.inventoryNo?.let { " · №$it" } ?: ""}",
                             style = AppTextStyle.Body,
                         )
                     }
@@ -238,7 +238,7 @@ private fun AssetDraftRow(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         AppText(
-            text = "${asset.name} · ${asset.source}${asset.category?.let { " · $it" } ?: ""}",
+            text = "${asset.name} · ${ruSource(asset.source)}${asset.category?.let { " · $it" } ?: ""}",
             style = AppTextStyle.Body,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
