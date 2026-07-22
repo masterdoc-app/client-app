@@ -38,6 +38,8 @@ fun AppScaffold(
     Scaffold(
         modifier = modifier,
         topBar = { AppTopBar(title = title) },
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         content = content,
     )
 }

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PrecisionManufacturing
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,13 +23,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.arkivanov.decompose.router.pages.ChildPages
+import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.designsystem.components.AppNavBar
 import pro.masterdoc.client.designsystem.components.AppNavItem
 import pro.masterdoc.client.designsystem.components.AppNavRail
-import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.navigation.NavDestinationId
 import pro.masterdoc.client.navigation.NavItemSpec
 import pro.masterdoc.client.presentation.shell.MainShellComponent
+import pro.masterdoc.client.session.ClientSession
+import pro.masterdoc.client.ui.screens.EquipmentScreen
 import pro.masterdoc.client.ui.screens.ProfileScreen
 import pro.masterdoc.client.ui.screens.StubDestinationScreen
 import pro.masterdoc.client.ui.screens.UsersScreen
@@ -42,6 +46,7 @@ fun MainShellContent(
     modifier: Modifier = Modifier,
     onLogout: () -> Unit = {},
     adminUsersRepository: AdminUsersRepository? = null,
+    equipmentRepository: EquipmentRepository? = null,
 ) {
     val pages by component.pages.subscribeAsState()
     val navUiItems = component.navItems.toAppNavItems(pages) { index ->
@@ -56,8 +61,10 @@ fun MainShellContent(
                 Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                     ActivePage(
                         pages = pages,
+                        session = component.session,
                         onLogout = onLogout,
                         adminUsersRepository = adminUsersRepository,
+                        equipmentRepository = equipmentRepository,
                     )
                 }
             }
@@ -65,12 +72,16 @@ fun MainShellContent(
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 bottomBar = { AppNavBar(items = navUiItems) },
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.onBackground,
             ) { padding ->
                 Box(modifier = Modifier.fillMaxSize().padding(padding)) {
                     ActivePage(
                         pages = pages,
+                        session = component.session,
                         onLogout = onLogout,
                         adminUsersRepository = adminUsersRepository,
+                        equipmentRepository = equipmentRepository,
                     )
                 }
             }
@@ -81,17 +92,30 @@ fun MainShellContent(
 @Composable
 private fun ActivePage(
     pages: ChildPages<MainShellComponent.PageConfig, MainShellComponent.PageChild>,
+    session: ClientSession,
     onLogout: () -> Unit,
     adminUsersRepository: AdminUsersRepository?,
+    equipmentRepository: EquipmentRepository?,
 ) {
     val active = pages.items.getOrNull(pages.selectedIndex)?.instance ?: return
     when (active) {
         is MainShellComponent.PageChild.Stub ->
             when (active.destination) {
-                NavDestinationId.Profile -> ProfileScreen(onLogout = onLogout)
+                NavDestinationId.Profile ->
+                    ProfileScreen(
+                        onLogout = onLogout,
+                        user = session.user,
+                        features = session.features,
+                    )
                 NavDestinationId.Users ->
                     if (adminUsersRepository != null) {
                         UsersScreen(repository = adminUsersRepository)
+                    } else {
+                        StubDestinationScreen(active.destination)
+                    }
+                NavDestinationId.Equipment ->
+                    if (equipmentRepository != null) {
+                        EquipmentScreen(repository = equipmentRepository)
                     } else {
                         StubDestinationScreen(active.destination)
                     }

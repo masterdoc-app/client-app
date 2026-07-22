@@ -15,6 +15,7 @@ import pro.masterdoc.client.navigation.NavMenuBuilder
 import pro.masterdoc.client.session.ClientSession
 
 interface MainShellComponent {
+    val session: ClientSession
     val navItems: List<NavItemSpec>
     val pages: Value<ChildPages<PageConfig, PageChild>>
 
@@ -35,6 +36,7 @@ class DefaultMainShellComponent(
     session: ClientSession,
     navMenuBuilder: NavMenuBuilder = DefaultNavMenuBuilder(),
 ) : MainShellComponent, ComponentContext by componentContext {
+    override val session: ClientSession = session
     override val navItems: List<NavItemSpec> = navMenuBuilder.build(session.features)
 
     private val navigation = PagesNavigation<MainShellComponent.PageConfig>()

@@ -19,10 +19,22 @@ object FeatureSetFixtures {
 }
 
 /**
+ * Profile fields from gateway GET /me (`userInfo`).
+ * Optional strings are omitted in UI when blank.
+ */
+data class SessionUser(
+    val id: String,
+    val email: String? = null,
+    val givenName: String? = null,
+    val familyName: String? = null,
+)
+
+/**
  * Session used by the feature shell (nav assembly). No IdP grants — only capabilities.
  */
 data class ClientSession(
     val features: Set<FeatureId>,
+    val user: SessionUser? = null,
 ) {
     companion object {
         fun stub(features: Set<FeatureId> = setOf(FeatureId.Tickets, FeatureId.Profile)): ClientSession =
@@ -34,7 +46,17 @@ data class ClientSession(
                     .mapNotNull { FeatureId.fromWire(it) }
                     .toMutableSet()
                     .apply { add(FeatureId.Profile) }
-            return ClientSession(features = features)
+            val info = me.userInfo
+            return ClientSession(
+                features = features,
+                user =
+                    SessionUser(
+                        id = info.id,
+                        email = info.email?.trim()?.takeIf { it.isNotEmpty() },
+                        givenName = info.givenName?.trim()?.takeIf { it.isNotEmpty() },
+                        familyName = info.familyName?.trim()?.takeIf { it.isNotEmpty() },
+                    ),
+            )
         }
     }
 }

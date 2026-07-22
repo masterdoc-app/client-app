@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import pro.masterdoc.client.designsystem.components.AppButton
@@ -31,10 +33,12 @@ import pro.masterdoc.client.designsystem.components.AppMenu
 import pro.masterdoc.client.designsystem.components.AppMenuItem
 import pro.masterdoc.client.designsystem.components.AppNavButton
 import pro.masterdoc.client.designsystem.components.AppNavButtonLayout
+import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientColors
 import pro.masterdoc.client.designsystem.theme.ClientTheme
+import pro.masterdoc.client.designsystem.theme.clientLightColorScheme
 
 class DesignSystemSnapshotTest {
     @get:Rule
@@ -50,12 +54,56 @@ class DesignSystemSnapshotTest {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Swatch("Background", ClientColors.Background)
                 Swatch("Surface", ClientColors.Surface)
+                Swatch("SurfaceContainer", ClientColors.SurfaceContainer)
+                Swatch("SurfaceContainerHighest", ClientColors.SurfaceContainerHighest)
                 Swatch("OnSurface", ClientColors.OnSurface)
                 Swatch("OnSurfaceVariant", ClientColors.OnSurfaceVariant)
                 Swatch("Primary", ClientColors.Primary)
                 Swatch("OnPrimary", ClientColors.OnPrimary)
                 Swatch("Outline", ClientColors.Outline)
                 Swatch("Error", ClientColors.Error)
+            }
+        }
+    }
+
+    @Test
+    fun lightScheme_rejectsMaterialWarmNeutrals() {
+        val scheme = clientLightColorScheme()
+        // Material3 ColorLightTokens.Neutral98 / Neutral94 — warm pink, not our graphite.
+        val materialWarmBackground = Color(0xFFFEF7FF)
+        val materialWarmContainer = Color(0xFFF3EDF7)
+        assertEquals(ClientColors.Background, scheme.background)
+        assertEquals(ClientColors.SurfaceContainer, scheme.surfaceContainer)
+        assertEquals(ClientColors.SurfaceContainerHighest, scheme.surfaceContainerHighest)
+        assert(scheme.background != materialWarmBackground)
+        assert(scheme.surfaceContainer != materialWarmContainer)
+        assert(scheme.surfaceContainerHighest != Color(0xFFE6E0E9))
+    }
+
+    @Test
+    fun appScaffold_background() {
+        paparazzi.snapshot {
+            ClientTheme(darkTheme = false) {
+                Box(
+                    modifier =
+                        Modifier
+                            .width(360.dp)
+                            .height(640.dp),
+                ) {
+                    AppScaffold(title = "Пользователи") { padding ->
+                        Column(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(padding)
+                                    .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            AppText(text = "Email", style = AppTextStyle.Label)
+                            AppText(text = "Имя", style = AppTextStyle.Label)
+                        }
+                    }
+                }
             }
         }
     }

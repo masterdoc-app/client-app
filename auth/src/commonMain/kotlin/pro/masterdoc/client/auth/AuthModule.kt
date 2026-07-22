@@ -37,6 +37,13 @@ fun authModule(
             )
         }
         single {
+            EquipmentRepository(
+                config = get(),
+                http = get(),
+                tokenStore = get(),
+            )
+        }
+        single {
             AuthCoordinator(
                 authRepository = get(),
                 meRepository = get(),
