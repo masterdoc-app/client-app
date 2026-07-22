@@ -29,4 +29,7 @@ class AuthCoordinator(
     fun logout() {
         authRepository.logout()
     }
+
+    /** Clear local session and return authorize URL with prompt=login (navigate there). */
+    suspend fun logoutRedirectUrl(): String = authRepository.logoutRedirectUrl()
 }

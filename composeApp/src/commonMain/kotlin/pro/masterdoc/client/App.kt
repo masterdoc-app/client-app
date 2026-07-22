@@ -68,9 +68,14 @@ fun AuthenticatedApp(
 
         fun logoutAndRestart() {
             scope.launch {
-                coordinator.logout()
                 state = ShellUiState.Loading
-                state = bootstrap(coordinator)
+                runCatching { coordinator.logoutRedirectUrl() }
+                    .onSuccess { BrowserNav.navigateTo(it) }
+                    .onFailure {
+                        // Local clear even if end_session URL cannot be built.
+                        coordinator.logout()
+                        state = ShellUiState.Error(it.message ?: "Не удалось выйти")
+                    }
             }
         }
 

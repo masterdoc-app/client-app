@@ -9,7 +9,7 @@ class AuthRepository(
     private val pkceStore: PkceSessionStore,
     private val json: Json = defaultJson,
 ) {
-    suspend fun buildAuthorizeUrl(): String {
+    suspend fun buildAuthorizeUrl(prompt: String? = null): String {
         val authorizeBase = fetchAuthorizeBase().trimEnd('/')
         val verifier = Pkce.generateVerifier()
         val state = Pkce.generateState()
@@ -24,6 +24,9 @@ class AuthRepository(
             append("&code_challenge=").append(encodeQuery(challenge))
             append("&code_challenge_method=S256")
             append("&state=").append(encodeQuery(state))
+            if (prompt != null) {
+                append("&prompt=").append(encodeQuery(prompt))
+            }
         }
     }
 
@@ -88,6 +91,16 @@ class AuthRepository(
     fun logout() {
         tokenStore.clear()
         pkceStore.clear()
+    }
+
+    /**
+     * Local logout + authorize URL with `prompt=login` so Zitadel SSO cannot
+     * silently re-issue a code (previous flow cleared tokens then called
+     * bootstrap → startLogin without prompt → instant re-login).
+     */
+    suspend fun logoutRedirectUrl(): String {
+        logout()
+        return buildAuthorizeUrl(prompt = "login")
     }
 
     fun currentTokens(): AuthTokens? = tokenStore.read()

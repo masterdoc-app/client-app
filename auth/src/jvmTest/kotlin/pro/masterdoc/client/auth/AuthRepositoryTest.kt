@@ -73,6 +73,49 @@ class AuthRepositoryTest {
             assertEquals("at", tokens.read()?.accessToken)
             assertEquals(null, pkce.readVerifier())
         }
+
+    @Test
+    fun logoutRedirectUrl_clearsSessionAndForcesLoginPrompt() =
+        runBlocking {
+            val http =
+                FakeGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertTrue(url.endsWith("/auth/url"))
+                    GatewayHttpResponse(
+                        200,
+                        """{"authUrl":"https://auth.formaverse.ru/oauth/v2/authorize"}""",
+                    )
+                }
+            val tokens = InMemoryTokenStore()
+            tokens.write(
+                AuthTokens(
+                    accessToken = "at",
+                    refreshToken = "rt",
+                    idToken = "id.jwt",
+                ),
+            )
+            val pkce = InMemoryPkceSessionStore()
+            pkce.save(verifier = "v", state = "s")
+            val repo =
+                AuthRepository(
+                    config =
+                        AuthConfig(
+                            clientId = "web-client",
+                            redirectUri = AuthConfig.LOCAL_REDIRECT_URI,
+                        ),
+                    http = http,
+                    tokenStore = tokens,
+                    pkceStore = pkce,
+                )
+
+            val url = repo.logoutRedirectUrl()
+
+            assertTrue(url.startsWith("https://auth.formaverse.ru/oauth/v2/authorize?"))
+            assertTrue(url.contains("prompt=login"))
+            assertTrue(url.contains("client_id=web-client"))
+            assertEquals(null, tokens.read())
+            assertTrue(pkce.readVerifier() != null)
+        }
 }
 
 private class FakeGatewayHttpClient(
