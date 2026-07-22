@@ -50,6 +50,7 @@ fun UsersScreen(
     var familyName by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf(setOf<String>()) }
     var inviting by remember { mutableStateOf(false) }
+    var revokingId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val titleById = remember(featureCatalog) { featureCatalog.associate { it.id to it.titleRu } }
 
@@ -178,15 +179,45 @@ fun UsersScreen(
                 loading -> CircularProgressIndicator()
                 else ->
                     users.forEach { user ->
-                        AppText(text = "${user.givenName} ${user.familyName} · ${user.email}")
-                        AppText(
-                            text =
-                                user.features
-                                    .map { id -> titleById[id] ?: id }
-                                    .joinToString(", ")
-                                    .ifEmpty { "-" },
-                        )
-                        AppText(text = user.state)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                AppText(text = "${user.givenName} ${user.familyName} · ${user.email}")
+                                AppText(
+                                    text =
+                                        user.features
+                                            .map { id -> titleById[id] ?: id }
+                                            .joinToString(", ")
+                                            .ifEmpty { "-" },
+                                )
+                                AppText(text = user.state)
+                            }
+                            if (user.state == "invited") {
+                                AppButton(
+                                    text = if (revokingId == user.id) "…" else "Отозвать",
+                                    enabled = revokingId == null,
+                                    onClick = {
+                                        scope.launch {
+                                            revokingId = user.id
+                                            error = null
+                                            try {
+                                                repository.revokeInvite(user.id)
+                                                users = repository.listUsers().items
+                                            } catch (e: GatewayHttpException) {
+                                                error = humanAdminError(e)
+                                            } catch (e: Exception) {
+                                                error = e.message ?: "Ошибка отзыва"
+                                            } finally {
+                                                revokingId = null
+                                            }
+                                        }
+                                    },
+                                )
+                            }
+                        }
                     }
             }
         }
@@ -205,7 +236,8 @@ private fun humanAdminError(e: GatewayHttpException): String =
     when (e.status) {
         400 -> e.message.ifBlank { "Некорректный запрос" }
         403 -> "Нет доступа (нужна фича user_invite)"
-        409 -> "Пользователь с таким email уже есть"
+        404 -> "Пользователь не найден"
+        409 -> "Можно отозвать только приглашение"
         502 -> "Сервис недоступен"
         else -> e.message.ifBlank { "Ошибка ${e.status}" }
     }
