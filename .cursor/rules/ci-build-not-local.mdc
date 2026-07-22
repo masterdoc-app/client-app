@@ -1,25 +1,27 @@
 ---
-description: Never build locally — push and let GitHub Actions build/deploy
+description: Build/deploy only via GitHub Actions — push, then watch the run
 alwaysApply: true
 ---
 
-# CI build, not local
+# Push → GitHub Actions → watch
 
-Do **not** run heavy local builds (`./gradlew`, Wasm/webpack, Docker image builds, full compile suites) on this machine.
+Сборка и деплой идут **на GitHub**, не на локальной машине.
 
 ## Required workflow
 
-1. Commit and **push** to the remote branch
-2. Let **GitHub Actions** build (and deploy when the workflow does)
-3. Monitor CI with `gh run list` / `gh run watch` / `gh run view`
+1. Commit and **push** to the remote branch right away
+2. Let **GitHub Actions** build and deploy
+3. **Immediately watch** the Action: `gh run list` → `gh run watch` / `gh run view --log-failed`
+4. Report the run result (success / failure + cause) before claiming the task is done
 
 ## Do not
 
-- Run `./gradlew :*wasmJs*`, `wasmJsBrowserDistribution`, webpack production, or similar locally for deploy artifacts
-- Pipe long Gradle runs through `tail` and wait
-- Block on local compile when CI can do the same job
+- Run heavy local builds (`./gradlew`, Wasm/webpack, Docker image builds, full compile suites)
+- Produce deploy artifacts locally (`:*wasmJs*`, `wasmJsBrowserDistribution`, webpack production, etc.)
+- Pipe long Gradle runs through `tail` and wait — that hides progress and looks hung
+- Stop after push without checking whether the Action passed
 
 ## Exceptions
 
-- Tiny checks the user explicitly asked for (single unit test, lint of one file)
-- Reading/editing code and configs without compiling
+- Tiny, targeted checks the user explicitly asked for (e.g. a single unit test, lint of one file)
+- Reading/editing code, configs, and deploy scripts without compiling

@@ -1,0 +1,23 @@
+---
+description: After finishing work, commit, push, and watch GitHub Actions
+alwaysApply: true
+---
+
+# Commit, push, watch Actions
+
+When a task is done and there are relevant local changes:
+
+1. **Do not ask** whether to commit or push.
+2. Commit the task-related changes right away (clear message; only files for this task).
+3. Push to the tracked remote branch immediately after the commit.
+4. Watch the triggered GitHub Action (`gh run watch` / `gh run view`) and report how it finished.
+
+## Scope
+
+- Commit **only** files that belong to the finished task; leave unrelated dirty work unstaged.
+- Follow the usual git safety rules (no force-push to main/master, no secrets, no `--no-verify` unless asked).
+- If the workspace is a multi-repo folder, commit/push in each affected git repo that has task changes.
+
+## Exceptions
+
+- Skip commit/push only if git fails, there is nothing to commit for the task, or the user explicitly said not to push this time.
