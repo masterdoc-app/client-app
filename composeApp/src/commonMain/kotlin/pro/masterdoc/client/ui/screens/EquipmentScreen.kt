@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,19 +38,25 @@ fun EquipmentScreen(
     modifier: Modifier = Modifier,
 ) {
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
     var picked by remember { mutableStateOf<PickedPdf?>(null) }
     var documentId by remember { mutableStateOf("") }
     var job by remember { mutableStateOf<TechnologistJobDto?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var actingId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     fun reload() {
         scope.launch {
+            loading = true
             try {
                 assets = repository.listAssets().items
+                error = null
             } catch (e: Exception) {
                 error = e.message
+            } finally {
+                loading = false
             }
         }
     }
@@ -68,6 +75,9 @@ fun EquipmentScreen(
         }
     }
 
+    val drafts = assets.filter { it.status == "draft" }
+    val active = assets.filter { it.status == "active" }
+
     AppScaffold(title = "Оборудование", modifier = modifier) { padding ->
         Column(
             modifier =
@@ -80,7 +90,7 @@ fun EquipmentScreen(
         ) {
             AppText(text = "Загрузка руководства", style = AppTextStyle.Title)
             AppText(
-                text = "Выберите PDF файл ИЭ / руководства. Агент создаёт только draft.",
+                text = "PDF руководства → Технолог создаёт черновик. После подтверждения оборудование попадает в базу.",
                 style = AppTextStyle.Label,
             )
             AppButton(
@@ -89,10 +99,7 @@ fun EquipmentScreen(
                 onClick = {
                     scope.launch {
                         error = null
-                        val file = pickPdfFile()
-                        if (file == null) {
-                            return@launch
-                        }
+                        val file = pickPdfFile() ?: return@launch
                         if (!file.filename.endsWith(".pdf", ignoreCase = true)) {
                             error = "Нужен файл PDF"
                             picked = null
@@ -137,61 +144,106 @@ fun EquipmentScreen(
                 AppText(text = "Job: ${j.status}")
                 j.error?.let { AppText(text = it) }
                 if (j.status == "succeeded") {
-                    AppText(text = "Draft asset: ${j.draftAssetId}")
-                    AppText(text = "Draft map: ${j.draftMapId}")
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        AppButton(
-                            text = "Подтвердить пакет",
-                            onClick = {
-                                scope.launch {
-                                    try {
-                                        repository.confirmPackage(j.id)
-                                        reload()
-                                        error = null
-                                    } catch (e: Exception) {
-                                        error = e.message
-                                    }
+                    AppText(
+                        text = "Созданы черновики: оборудование ${j.draftAssetId ?: "—"}, ППР ${j.draftMapId ?: "—"}",
+                        style = AppTextStyle.Label,
+                    )
+                    AppButton(
+                        text = "Подтвердить пакет (оборудование + ППР)",
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    repository.confirmPackage(j.id)
+                                    reload()
+                                    error = null
+                                } catch (e: Exception) {
+                                    error = e.message
                                 }
-                            },
-                        )
-                    }
+                            }
+                        },
+                    )
                 }
             }
+
             error?.let { AppText(text = it) }
-            AppText(text = "Активы", style = AppTextStyle.Title)
-            assets.forEach { asset ->
-                AppText(text = "${asset.name} · ${asset.status} · ${asset.source}")
-                if (asset.status == "draft") {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        AppButton(
-                            text = "Подтвердить",
-                            onClick = {
+
+            AppText(text = "Черновики оборудования", style = AppTextStyle.Title)
+            AppText(
+                text = "Подтвердите — попадёт в базу. Отклоните — черновик удалится.",
+                style = AppTextStyle.Label,
+            )
+            when {
+                loading && assets.isEmpty() -> CircularProgressIndicator()
+                drafts.isEmpty() -> AppText(text = "Нет черновиков", style = AppTextStyle.Label)
+                else ->
+                    drafts.forEach { asset ->
+                        AssetDraftRow(
+                            asset = asset,
+                            acting = actingId == asset.id,
+                            onConfirm = {
                                 scope.launch {
+                                    actingId = asset.id
                                     try {
                                         repository.confirmAsset(asset.id)
                                         reload()
                                     } catch (e: Exception) {
                                         error = e.message
+                                    } finally {
+                                        actingId = null
                                     }
                                 }
                             },
-                        )
-                        AppButton(
-                            text = "Отклонить",
-                            onClick = {
+                            onReject = {
                                 scope.launch {
+                                    actingId = asset.id
                                     try {
                                         repository.rejectAsset(asset.id)
                                         reload()
                                     } catch (e: Exception) {
                                         error = e.message
+                                    } finally {
+                                        actingId = null
                                     }
                                 }
                             },
                         )
                     }
-                }
             }
+
+            AppText(text = "В базе", style = AppTextStyle.Title)
+            when {
+                loading && assets.isEmpty() -> Unit
+                active.isEmpty() -> AppText(text = "Пока пусто", style = AppTextStyle.Label)
+                else ->
+                    active.forEach { asset ->
+                        AppText(
+                            text = "${asset.name} · ${asset.source}${asset.inventoryNo?.let { " · №$it" } ?: ""}",
+                            style = AppTextStyle.Body,
+                        )
+                    }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AssetDraftRow(
+    asset: AssetDto,
+    acting: Boolean,
+    onConfirm: () -> Unit,
+    onReject: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        AppText(
+            text = "${asset.name} · ${asset.source}${asset.category?.let { " · $it" } ?: ""}",
+            style = AppTextStyle.Body,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppButton(text = if (acting) "…" else "Подтвердить", enabled = !acting, onClick = onConfirm)
+            AppButton(text = "Отклонить", enabled = !acting, onClick = onReject)
         }
     }
 }

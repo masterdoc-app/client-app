@@ -32,6 +32,7 @@ import pro.masterdoc.client.navigation.NavDestinationId
 import pro.masterdoc.client.navigation.NavItemSpec
 import pro.masterdoc.client.presentation.shell.MainShellComponent
 import pro.masterdoc.client.session.ClientSession
+import pro.masterdoc.client.ui.screens.ChartsScreen
 import pro.masterdoc.client.ui.screens.EquipmentScreen
 import pro.masterdoc.client.ui.screens.ProfileScreen
 import pro.masterdoc.client.ui.screens.StubDestinationScreen
@@ -116,6 +117,12 @@ private fun ActivePage(
                 NavDestinationId.Equipment ->
                     if (equipmentRepository != null) {
                         EquipmentScreen(repository = equipmentRepository)
+                    } else {
+                        StubDestinationScreen(active.destination)
+                    }
+                NavDestinationId.Charts ->
+                    if (equipmentRepository != null) {
+                        ChartsScreen(repository = equipmentRepository)
                     } else {
                         StubDestinationScreen(active.destination)
                     }

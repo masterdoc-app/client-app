@@ -50,6 +50,22 @@ data class StartTechnologistJobRequest(
 )
 
 @Serializable
+data class IntervalDto(
+    val every: Int,
+    val unit: String,
+)
+
+@Serializable
+data class MaintenanceMapItemDto(
+    val id: String,
+    val title: String,
+    val kind: String,
+    val interval: IntervalDto,
+    val criticality: String,
+    val sourceRef: String? = null,
+)
+
+@Serializable
 data class MaintenanceMapDto(
     val id: String,
     val assetId: String,
@@ -57,6 +73,7 @@ data class MaintenanceMapDto(
     val title: String,
     val status: String,
     val source: String,
+    val items: List<MaintenanceMapItemDto> = emptyList(),
 )
 
 @Serializable
@@ -124,6 +141,16 @@ class EquipmentRepository(
             )
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
         return json.decodeFromString(MaintenanceMapDto.serializer(), response.body)
+    }
+
+    suspend fun rejectMap(id: String) {
+        val response =
+            http.postForm(
+                url = "${base()}/maintenance-maps/$id/reject",
+                body = "",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
     }
 
     suspend fun uploadManualPdf(
