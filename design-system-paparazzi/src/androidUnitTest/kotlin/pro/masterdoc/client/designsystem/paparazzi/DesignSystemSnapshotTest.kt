@@ -21,7 +21,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi
+import com.android.ide.common.rendering.api.SessionParams
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import pro.masterdoc.client.designsystem.components.AppButton
@@ -44,8 +46,10 @@ class DesignSystemSnapshotTest {
     @get:Rule
     val paparazzi =
         Paparazzi(
-            deviceConfig = DeviceConfig.PIXEL_5,
+            deviceConfig = DeviceConfig.PIXEL_5.copy(softButtons = false),
             theme = "android:Theme.Material.Light.NoActionBar",
+            // Crop to composable — avoid Android window letterbox looking cream.
+            renderingMode = SessionParams.RenderingMode.SHRINK,
         )
 
     @Test
@@ -78,6 +82,12 @@ class DesignSystemSnapshotTest {
         assert(scheme.background != materialWarmBackground)
         assert(scheme.surfaceContainer != materialWarmContainer)
         assert(scheme.surfaceContainerHighest != Color(0xFFE6E0E9))
+        // Cool bias: blue channel must dominate red (not cream/yellow).
+        assertTrue(ClientColors.Background.blue > ClientColors.Background.red)
+        assertTrue(scheme.surfaceContainer.blue > scheme.surfaceContainer.red)
+        assertTrue(scheme.outlineVariant.blue >= scheme.outlineVariant.red)
+        assertEquals(ClientColors.OutlineVariant, scheme.outlineVariant)
+        assertEquals(ClientColors.SurfaceContainerHigh, scheme.secondaryContainer)
     }
 
     @Test
@@ -88,7 +98,8 @@ class DesignSystemSnapshotTest {
                     modifier =
                         Modifier
                             .width(360.dp)
-                            .height(640.dp),
+                            .height(640.dp)
+                            .background(MaterialTheme.colorScheme.background),
                 ) {
                     AppScaffold(title = "Пользователи") { padding ->
                         Column(
