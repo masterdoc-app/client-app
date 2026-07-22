@@ -62,12 +62,6 @@ data class MaintenanceMapDto(
 @Serializable
 data class MaintenanceMapListDto(val items: List<MaintenanceMapDto>)
 
-@Serializable
-data class TextDocumentUploadRequest(
-    val text: String,
-    val filename: String? = "manual.pdf",
-)
-
 class EquipmentRepository(
     private val config: AuthConfig,
     private val http: GatewayHttpClient,
@@ -132,20 +126,27 @@ class EquipmentRepository(
         return json.decodeFromString(MaintenanceMapDto.serializer(), response.body)
     }
 
-    suspend fun uploadManualText(text: String, filename: String = "manual.pdf"): DocumentMetaDto {
-        val body =
-            json.encodeToString(
-                TextDocumentUploadRequest.serializer(),
-                TextDocumentUploadRequest(text = text, filename = filename),
+    suspend fun uploadManualPdf(
+        bytes: ByteArray,
+        filename: String,
+    ): DocumentMetaDto {
+        require(filename.endsWith(".pdf", ignoreCase = true)) { "Only PDF allowed" }
+        require(bytes.isNotEmpty()) { "PDF file is empty" }
+        val part =
+            MultipartBody.filePart(
+                fieldName = "file",
+                filename = filename,
+                fileContentType = "application/pdf",
+                bytes = bytes,
             )
         val response =
-            http.postForm(
-                url = "${base()}/documents/from-text",
-                body = body,
+            http.postBytes(
+                url = "${base()}/documents",
+                body = part.body,
                 headers =
                     mapOf(
                         "Authorization" to "Bearer ${bearer()}",
-                        "Content-Type" to "application/json",
+                        "Content-Type" to part.contentType,
                     ),
             )
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)

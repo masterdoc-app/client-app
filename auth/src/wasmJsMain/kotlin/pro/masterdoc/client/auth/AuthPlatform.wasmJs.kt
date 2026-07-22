@@ -90,32 +90,48 @@ class WasmGatewayHttpClient : GatewayHttpClient {
     override suspend fun get(
         url: String,
         headers: Map<String, String>,
-    ): GatewayHttpResponse = request(method = "GET", url = url, headers = headers, body = "")
+    ): GatewayHttpResponse = request(method = "GET", url = url, headers = headers, bodyBase64 = null)
 
     override suspend fun postForm(
         url: String,
         body: String,
         headers: Map<String, String>,
-    ): GatewayHttpResponse = request(method = "POST", url = url, headers = headers, body = body)
+    ): GatewayHttpResponse =
+        request(
+            method = "POST",
+            url = url,
+            headers = headers,
+            bodyBase64 = Base64Std.encode(body.encodeToByteArray()),
+        )
+
+    override suspend fun postBytes(
+        url: String,
+        body: ByteArray,
+        headers: Map<String, String>,
+    ): GatewayHttpResponse =
+        request(
+            method = "POST",
+            url = url,
+            headers = headers,
+            bodyBase64 = Base64Std.encode(body),
+        )
 
     private suspend fun request(
         method: String,
         url: String,
         headers: Map<String, String>,
-        body: String,
+        bodyBase64: String?,
     ): GatewayHttpResponse =
         suspendCoroutine { cont ->
             val headerJson =
                 headers.entries.joinToString(prefix = "{", postfix = "}") { (k, v) ->
                     "\"${escapeJs(k)}\":\"${escapeJs(v)}\""
                 }
-            // Empty body means GET without body (avoid Kotlin/JS null in JsFun).
-            val bodyOrEmpty = body
             fetchHttpJs(
                 method = method,
                 url = url,
                 headerJson = headerJson,
-                body = bodyOrEmpty,
+                bodyBase64 = bodyBase64 ?: "",
                 onSuccess = { payload ->
                     val nl = payload.indexOf('\n')
                     if (nl < 0) {
@@ -148,13 +164,18 @@ class WasmGatewayHttpClient : GatewayHttpClient {
 
 @JsFun(
     """
-    (method, url, headerJson, body, onSuccess, onFailure) => {
+    (method, url, headerJson, bodyBase64, onSuccess, onFailure) => {
       (async () => {
         try {
           const headers = JSON.parse(headerJson);
           const init = { method: method, headers: headers };
-          if (method !== 'GET' && method !== 'HEAD' && body !== '') {
-            init.body = body;
+          if (method !== 'GET' && method !== 'HEAD' && bodyBase64 !== '') {
+            const binary = atob(bodyBase64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+              bytes[i] = binary.charCodeAt(i);
+            }
+            init.body = bytes;
           }
           const response = await fetch(url, init);
           const text = await response.text();
@@ -170,7 +191,7 @@ private external fun fetchHttpJs(
     method: String,
     url: String,
     headerJson: String,
-    body: String,
+    bodyBase64: String,
     onSuccess: (String) -> Unit,
     onFailure: (String) -> Unit,
 )

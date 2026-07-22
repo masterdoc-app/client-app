@@ -26,4 +26,10 @@ actual fun createDefaultGatewayHttpClient(): GatewayHttpClient =
             body: String,
             headers: Map<String, String>,
         ): GatewayHttpResponse = GatewayHttpResponse(501, "HTTP not wired on Android auth actual")
+
+        override suspend fun postBytes(
+            url: String,
+            body: ByteArray,
+            headers: Map<String, String>,
+        ): GatewayHttpResponse = GatewayHttpResponse(501, "HTTP not wired on Android auth actual")
     }

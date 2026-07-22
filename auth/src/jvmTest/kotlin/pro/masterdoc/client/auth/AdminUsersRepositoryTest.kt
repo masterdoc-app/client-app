@@ -130,4 +130,10 @@ internal class RecordingGatewayHttpClient(
         body: String,
         headers: Map<String, String>,
     ): GatewayHttpResponse = handler("POST", url, headers, body)
+
+    override suspend fun postBytes(
+        url: String,
+        body: ByteArray,
+        headers: Map<String, String>,
+    ): GatewayHttpResponse = handler("POST", url, headers, "<bytes:${body.size}>")
 }

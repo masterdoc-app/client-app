@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +28,8 @@ import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
+import pro.masterdoc.client.platform.PickedPdf
+import pro.masterdoc.client.platform.pickPdfFile
 
 @Composable
 fun EquipmentScreen(
@@ -37,14 +37,7 @@ fun EquipmentScreen(
     modifier: Modifier = Modifier,
 ) {
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
-    var manualText by remember {
-        mutableStateOf(
-            "Руководство по эксплуатации компрессора CX-100.\n" +
-                "Ежедневно: визуальный осмотр утечек.\n" +
-                "Раз в 30 дней: проверка фильтра-осушителя.\n" +
-                "Раз в год: замена фильтра-осушителя.",
-        )
-    }
+    var picked by remember { mutableStateOf<PickedPdf?>(null) }
     var documentId by remember { mutableStateOf("") }
     var job by remember { mutableStateOf<TechnologistJobDto?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -87,25 +80,44 @@ fun EquipmentScreen(
         ) {
             AppText(text = "Загрузка руководства", style = AppTextStyle.Title)
             AppText(
-                text = "Вставьте текст ИЭ (или PDF через API /documents). Агент создаёт только draft.",
+                text = "Выберите PDF файл ИЭ / руководства. Агент создаёт только draft.",
                 style = AppTextStyle.Label,
             )
-            OutlinedTextField(
-                value = manualText,
-                onValueChange = { manualText = it },
-                label = { Text("Текст руководства") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 5,
+            AppButton(
+                text = "Выбрать PDF",
+                enabled = !busy,
+                onClick = {
+                    scope.launch {
+                        error = null
+                        val file = pickPdfFile()
+                        if (file == null) {
+                            return@launch
+                        }
+                        if (!file.filename.endsWith(".pdf", ignoreCase = true)) {
+                            error = "Нужен файл PDF"
+                            picked = null
+                            return@launch
+                        }
+                        picked = file
+                    }
+                },
             )
+            picked?.let { file ->
+                AppText(
+                    text = "Файл: ${file.filename} (${file.bytes.size} байт)",
+                    style = AppTextStyle.Label,
+                )
+            }
             AppButton(
                 text = if (busy) "Загрузка…" else "Загрузить и запустить Технолога",
-                enabled = !busy && manualText.isNotBlank(),
+                enabled = !busy && picked != null,
                 onClick = {
+                    val file = picked ?: return@AppButton
                     scope.launch {
                         busy = true
                         error = null
                         try {
-                            val doc = repository.uploadManualText(manualText.trim())
+                            val doc = repository.uploadManualPdf(file.bytes, file.filename)
                             documentId = doc.id
                             job = repository.startTechnologist(doc.id)
                         } catch (e: GatewayHttpException) {

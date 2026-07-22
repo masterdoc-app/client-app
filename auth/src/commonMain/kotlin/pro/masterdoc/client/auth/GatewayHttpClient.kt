@@ -14,6 +14,12 @@ interface GatewayHttpClient {
         body: String,
         headers: Map<String, String> = emptyMap(),
     ): GatewayHttpResponse
+
+    suspend fun postBytes(
+        url: String,
+        body: ByteArray,
+        headers: Map<String, String> = emptyMap(),
+    ): GatewayHttpResponse
 }
 
 data class GatewayHttpResponse(

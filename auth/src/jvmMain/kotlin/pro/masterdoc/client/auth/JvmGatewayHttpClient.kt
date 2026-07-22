@@ -14,13 +14,19 @@ class JvmGatewayHttpClient : GatewayHttpClient {
         url: String,
         body: String,
         headers: Map<String, String>,
+    ): GatewayHttpResponse = execute("POST", url, headers, body.toByteArray(StandardCharsets.UTF_8))
+
+    override suspend fun postBytes(
+        url: String,
+        body: ByteArray,
+        headers: Map<String, String>,
     ): GatewayHttpResponse = execute("POST", url, headers, body)
 
     private fun execute(
         method: String,
         url: String,
         headers: Map<String, String>,
-        body: String?,
+        body: ByteArray?,
     ): GatewayHttpResponse {
         val connection = URI(url).toURL().openConnection() as HttpURLConnection
         connection.requestMethod = method
@@ -30,8 +36,9 @@ class JvmGatewayHttpClient : GatewayHttpClient {
         headers.forEach { (k, v) -> connection.setRequestProperty(k, v) }
         if (body != null) {
             connection.doOutput = true
+            connection.setRequestProperty("Content-Length", body.size.toString())
             connection.outputStream.use { os ->
-                os.write(body.toByteArray(StandardCharsets.UTF_8))
+                os.write(body)
             }
         }
         val status = connection.responseCode
