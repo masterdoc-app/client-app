@@ -12,6 +12,7 @@ data class AssetDto(
     val name: String,
     val inventoryNo: String? = null,
     val category: String? = null,
+    val description: String? = null,
     val status: String,
     val source: String,
     val documentIds: List<String> = emptyList(),

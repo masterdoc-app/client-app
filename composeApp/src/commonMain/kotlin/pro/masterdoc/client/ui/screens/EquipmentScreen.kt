@@ -2,9 +2,7 @@ package pro.masterdoc.client.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +21,7 @@ import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
+import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.TechnologistJobDto
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppScaffold
@@ -38,6 +37,7 @@ fun EquipmentScreen(
     modifier: Modifier = Modifier,
 ) {
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
+    var mapsByAsset by remember { mutableStateOf<Map<String, MaintenanceMapDto>>(emptyMap()) }
     var loading by remember { mutableStateOf(true) }
     var picked by remember { mutableStateOf<PickedPdf?>(null) }
     var documentId by remember { mutableStateOf("") }
@@ -52,6 +52,15 @@ fun EquipmentScreen(
             loading = true
             try {
                 assets = repository.listAssets().items
+                val maps = repository.listMaps().items
+                mapsByAsset =
+                    maps
+                        .groupBy { it.assetId }
+                        .mapValues { (_, list) ->
+                            list.firstOrNull { it.status == "draft" }
+                                ?: list.firstOrNull { it.status == "active" }
+                                ?: list.first()
+                        }
                 error = null
             } catch (e: Exception) {
                 error = e.message
@@ -90,7 +99,9 @@ fun EquipmentScreen(
         ) {
             AppText(text = "Загрузка руководства", style = AppTextStyle.Title)
             AppText(
-                text = "PDF руководства → Технолог создаёт черновик. После подтверждения оборудование попадает в базу.",
+                text =
+                    "PDF руководства → Технолог собирает карточку оборудования и черновик ППР. " +
+                        "После подтверждения карточка попадает в базу.",
                 style = AppTextStyle.Label,
             )
             AppButton(
@@ -145,7 +156,7 @@ fun EquipmentScreen(
                 j.error?.let { AppText(text = it) }
                 if (j.status == "succeeded") {
                     AppText(
-                        text = "Созданы черновики: оборудование ${j.draftAssetId ?: "—"}, ППР ${j.draftMapId ?: "—"}",
+                        text = "Черновики готовы. Проверьте карточку ниже и подтвердите или отклоните.",
                         style = AppTextStyle.Label,
                     )
                     AppButton(
@@ -167,24 +178,26 @@ fun EquipmentScreen(
 
             error?.let { AppText(text = it) }
 
-            AppText(text = "Черновики оборудования", style = AppTextStyle.Title)
-            AppText(
-                text = "Подтвердите — попадёт в базу. Отклоните — черновик удалится.",
-                style = AppTextStyle.Label,
-            )
+            AppText(text = "Черновики", style = AppTextStyle.Title)
             when {
                 loading && assets.isEmpty() -> CircularProgressIndicator()
-                drafts.isEmpty() -> AppText(text = "Нет черновиков", style = AppTextStyle.Label)
+                drafts.isEmpty() -> AppText(text = "Нет черновиков — загрузите руководство.", style = AppTextStyle.Label)
                 else ->
                     drafts.forEach { asset ->
-                        AssetDraftRow(
+                        EquipmentCard(
                             asset = asset,
+                            linkedMap = mapsByAsset[asset.id],
                             acting = actingId == asset.id,
                             onConfirm = {
                                 scope.launch {
                                     actingId = asset.id
                                     try {
                                         repository.confirmAsset(asset.id)
+                                        mapsByAsset[asset.id]?.let { map ->
+                                            if (map.status == "draft") {
+                                                runCatching { repository.confirmMap(map.id) }
+                                            }
+                                        }
                                         reload()
                                     } catch (e: Exception) {
                                         error = e.message
@@ -197,6 +210,11 @@ fun EquipmentScreen(
                                 scope.launch {
                                     actingId = asset.id
                                     try {
+                                        mapsByAsset[asset.id]?.let { map ->
+                                            if (map.status == "draft") {
+                                                runCatching { repository.rejectMap(map.id) }
+                                            }
+                                        }
                                         repository.rejectAsset(asset.id)
                                         reload()
                                     } catch (e: Exception) {
@@ -216,34 +234,12 @@ fun EquipmentScreen(
                 active.isEmpty() -> AppText(text = "Пока пусто", style = AppTextStyle.Label)
                 else ->
                     active.forEach { asset ->
-                        AppText(
-                            text = "${asset.name} · ${ruSource(asset.source)}${asset.inventoryNo?.let { " · №$it" } ?: ""}",
-                            style = AppTextStyle.Body,
+                        EquipmentCard(
+                            asset = asset,
+                            linkedMap = mapsByAsset[asset.id],
                         )
                     }
             }
-        }
-    }
-}
-
-@Composable
-private fun AssetDraftRow(
-    asset: AssetDto,
-    acting: Boolean,
-    onConfirm: () -> Unit,
-    onReject: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        AppText(
-            text = "${asset.name} · ${ruSource(asset.source)}${asset.category?.let { " · $it" } ?: ""}",
-            style = AppTextStyle.Body,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AppButton(text = if (acting) "…" else "Подтвердить", enabled = !acting, onClick = onConfirm)
-            AppButton(text = "Отклонить", enabled = !acting, onClick = onReject)
         }
     }
 }
