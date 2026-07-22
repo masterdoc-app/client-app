@@ -42,7 +42,8 @@ private sealed interface ShellUiState {
 
 @Composable
 fun App(root: RootComponent) {
-    ClientTheme {
+    // Product UI is light graphite; do not follow OS dark mode (near-black #121417).
+    ClientTheme(darkTheme = false) {
         MainShellContent(component = root.shell)
     }
 }
@@ -61,7 +62,7 @@ fun AuthenticatedApp(
     adminUsersRepository: AdminUsersRepository,
     equipmentRepository: EquipmentRepository,
 ) {
-    ClientTheme {
+    ClientTheme(darkTheme = false) {
         var state by remember { mutableStateOf<ShellUiState>(ShellUiState.Loading) }
         val scope = rememberCoroutineScope()
 

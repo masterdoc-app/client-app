@@ -6,7 +6,8 @@ import androidx.compose.runtime.Composable
 
 @Composable
 fun ClientTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    /** Product default is light graphite; opt into dark explicitly (not OS auto). */
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
