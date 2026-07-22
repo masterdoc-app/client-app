@@ -112,7 +112,7 @@ class AdminUsersRepositoryTest {
         }
 
     @Test
-    fun revokeInvite_deletesUser() =
+    fun deleteUser_deletesUser() =
         runBlocking {
             val tokens = InMemoryTokenStore()
             tokens.write(AuthTokens(accessToken = "at"))
@@ -130,7 +130,7 @@ class AdminUsersRepositoryTest {
                     http = http,
                     tokenStore = tokens,
                 )
-            repo.revokeInvite("u-1")
+            repo.deleteUser("u-1")
         }
 }
 

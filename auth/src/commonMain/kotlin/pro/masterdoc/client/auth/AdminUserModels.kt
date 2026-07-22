@@ -99,7 +99,7 @@ class AdminUsersRepository(
         return json.decodeFromString(AdminUser.serializer(), response.body)
     }
 
-    suspend fun revokeInvite(userId: String) {
+    suspend fun deleteUser(userId: String) {
         val access =
             tokenStore.read()?.accessToken
                 ?: throw GatewayHttpException(401, "Not authenticated")

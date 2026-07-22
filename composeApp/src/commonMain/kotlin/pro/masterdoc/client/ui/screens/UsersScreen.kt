@@ -39,6 +39,7 @@ import pro.masterdoc.client.presentation.users.InviteFormValidator
 @Composable
 fun UsersScreen(
     repository: AdminUsersRepository,
+    currentUserId: String? = null,
     modifier: Modifier = Modifier,
 ) {
     var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
@@ -50,7 +51,7 @@ fun UsersScreen(
     var familyName by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf(setOf<String>()) }
     var inviting by remember { mutableStateOf(false) }
-    var revokingId by remember { mutableStateOf<String?>(null) }
+    var deletingId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val titleById = remember(featureCatalog) { featureCatalog.associate { it.id to it.titleRu } }
 
@@ -195,23 +196,23 @@ fun UsersScreen(
                                 )
                                 AppText(text = user.state)
                             }
-                            if (user.state == "invited") {
+                            if (currentUserId == null || user.id != currentUserId) {
                                 AppButton(
-                                    text = if (revokingId == user.id) "…" else "Отозвать",
-                                    enabled = revokingId == null,
+                                    text = if (deletingId == user.id) "…" else "Удалить",
+                                    enabled = deletingId == null,
                                     onClick = {
                                         scope.launch {
-                                            revokingId = user.id
+                                            deletingId = user.id
                                             error = null
                                             try {
-                                                repository.revokeInvite(user.id)
+                                                repository.deleteUser(user.id)
                                                 users = repository.listUsers().items
                                             } catch (e: GatewayHttpException) {
-                                                error = humanAdminError(e, AdminUserAction.Revoke)
+                                                error = humanAdminError(e, AdminUserAction.Delete)
                                             } catch (e: Exception) {
-                                                error = e.message ?: "Ошибка отзыва"
+                                                error = e.message ?: "Ошибка удаления"
                                             } finally {
-                                                revokingId = null
+                                                deletingId = null
                                             }
                                         }
                                     },
@@ -234,7 +235,7 @@ private fun InviteFormError.toMessage(): String =
 
 private enum class AdminUserAction {
     Invite,
-    Revoke,
+    Delete,
 }
 
 private fun humanAdminError(e: GatewayHttpException, action: AdminUserAction = AdminUserAction.Invite): String =
@@ -245,7 +246,7 @@ private fun humanAdminError(e: GatewayHttpException, action: AdminUserAction = A
         409 ->
             when (action) {
                 AdminUserAction.Invite -> "Пользователь с таким email уже зарегистрирован"
-                AdminUserAction.Revoke -> "Можно отозвать только приглашение"
+                AdminUserAction.Delete -> "Нельзя удалить себя"
             }
         502 -> "Сервис недоступен"
         else -> e.message.ifBlank { "Ошибка ${e.status}" }

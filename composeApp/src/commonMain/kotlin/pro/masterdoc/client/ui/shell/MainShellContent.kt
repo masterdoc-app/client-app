@@ -110,7 +110,10 @@ private fun ActivePage(
                     )
                 NavDestinationId.Users ->
                     if (adminUsersRepository != null) {
-                        UsersScreen(repository = adminUsersRepository)
+                        UsersScreen(
+                            repository = adminUsersRepository,
+                            currentUserId = session.user?.id,
+                        )
                     } else {
                         StubDestinationScreen(active.destination)
                     }
