@@ -9,3 +9,6 @@ local.properties
 .idea/
 *.iml
 .kotlin/
+
+# local agent/smoke secrets
+.local/

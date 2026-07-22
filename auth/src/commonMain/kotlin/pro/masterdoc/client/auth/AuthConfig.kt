@@ -14,7 +14,9 @@ data class AuthConfig(
     companion object {
         const val DEFAULT_GATEWAY_BASE_URL = "https://api.masterdoc.pro"
         const val DEFAULT_REDIRECT_URI = "https://app.fixaverse.ru/auth/callback"
-        const val DEFAULT_SCOPES = "openid profile email offline_access"
+        // resourceowner → JWT claims urn:zitadel:iam:user:resourceowner:* (tenant org id)
+        const val DEFAULT_SCOPES =
+            "openid profile email offline_access urn:zitadel:iam:user:resourceowner"
         const val LOCAL_REDIRECT_URI = "http://localhost:8080/auth/callback"
     }
 }
