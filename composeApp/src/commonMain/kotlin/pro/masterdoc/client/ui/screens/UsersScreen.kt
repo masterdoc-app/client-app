@@ -164,7 +164,7 @@ fun UsersScreen(
                             selected = emptySet()
                             users = repository.listUsers().items
                         } catch (e: GatewayHttpException) {
-                            error = humanAdminError(e)
+                            error = humanAdminError(e, AdminUserAction.Invite)
                         } catch (e: Exception) {
                             error = e.message ?: "Ошибка приглашения"
                         } finally {
@@ -207,7 +207,7 @@ fun UsersScreen(
                                                 repository.revokeInvite(user.id)
                                                 users = repository.listUsers().items
                                             } catch (e: GatewayHttpException) {
-                                                error = humanAdminError(e)
+                                                error = humanAdminError(e, AdminUserAction.Revoke)
                                             } catch (e: Exception) {
                                                 error = e.message ?: "Ошибка отзыва"
                                             } finally {
@@ -232,12 +232,21 @@ private fun InviteFormError.toMessage(): String =
         InviteFormError.FeaturesRequired -> "Выберите хотя бы одну фичу"
     }
 
-private fun humanAdminError(e: GatewayHttpException): String =
+private enum class AdminUserAction {
+    Invite,
+    Revoke,
+}
+
+private fun humanAdminError(e: GatewayHttpException, action: AdminUserAction = AdminUserAction.Invite): String =
     when (e.status) {
         400 -> e.message.ifBlank { "Некорректный запрос" }
         403 -> "Нет доступа (нужна фича user_invite)"
         404 -> "Пользователь не найден"
-        409 -> "Можно отозвать только приглашение"
+        409 ->
+            when (action) {
+                AdminUserAction.Invite -> "Пользователь с таким email уже зарегистрирован"
+                AdminUserAction.Revoke -> "Можно отозвать только приглашение"
+            }
         502 -> "Сервис недоступен"
         else -> e.message.ifBlank { "Ошибка ${e.status}" }
     }
