@@ -4,6 +4,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.document
 import org.koin.core.context.startKoin
+import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.authModule
 import pro.masterdoc.client.auth.createDefaultGatewayHttpClient
@@ -20,7 +21,11 @@ fun main() {
             )
         }
     val coordinator = koinApp.koin.get<AuthCoordinator>()
+    val adminUsers = koinApp.koin.get<AdminUsersRepository>()
     ComposeViewport(document.body!!) {
-        AuthenticatedApp(coordinator = coordinator)
+        AuthenticatedApp(
+            coordinator = coordinator,
+            adminUsersRepository = adminUsers,
+        )
     }
 }

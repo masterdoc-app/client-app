@@ -4,14 +4,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import pro.masterdoc.client.session.RoleFeatureFixtures
+import pro.masterdoc.client.session.FeatureSetFixtures
 
 class NavMenuBuilderTest {
     private val builder: NavMenuBuilder = DefaultNavMenuBuilder()
 
     @Test
-    fun engineerMenu_hasTicketsAndProfile() {
-        val items = builder.build(RoleFeatureFixtures.featuresForRole("engineer"))
+    fun copilotFixture_hasTicketsAndProfile() {
+        val items = builder.build(FeatureSetFixtures.copilot())
         assertEquals(
             listOf(NavDestinationId.Tickets, NavDestinationId.Profile),
             items.map { it.destination },
@@ -20,8 +20,9 @@ class NavMenuBuilderTest {
     }
 
     @Test
-    fun dispatcherMenu_hasBoardMapProfile() {
-        val items = builder.build(RoleFeatureFixtures.featuresForRole("dispatcher"))
+    fun boardFixture_hasBoardMapProfile() {
+        // Board fixture is board+profile; Map is separate wire — keep board-only nav for MVP fixture
+        val items = builder.build(FeatureSetFixtures.board() + FeatureId.Map)
         assertEquals(
             listOf(NavDestinationId.Board, NavDestinationId.Map, NavDestinationId.Profile),
             items.map { it.destination },
@@ -29,8 +30,8 @@ class NavMenuBuilderTest {
     }
 
     @Test
-    fun technologistMenu_hasChartsEquipmentProfile() {
-        val items = builder.build(RoleFeatureFixtures.featuresForRole("technologist"))
+    fun chartsEquipment_hasChartsEquipmentProfile() {
+        val items = builder.build(FeatureSetFixtures.chartsEquipment())
         assertEquals(
             listOf(NavDestinationId.Charts, NavDestinationId.Equipment, NavDestinationId.Profile),
             items.map { it.destination },
@@ -38,8 +39,8 @@ class NavMenuBuilderTest {
     }
 
     @Test
-    fun adminMenu_hasUsersAndProfile() {
-        val items = builder.build(RoleFeatureFixtures.featuresForRole("admin"))
+    fun usersAdmin_hasUsersAndProfile() {
+        val items = builder.build(FeatureSetFixtures.usersAdmin())
         assertEquals(
             listOf(NavDestinationId.Users, NavDestinationId.Profile),
             items.map { it.destination },
@@ -49,9 +50,10 @@ class NavMenuBuilderTest {
     @Test
     fun multiFeatureUnion_includesAllMatchingNavItems() {
         val features =
-            RoleFeatureFixtures.featuresForRole("technologist") +
-                RoleFeatureFixtures.featuresForRole("admin") +
-                RoleFeatureFixtures.featuresForRole("dispatcher")
+            FeatureSetFixtures.chartsEquipment() +
+                FeatureSetFixtures.usersAdmin() +
+                FeatureSetFixtures.board() +
+                FeatureId.Map
         val items = builder.build(features)
         assertEquals(
             listOf(
@@ -91,8 +93,8 @@ class NavMenuBuilderTest {
     }
 
     @Test
-    fun copilotReserved_notInEngineerFixture() {
-        val items = builder.build(RoleFeatureFixtures.featuresForRole("engineer"))
+    fun copilotReserved_notInCopilotTicketFixture() {
+        val items = builder.build(FeatureSetFixtures.copilot())
         assertTrue(items.none { it.destination == NavDestinationId.Copilot })
     }
 }

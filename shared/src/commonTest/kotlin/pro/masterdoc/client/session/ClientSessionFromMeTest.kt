@@ -13,11 +13,7 @@ class ClientSessionFromMeTest {
         val session =
             ClientSession.fromMe(
                 MeResponse(
-                    userInfo =
-                        UserInfoDto(
-                            id = "u1",
-                            roles = listOf("technologist", "admin"),
-                        ),
+                    userInfo = UserInfoDto(id = "u1"),
                     features = listOf("charts", "equipment", "user_invite"),
                 ),
             )
@@ -33,7 +29,7 @@ class ClientSessionFromMeTest {
         val session =
             ClientSession.fromMe(
                 MeResponse(
-                    userInfo = UserInfoDto(id = "u1", roles = emptyList()),
+                    userInfo = UserInfoDto(id = "u1"),
                     features = listOf("unknown_feature", "board"),
                 ),
             )

@@ -131,7 +131,7 @@ class MeRepository(
         val me = json.decodeFromString<MeResponse>(response.body)
         println(
             "[auth] GET /me ok id=${me.userInfo.id} email=${me.userInfo.email} " +
-                "roles=${me.userInfo.roles} features=${me.features} raw=${response.body}",
+                "features=${me.features} raw=${response.body}",
         )
         return me
     }
