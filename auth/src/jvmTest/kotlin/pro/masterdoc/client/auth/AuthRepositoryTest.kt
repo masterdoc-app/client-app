@@ -2,6 +2,7 @@ package pro.masterdoc.client.auth
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 
@@ -72,6 +73,52 @@ class AuthRepositoryTest {
             assertEquals("rt", result.refreshToken)
             assertEquals("at", tokens.read()?.accessToken)
             assertEquals(null, pkce.readVerifier())
+        }
+
+    @Test
+    fun exchangeCode_stateMismatch_throws400() =
+        runBlocking {
+            val http = FakeGatewayHttpClient { _, _, _, _ ->
+                error("HTTP must not be called on state mismatch")
+            }
+            val pkce = InMemoryPkceSessionStore()
+            pkce.save(verifier = "verifier-value", state = "s1")
+            val repo =
+                AuthRepository(
+                    config = AuthConfig(clientId = "web-client"),
+                    http = http,
+                    tokenStore = InMemoryTokenStore(),
+                    pkceStore = pkce,
+                )
+
+            val ex =
+                assertFailsWith<GatewayHttpException> {
+                    repo.exchangeCode(code = "abc", returnedState = "s2")
+                }
+            assertEquals(400, ex.status)
+            assertTrue(ex.message.contains("OIDC state mismatch"))
+        }
+
+    @Test
+    fun exchangeCode_missingVerifier_throws400() =
+        runBlocking {
+            val http = FakeGatewayHttpClient { _, _, _, _ ->
+                error("HTTP must not be called when PKCE verifier is missing")
+            }
+            val repo =
+                AuthRepository(
+                    config = AuthConfig(clientId = "web-client"),
+                    http = http,
+                    tokenStore = InMemoryTokenStore(),
+                    pkceStore = InMemoryPkceSessionStore(),
+                )
+
+            val ex =
+                assertFailsWith<GatewayHttpException> {
+                    repo.exchangeCode(code = "abc", returnedState = "state-1")
+                }
+            assertEquals(400, ex.status)
+            assertTrue(ex.message.contains("Missing PKCE verifier"))
         }
 
     @Test
