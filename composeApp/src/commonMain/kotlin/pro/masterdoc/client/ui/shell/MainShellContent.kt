@@ -33,6 +33,7 @@ import pro.masterdoc.client.designsystem.components.AppNavRail
 import pro.masterdoc.client.navigation.AppDeepLink
 import pro.masterdoc.client.navigation.NavDestinationId
 import pro.masterdoc.client.navigation.NavItemSpec
+import pro.masterdoc.client.navigation.toHash
 import pro.masterdoc.client.presentation.shell.MainShellComponent
 import pro.masterdoc.client.session.ClientSession
 import pro.masterdoc.client.ui.screens.ChartsScreen
