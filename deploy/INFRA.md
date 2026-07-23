@@ -32,8 +32,13 @@ GitHub Actions workflow `.github/workflows/deploy-app-fixaverse.yml` builds `:co
 
 Install script enables nginx + certbot for `app.fixaverse.ru`.
 
+## Caching
+
+Shell bundles keep stable names (`/composeApp.js`). Nginx sends `Cache-Control: no-cache` for HTML/JS/Wasm so the browser revalidates on every load (ETag → 304 if unchanged, fresh body after deploy). Do not long-cache those files.
+
 ## Smoke
 
 1. Open `https://app.fixaverse.ru/` → OIDC login.
 2. After login → shell with nav items for features from `/me` (e.g. ППР / Оборудование / Профиль).
 3. Legacy `/technolog/` redirects to `/`.
+4. `curl -sSI https://app.fixaverse.ru/composeApp.js | grep -i cache-control` → `no-cache`.
