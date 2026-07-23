@@ -22,8 +22,8 @@ interface MainShellComponent {
     val navItems: List<NavItemSpec>
     val pages: Value<ChildPages<PageConfig, PageChild>>
 
-    /** Focused maintenance map id from deep link `#/ppr/{id}` (null when unset). */
-    val focusedMapId: Value<String?>
+    /** Focused maintenance map id from deep link `#/ppr/{id}` (empty when unset). */
+    val focusedMapId: Value<String>
 
     fun onNavItemSelected(index: Int)
 
@@ -50,8 +50,8 @@ class DefaultMainShellComponent(
     override val navItems: List<NavItemSpec> = navMenuBuilder.build(session.features)
 
     private val navigation = PagesNavigation<MainShellComponent.PageConfig>()
-    private val _focusedMapId = MutableValue<String?>(null)
-    override val focusedMapId: Value<String?> = _focusedMapId
+    private val _focusedMapId = MutableValue("")
+    override val focusedMapId: Value<String> = _focusedMapId
 
     override val pages: Value<ChildPages<MainShellComponent.PageConfig, MainShellComponent.PageChild>> =
         childPages(
