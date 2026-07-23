@@ -75,7 +75,7 @@ fun MainShellContent(
                         onLogout = onLogout,
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
-                        focusedMapId = focusedMapId.takeIf { it.isNotBlank() },
+                        focusedMapId = focusedMapId,
                         onOpenLinkedPpr = { map ->
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
                             component.navigateTo(NavDestinationId.Charts, mapId = map.id)
@@ -97,7 +97,7 @@ fun MainShellContent(
                         onLogout = onLogout,
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
-                        focusedMapId = focusedMapId.takeIf { it.isNotBlank() },
+                        focusedMapId = focusedMapId,
                         onOpenLinkedPpr = { map ->
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
                             component.navigateTo(NavDestinationId.Charts, mapId = map.id)
