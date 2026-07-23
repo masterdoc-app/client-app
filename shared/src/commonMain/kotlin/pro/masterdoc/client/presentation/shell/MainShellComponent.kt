@@ -75,7 +75,7 @@ class DefaultMainShellComponent(
     override fun navigateTo(destination: NavDestinationId, mapId: String?) {
         val index = navItems.indexOfFirst { it.destination == destination }
         if (index < 0) return
-        _focusedMapId.value = mapId
+        _focusedMapId.value = mapId.orEmpty()
         navigation.select(index = index)
     }
 
