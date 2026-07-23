@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -24,10 +25,12 @@ import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.arkivanov.decompose.router.pages.ChildPages
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.designsystem.components.AppNavBar
 import pro.masterdoc.client.designsystem.components.AppNavItem
 import pro.masterdoc.client.designsystem.components.AppNavRail
+import pro.masterdoc.client.navigation.AppDeepLink
 import pro.masterdoc.client.navigation.NavDestinationId
 import pro.masterdoc.client.navigation.NavItemSpec
 import pro.masterdoc.client.presentation.shell.MainShellComponent
@@ -50,8 +53,13 @@ fun MainShellContent(
     equipmentRepository: EquipmentRepository? = null,
 ) {
     val pages by component.pages.subscribeAsState()
+    val focusedMapId by component.focusedMapId.subscribeAsState()
     val navUiItems = component.navItems.toAppNavItems(pages) { index ->
         component.onNavItemSelected(index)
+    }
+
+    LaunchedEffect(Unit) {
+        component.applyDeepLinkHash(BrowserNav.currentHash())
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
@@ -66,6 +74,11 @@ fun MainShellContent(
                         onLogout = onLogout,
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
+                        focusedMapId = focusedMapId,
+                        onOpenLinkedPpr = { map ->
+                            BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
+                            component.navigateTo(NavDestinationId.Charts, mapId = map.id)
+                        },
                     )
                 }
             }
@@ -83,6 +96,11 @@ fun MainShellContent(
                         onLogout = onLogout,
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
+                        focusedMapId = focusedMapId,
+                        onOpenLinkedPpr = { map ->
+                            BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
+                            component.navigateTo(NavDestinationId.Charts, mapId = map.id)
+                        },
                     )
                 }
             }
@@ -97,6 +115,8 @@ private fun ActivePage(
     onLogout: () -> Unit,
     adminUsersRepository: AdminUsersRepository?,
     equipmentRepository: EquipmentRepository?,
+    focusedMapId: String?,
+    onOpenLinkedPpr: (pro.masterdoc.client.auth.MaintenanceMapDto) -> Unit,
 ) {
     val active = pages.items.getOrNull(pages.selectedIndex)?.instance ?: return
     when (active) {
@@ -119,13 +139,19 @@ private fun ActivePage(
                     }
                 NavDestinationId.Equipment ->
                     if (equipmentRepository != null) {
-                        EquipmentScreen(repository = equipmentRepository)
+                        EquipmentScreen(
+                            repository = equipmentRepository,
+                            onOpenLinkedPpr = onOpenLinkedPpr,
+                        )
                     } else {
                         StubDestinationScreen(active.destination)
                     }
                 NavDestinationId.Charts ->
                     if (equipmentRepository != null) {
-                        ChartsScreen(repository = equipmentRepository)
+                        ChartsScreen(
+                            repository = equipmentRepository,
+                            focusedMapId = focusedMapId,
+                        )
                     } else {
                         StubDestinationScreen(active.destination)
                     }

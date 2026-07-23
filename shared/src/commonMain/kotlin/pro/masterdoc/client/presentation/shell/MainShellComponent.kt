@@ -6,12 +6,15 @@ import com.arkivanov.decompose.router.pages.Pages
 import com.arkivanov.decompose.router.pages.PagesNavigation
 import com.arkivanov.decompose.router.pages.childPages
 import com.arkivanov.decompose.router.pages.select
+import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import kotlinx.serialization.Serializable
+import pro.masterdoc.client.navigation.AppDeepLink
 import pro.masterdoc.client.navigation.DefaultNavMenuBuilder
 import pro.masterdoc.client.navigation.NavDestinationId
 import pro.masterdoc.client.navigation.NavItemSpec
 import pro.masterdoc.client.navigation.NavMenuBuilder
+import pro.masterdoc.client.navigation.parseAppDeepLink
 import pro.masterdoc.client.session.ClientSession
 
 interface MainShellComponent {
@@ -19,7 +22,14 @@ interface MainShellComponent {
     val navItems: List<NavItemSpec>
     val pages: Value<ChildPages<PageConfig, PageChild>>
 
+    /** Focused maintenance map id from deep link `#/ppr/{id}` (null when unset). */
+    val focusedMapId: Value<String?>
+
     fun onNavItemSelected(index: Int)
+
+    fun navigateTo(destination: NavDestinationId, mapId: String? = null)
+
+    fun applyDeepLinkHash(hash: String)
 
     @Serializable
     data class PageConfig(val destination: NavDestinationId)
@@ -40,6 +50,8 @@ class DefaultMainShellComponent(
     override val navItems: List<NavItemSpec> = navMenuBuilder.build(session.features)
 
     private val navigation = PagesNavigation<MainShellComponent.PageConfig>()
+    private val _focusedMapId = MutableValue<String?>(null)
+    override val focusedMapId: Value<String?> = _focusedMapId
 
     override val pages: Value<ChildPages<MainShellComponent.PageConfig, MainShellComponent.PageChild>> =
         childPages(
@@ -58,5 +70,21 @@ class DefaultMainShellComponent(
 
     override fun onNavItemSelected(index: Int) {
         navigation.select(index = index)
+    }
+
+    override fun navigateTo(destination: NavDestinationId, mapId: String?) {
+        val index = navItems.indexOfFirst { it.destination == destination }
+        if (index < 0) return
+        _focusedMapId.value = mapId
+        navigation.select(index = index)
+    }
+
+    override fun applyDeepLinkHash(hash: String) {
+        val link = parseAppDeepLink(hash) ?: return
+        when (link) {
+            is AppDeepLink.Ppr -> navigateTo(NavDestinationId.Charts, mapId = link.mapId)
+            AppDeepLink.Charts -> navigateTo(NavDestinationId.Charts, mapId = null)
+            AppDeepLink.Equipment -> navigateTo(NavDestinationId.Equipment, mapId = null)
+        }
     }
 }

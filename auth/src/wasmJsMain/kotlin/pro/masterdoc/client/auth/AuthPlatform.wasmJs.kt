@@ -13,6 +13,13 @@ actual object BrowserNav {
 
     actual fun currentSearch(): String = window.location.search
 
+    actual fun currentHash(): String = window.location.hash
+
+    actual fun setHash(hash: String) {
+        val normalized = if (hash.isBlank() || hash == "#") "" else if (hash.startsWith("#")) hash else "#$hash"
+        window.location.hash = normalized
+    }
+
     actual fun navigateTo(url: String) {
         window.location.href = url
     }

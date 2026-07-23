@@ -8,6 +8,10 @@ expect object BrowserNav {
 
     fun currentSearch(): String
 
+    fun currentHash(): String
+
+    fun setHash(hash: String)
+
     fun navigateTo(url: String)
 
     fun replaceTo(url: String)

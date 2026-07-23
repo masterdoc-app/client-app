@@ -5,6 +5,10 @@ actual object BrowserNav {
 
     actual fun currentSearch(): String = ""
 
+    actual fun currentHash(): String = ""
+
+    actual fun setHash(hash: String) = Unit
+
     actual fun navigateTo(url: String) {
         // no-op on JVM/Android unit hosts
     }

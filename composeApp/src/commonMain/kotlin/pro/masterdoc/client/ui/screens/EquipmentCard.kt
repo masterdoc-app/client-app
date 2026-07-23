@@ -1,6 +1,7 @@
 package pro.masterdoc.client.ui.screens
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.DocumentMetaDto
 import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppText
@@ -22,18 +24,27 @@ import pro.masterdoc.client.designsystem.theme.ClientSpacing
 /**
  * Карточка единицы оборудования — контейнер для просмотра и (для draft) подтверждения.
  *
- * Иерархия: статус → название → описание «что это» → метаданные → связанный ППР → действия.
+ * Иерархия: статус → название → описание «что это» → метаданные → документы → связанный ППР → действия.
  */
 @Composable
 fun EquipmentCard(
     asset: AssetDto,
     linkedMap: MaintenanceMapDto? = null,
+    documents: List<DocumentMetaDto> = emptyList(),
+    folderDocuments: List<DocumentMetaDto> = emptyList(),
     acting: Boolean = false,
     onConfirm: (() -> Unit)? = null,
     onReject: (() -> Unit)? = null,
+    onOpenLinkedPpr: ((MaintenanceMapDto) -> Unit)? = null,
+    onOpenStorageFolder: ((String) -> Unit)? = null,
+    onOpenDocument: ((DocumentMetaDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isDraft = asset.status == "draft"
+    val storageFolder =
+        documents.firstOrNull()?.storageFolder()
+            ?: folderDocuments.firstOrNull()?.storageFolder()
+            ?: asset.orgId
     Surface(
         modifier =
             modifier
@@ -80,22 +91,56 @@ fun EquipmentCard(
                 MetaRow("Категория", categoryLabel(asset.category))
                 MetaRow("Площадка", asset.siteId)
                 MetaRow("Инв. №", asset.inventoryNo?.takeIf { it.isNotBlank() } ?: "не указан")
-                MetaRow(
-                    "Документы",
-                    if (asset.documentIds.isEmpty()) {
-                        "нет"
-                    } else {
-                        "${asset.documentIds.size} шт."
-                    },
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                AppText(text = "Документы", style = AppTextStyle.Label)
+                LinkRow(
+                    label = "Папка в хранилище",
+                    value = "$storageFolder/",
+                    onClick = onOpenStorageFolder?.let { { it(storageFolder) } },
                 )
+                when {
+                    documents.isNotEmpty() || folderDocuments.isNotEmpty() -> {
+                        val shown = (documents + folderDocuments).distinctBy { it.id }
+                        shown.forEach { doc ->
+                            LinkRow(
+                                label = "Файл",
+                                value = doc.filename,
+                                onClick = onOpenDocument?.let { { it(doc) } },
+                            )
+                        }
+                    }
+                    asset.documentIds.isNotEmpty() ->
+                        asset.documentIds.forEach { id ->
+                            AppText(
+                                text = "• $id (метаданные недоступны)",
+                                style = AppTextStyle.Label,
+                            )
+                        }
+                    else -> AppText(text = "нет привязанных файлов", style = AppTextStyle.Label)
+                }
             }
 
             if (linkedMap != null) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     AppText(text = "Связанный ППР", style = AppTextStyle.Label)
+                    val openPpr = onOpenLinkedPpr
                     AppText(
                         text = "${linkedMap.title} · ${mapStatusLabel(linkedMap.status)} · ${linkedMap.items.size} пунктов",
                         style = AppTextStyle.Body,
+                        color =
+                            if (openPpr != null) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                ColorUnspecified
+                            },
+                        modifier =
+                            if (openPpr != null) {
+                                Modifier.clickable { openPpr(linkedMap) }
+                            } else {
+                                Modifier
+                            },
                     )
                     linkedMap.items.take(3).forEach { item ->
                         AppText(
@@ -107,6 +152,14 @@ fun EquipmentCard(
                         AppText(
                             text = "… ещё ${linkedMap.items.size - 3}",
                             style = AppTextStyle.Label,
+                        )
+                    }
+                    if (openPpr != null) {
+                        AppText(
+                            text = "Открыть ППР →",
+                            style = AppTextStyle.Label,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable { openPpr(linkedMap) },
                         )
                     }
                 }
@@ -130,6 +183,8 @@ fun EquipmentCard(
     }
 }
 
+private val ColorUnspecified = androidx.compose.ui.graphics.Color.Unspecified
+
 @Composable
 private fun MetaRow(label: String, value: String) {
     Row(
@@ -145,6 +200,38 @@ private fun MetaRow(label: String, value: String) {
             text = value,
             style = AppTextStyle.Body,
             modifier = Modifier.weight(0.65f),
+        )
+    }
+}
+
+@Composable
+private fun LinkRow(
+    label: String,
+    value: String,
+    onClick: (() -> Unit)?,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        AppText(
+            text = label,
+            style = AppTextStyle.Label,
+            modifier = Modifier.weight(0.35f),
+        )
+        AppText(
+            text = value,
+            style = AppTextStyle.Body,
+            color =
+                if (onClick != null) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    ColorUnspecified
+                },
+            modifier =
+                Modifier
+                    .weight(0.65f)
+                    .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         )
     }
 }

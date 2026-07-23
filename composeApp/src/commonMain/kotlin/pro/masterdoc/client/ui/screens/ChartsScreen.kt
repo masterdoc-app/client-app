@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +31,7 @@ import pro.masterdoc.client.designsystem.theme.ClientSpacing
 @Composable
 fun ChartsScreen(
     repository: EquipmentRepository,
+    focusedMapId: String? = null,
     modifier: Modifier = Modifier,
 ) {
     var maps by remember { mutableStateOf<List<MaintenanceMapDto>>(emptyList()) }
@@ -56,6 +58,7 @@ fun ChartsScreen(
 
     val drafts = maps.filter { it.status == "draft" }
     val active = maps.filter { it.status == "active" }
+    val focused = focusedMapId?.let { id -> maps.firstOrNull { it.id == id } }
 
     AppScaffold(title = "ППР", modifier = modifier) { padding ->
         Column(
@@ -73,6 +76,11 @@ fun ChartsScreen(
             )
             error?.let { AppText(text = it) }
 
+            if (focused != null) {
+                AppText(text = "Открыто по ссылке", style = AppTextStyle.Title)
+                MapSummary(map = focused, highlighted = true)
+            }
+
             AppText(text = "Черновики ППР", style = AppTextStyle.Title)
             when {
                 loading && maps.isEmpty() -> CircularProgressIndicator()
@@ -82,6 +90,7 @@ fun ChartsScreen(
                         MapDraftRow(
                             map = map,
                             acting = actingId == map.id,
+                            highlighted = map.id == focusedMapId,
                             onConfirm = {
                                 scope.launch {
                                     actingId = map.id
@@ -118,7 +127,7 @@ fun ChartsScreen(
                 active.isEmpty() -> AppText(text = "Пока пусто", style = AppTextStyle.Label)
                 else ->
                     active.forEach { map ->
-                        MapSummary(map = map)
+                        MapSummary(map = map, highlighted = map.id == focusedMapId)
                     }
             }
         }
@@ -129,6 +138,7 @@ fun ChartsScreen(
 private fun MapDraftRow(
     map: MaintenanceMapDto,
     acting: Boolean,
+    highlighted: Boolean = false,
     onConfirm: () -> Unit,
     onReject: () -> Unit,
 ) {
@@ -136,7 +146,7 @@ private fun MapDraftRow(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        MapSummary(map = map)
+        MapSummary(map = map, highlighted = highlighted)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AppButton(text = if (acting) "…" else "Подтвердить", enabled = !acting, onClick = onConfirm)
             AppButton(text = "Отклонить", enabled = !acting, onClick = onReject)
@@ -145,11 +155,24 @@ private fun MapDraftRow(
 }
 
 @Composable
-private fun MapSummary(map: MaintenanceMapDto) {
+private fun MapSummary(
+    map: MaintenanceMapDto,
+    highlighted: Boolean = false,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         AppText(
-            text = "${map.title} · ${ruStatus(map.status)} · ${ruSource(map.source)}",
+            text =
+                buildString {
+                    if (highlighted) append("→ ")
+                    append("${map.title} · ${ruStatus(map.status)} · ${ruSource(map.source)}")
+                },
             style = AppTextStyle.Body,
+            color =
+                if (highlighted) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    androidx.compose.ui.graphics.Color.Unspecified
+                },
         )
         AppText(
             text = "Оборудование: ${map.assetId} · пунктов: ${map.items.size}",

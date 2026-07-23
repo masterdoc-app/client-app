@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.DocumentMetaDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.MaintenanceMapDto
@@ -29,15 +30,19 @@ import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 import pro.masterdoc.client.platform.PickedPdf
+import pro.masterdoc.client.platform.openAuthenticatedDocument
 import pro.masterdoc.client.platform.pickPdfFile
 
 @Composable
 fun EquipmentScreen(
     repository: EquipmentRepository,
+    onOpenLinkedPpr: (MaintenanceMapDto) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
     var mapsByAsset by remember { mutableStateOf<Map<String, MaintenanceMapDto>>(emptyMap()) }
+    var documentsById by remember { mutableStateOf<Map<String, DocumentMetaDto>>(emptyMap()) }
+    var documentsByFolder by remember { mutableStateOf<Map<String, List<DocumentMetaDto>>>(emptyMap()) }
     var loading by remember { mutableStateOf(true) }
     var picked by remember { mutableStateOf<PickedPdf?>(null) }
     var documentId by remember { mutableStateOf("") }
@@ -61,11 +66,63 @@ fun EquipmentScreen(
                                 ?: list.firstOrNull { it.status == "active" }
                                 ?: list.first()
                         }
+                val docIds = assets.flatMap { it.documentIds }.distinct()
+                val resolved = linkedMapOf<String, DocumentMetaDto>()
+                docIds.forEach { id ->
+                    runCatching { repository.getDocument(id) }
+                        .onSuccess { resolved[id] = it }
+                }
+                documentsById = resolved.toMap()
+                val folders =
+                    (resolved.values.map { it.storageFolder() } + assets.map { it.orgId })
+                        .distinct()
+                val byFolder = linkedMapOf<String, List<DocumentMetaDto>>()
+                folders.forEach { folder ->
+                    runCatching { repository.listDocuments(folder) }
+                        .onSuccess { byFolder[folder] = it.items }
+                }
+                documentsByFolder = byFolder.toMap()
                 error = null
             } catch (e: Exception) {
                 error = e.message
             } finally {
                 loading = false
+            }
+        }
+    }
+
+    fun openDocument(doc: DocumentMetaDto) {
+        scope.launch {
+            try {
+                openAuthenticatedDocument(
+                    url = repository.documentContentUrl(doc.id),
+                    bearerToken = repository.accessToken(),
+                    filename = doc.filename,
+                    mimeType = doc.contentType.ifBlank { "application/pdf" },
+                )
+                error = null
+            } catch (e: Exception) {
+                error = e.message ?: "Не удалось открыть документ"
+            }
+        }
+    }
+
+    fun openFolder(folder: String) {
+        scope.launch {
+            try {
+                val items =
+                    documentsByFolder[folder]
+                        ?: repository.listDocuments(folder).items.also {
+                            documentsByFolder = documentsByFolder + (folder to it)
+                        }
+                if (items.isEmpty()) {
+                    error = "В папке $folder/ нет документов"
+                    return@launch
+                }
+                error = null
+                openDocument(items.first())
+            } catch (e: Exception) {
+                error = e.message ?: "Не удалось открыть папку"
             }
         }
     }
@@ -187,7 +244,12 @@ fun EquipmentScreen(
                         EquipmentCard(
                             asset = asset,
                             linkedMap = mapsByAsset[asset.id],
+                            documents = asset.documentIds.mapNotNull { documentsById[it] },
+                            folderDocuments = documentsByFolder[asset.orgId].orEmpty(),
                             acting = actingId == asset.id,
+                            onOpenLinkedPpr = onOpenLinkedPpr,
+                            onOpenStorageFolder = ::openFolder,
+                            onOpenDocument = ::openDocument,
                             onConfirm = {
                                 scope.launch {
                                     actingId = asset.id
@@ -237,6 +299,11 @@ fun EquipmentScreen(
                         EquipmentCard(
                             asset = asset,
                             linkedMap = mapsByAsset[asset.id],
+                            documents = asset.documentIds.mapNotNull { documentsById[it] },
+                            folderDocuments = documentsByFolder[asset.orgId].orEmpty(),
+                            onOpenLinkedPpr = onOpenLinkedPpr,
+                            onOpenStorageFolder = ::openFolder,
+                            onOpenDocument = ::openDocument,
                         )
                     }
             }

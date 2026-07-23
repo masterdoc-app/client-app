@@ -30,7 +30,12 @@ data class DocumentMetaDto(
     val storageKey: String,
     val sha256: String,
     val uploadedBy: String,
-)
+) {
+    fun storageFolder(): String = storageKey.substringBeforeLast('/', missingDelimiterValue = orgId)
+}
+
+@Serializable
+data class DocumentListDto(val items: List<DocumentMetaDto> = emptyList())
 
 @Serializable
 data class TechnologistJobDto(
@@ -180,6 +185,31 @@ class EquipmentRepository(
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
         return json.decodeFromString(DocumentMetaDto.serializer(), response.body)
     }
+
+    suspend fun getDocument(id: String): DocumentMetaDto {
+        val response =
+            http.get(
+                url = "${base()}/documents/$id",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(DocumentMetaDto.serializer(), response.body)
+    }
+
+    suspend fun listDocuments(folder: String? = null): DocumentListDto {
+        val q = folder?.let { "?folder=${it.trimEnd('/')}" } ?: ""
+        val response =
+            http.get(
+                url = "${base()}/documents$q",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(DocumentListDto.serializer(), response.body)
+    }
+
+    fun documentContentUrl(id: String): String = "${base()}/documents/$id/content"
+
+    suspend fun accessToken(): String = bearer()
 
     suspend fun startTechnologist(documentId: String, siteId: String = "default-site"): TechnologistJobDto {
         val body =
