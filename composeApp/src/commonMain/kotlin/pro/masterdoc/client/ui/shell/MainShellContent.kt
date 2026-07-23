@@ -116,7 +116,7 @@ private fun ActivePage(
     onLogout: () -> Unit,
     adminUsersRepository: AdminUsersRepository?,
     equipmentRepository: EquipmentRepository?,
-    focusedMapId: String,
+    focusedMapId: String?,
     onOpenLinkedPpr: (pro.masterdoc.client.auth.MaintenanceMapDto) -> Unit,
 ) {
     val active = pages.items.getOrNull(pages.selectedIndex)?.instance ?: return
@@ -151,7 +151,7 @@ private fun ActivePage(
                     if (equipmentRepository != null) {
                         ChartsScreen(
                             repository = equipmentRepository,
-                            focusedMapId = focusedMapId.takeIf { it.isNotBlank() },
+                            focusedMapId = focusedMapId?.takeIf { it.isNotBlank() },
                         )
                     } else {
                         StubDestinationScreen(active.destination)
