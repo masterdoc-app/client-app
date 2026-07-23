@@ -1,31 +1,58 @@
 package pro.masterdoc.client.ui.screens
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.PrecisionManufacturing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.DocumentMetaDto
 import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.designsystem.components.AppButton
+import pro.masterdoc.client.designsystem.components.AppButtonVariant
+import pro.masterdoc.client.designsystem.components.AppIcon
+import pro.masterdoc.client.designsystem.components.AppStatusChip
+import pro.masterdoc.client.designsystem.components.AppStatusChipTone
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
 /**
- * Карточка единицы оборудования — контейнер для просмотра и (для draft) подтверждения.
+ * Карточка единицы оборудования — scannable CMMS-style layout on Graphite+Cobalt DS.
  *
- * Иерархия: статус → название → описание «что это» → метаданные → документы → связанный ППР → действия.
+ * Hierarchy (Limble/MaintainX/Fiix pattern): status → identity → description →
+ * passport tiles → documents → linked PPR → draft actions.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EquipmentCard(
     asset: AssetDto,
@@ -45,196 +72,388 @@ fun EquipmentCard(
         documents.firstOrNull()?.storageFolder()
             ?: folderDocuments.firstOrNull()?.storageFolder()
             ?: asset.orgId
+    val shownDocs = (documents + folderDocuments).distinctBy { it.id }
+    val accent =
+        if (isDraft) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.outlineVariant
+        }
+
     Surface(
         modifier =
             modifier
                 .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium),
-        shape = MaterialTheme.shapes.medium,
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large)
+                .animateContentSize(animationSpec = tween(220)),
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
+        shadowElevation = if (isDraft) 2.dp else 0.dp,
+        tonalElevation = if (isDraft) 1.dp else 0.dp,
     ) {
-        Column(
-            modifier = Modifier.padding(ClientSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier =
+                    Modifier
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .background(accent),
+            )
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .padding(ClientSpacing.md),
+                verticalArrangement = Arrangement.spacedBy(ClientSpacing.md),
             ) {
-                AppText(
-                    text = statusLabel(asset.status),
-                    style = AppTextStyle.Label,
-                    color =
-                        if (isDraft) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                )
-                AppText(text = sourceLabel(asset.source), style = AppTextStyle.Label)
-            }
-
-            AppText(text = asset.name, style = AppTextStyle.Title)
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                AppText(text = "Что это", style = AppTextStyle.Label)
-                AppText(
-                    text = asset.description?.takeIf { it.isNotBlank() } ?: fallbackDescription(asset),
-                    style = AppTextStyle.Body,
-                )
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                AppText(text = "Паспорт", style = AppTextStyle.Label)
-                MetaRow("Категория", categoryLabel(asset.category))
-                MetaRow("Площадка", asset.siteId)
-                MetaRow("Инв. №", asset.inventoryNo?.takeIf { it.isNotBlank() } ?: "не указан")
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                AppText(text = "Документы", style = AppTextStyle.Label)
-                LinkRow(
-                    label = "Папка в хранилище",
-                    value = "$storageFolder/",
-                    onClick = onOpenStorageFolder?.let { { it(storageFolder) } },
-                )
-                when {
-                    documents.isNotEmpty() || folderDocuments.isNotEmpty() -> {
-                        val shown = (documents + folderDocuments).distinctBy { it.id }
-                        shown.forEach { doc ->
-                            LinkRow(
-                                label = "Файл",
-                                value = doc.filename,
-                                onClick = onOpenDocument?.let { { it(doc) } },
-                            )
-                        }
-                    }
-                    asset.documentIds.isNotEmpty() ->
-                        asset.documentIds.forEach { id ->
-                            AppText(
-                                text = "• $id (метаданные недоступны)",
-                                style = AppTextStyle.Label,
-                            )
-                        }
-                    else -> AppText(text = "нет привязанных файлов", style = AppTextStyle.Label)
-                }
-            }
-
-            if (linkedMap != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    AppText(text = "Связанный ППР", style = AppTextStyle.Label)
-                    val openPpr = onOpenLinkedPpr
-                    AppText(
-                        text = "${linkedMap.title} · ${mapStatusLabel(linkedMap.status)} · ${linkedMap.items.size} пунктов",
-                        style = AppTextStyle.Body,
-                        color =
-                            if (openPpr != null) {
-                                MaterialTheme.colorScheme.primary
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
+                ) {
+                    AppStatusChip(
+                        text = statusLabel(asset.status),
+                        tone =
+                            if (isDraft) {
+                                AppStatusChipTone.Accent
                             } else {
-                                ColorUnspecified
-                            },
-                        modifier =
-                            if (openPpr != null) {
-                                Modifier.clickable { openPpr(linkedMap) }
-                            } else {
-                                Modifier
+                                AppStatusChipTone.Neutral
                             },
                     )
-                    linkedMap.items.take(3).forEach { item ->
-                        AppText(
-                            text = "• ${item.title}",
-                            style = AppTextStyle.Label,
+                    AppStatusChip(
+                        text = sourceLabel(asset.source),
+                        tone = AppStatusChipTone.Muted,
+                        showDot = false,
+                    )
+                    AppStatusChip(
+                        text = categoryLabel(asset.category),
+                        tone = AppStatusChipTone.Muted,
+                        showDot = false,
+                    )
+                }
+
+                IdentityHeader(asset = asset)
+
+                DescriptionBlock(asset = asset)
+
+                Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+                    SectionLabel("Паспорт")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                    ) {
+                        PassportTile(
+                            label = "Площадка",
+                            value = asset.siteId,
+                            modifier = Modifier.weight(1f),
                         )
-                    }
-                    if (linkedMap.items.size > 3) {
-                        AppText(
-                            text = "… ещё ${linkedMap.items.size - 3}",
-                            style = AppTextStyle.Label,
-                        )
-                    }
-                    if (openPpr != null) {
-                        AppText(
-                            text = "Открыть ППР →",
-                            style = AppTextStyle.Label,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.clickable { openPpr(linkedMap) },
+                        PassportTile(
+                            label = "Инв. №",
+                            value = asset.inventoryNo?.takeIf { it.isNotBlank() } ?: "не указан",
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
-            }
 
-            if (isDraft && onConfirm != null && onReject != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AppButton(
-                        text = if (acting) "…" else "В базу",
-                        enabled = !acting,
-                        onClick = onConfirm,
+                DocumentsSection(
+                    storageFolder = storageFolder,
+                    shownDocs = shownDocs,
+                    fallbackIds = asset.documentIds,
+                    onOpenStorageFolder = onOpenStorageFolder,
+                    onOpenDocument = onOpenDocument,
+                )
+
+                if (linkedMap != null) {
+                    LinkedPprBlock(
+                        linkedMap = linkedMap,
+                        onOpenLinkedPpr = onOpenLinkedPpr,
                     )
-                    AppButton(
-                        text = "Отклонить",
-                        enabled = !acting,
-                        onClick = onReject,
-                    )
+                }
+
+                if (isDraft && onConfirm != null && onReject != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+                        AppButton(
+                            text = if (acting) "…" else "В базу",
+                            enabled = !acting,
+                            onClick = onConfirm,
+                            variant = AppButtonVariant.Primary,
+                            fillMaxWidth = false,
+                            modifier = Modifier.weight(1f),
+                        )
+                        AppButton(
+                            text = "Отклонить",
+                            enabled = !acting,
+                            onClick = onReject,
+                            variant = AppButtonVariant.Secondary,
+                            fillMaxWidth = false,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-private val ColorUnspecified = androidx.compose.ui.graphics.Color.Unspecified
+@Composable
+private fun IdentityHeader(asset: AssetDto) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(52.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            AppIcon(
+                imageVector = categoryIcon(asset.category),
+                contentDescription = categoryLabel(asset.category),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(28.dp),
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            AppText(text = asset.name, style = AppTextStyle.Title, maxLines = 2)
+            val inv = asset.inventoryNo?.takeIf { it.isNotBlank() }
+            AppText(
+                text =
+                    if (inv != null) {
+                        "Инв. № $inv · ${asset.siteId}"
+                    } else {
+                        asset.siteId
+                    },
+                style = AppTextStyle.Label,
+            )
+        }
+    }
+}
 
 @Composable
-private fun MetaRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+private fun DescriptionBlock(asset: AssetDto) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .padding(ClientSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
     ) {
+        AppText(text = "Что это", style = AppTextStyle.Label)
         AppText(
-            text = label,
-            style = AppTextStyle.Label,
-            modifier = Modifier.weight(0.35f),
-        )
-        AppText(
-            text = value,
+            text = asset.description?.takeIf { it.isNotBlank() } ?: fallbackDescription(asset),
             style = AppTextStyle.Body,
-            modifier = Modifier.weight(0.65f),
         )
     }
 }
 
 @Composable
-private fun LinkRow(
+private fun PassportTile(
     label: String,
     value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .widthIn(min = 120.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .padding(horizontal = ClientSpacing.sm, vertical = ClientSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        AppText(text = label, style = AppTextStyle.Label)
+        AppText(text = value, style = AppTextStyle.Body, maxLines = 2)
+    }
+}
+
+@Composable
+private fun DocumentsSection(
+    storageFolder: String,
+    shownDocs: List<DocumentMetaDto>,
+    fallbackIds: List<String>,
+    onOpenStorageFolder: ((String) -> Unit)?,
+    onOpenDocument: ((DocumentMetaDto) -> Unit)?,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+        SectionLabel("Документы")
+        DocRow(
+            icon = Icons.Filled.FolderOpen,
+            title = "Папка в хранилище",
+            subtitle = "$storageFolder/",
+            onClick = onOpenStorageFolder?.let { { it(storageFolder) } },
+        )
+        when {
+            shownDocs.isNotEmpty() ->
+                shownDocs.forEach { doc ->
+                    DocRow(
+                        icon = Icons.Filled.Description,
+                        title = doc.filename,
+                        subtitle = doc.contentType.ifBlank { "файл" },
+                        onClick = onOpenDocument?.let { { it(doc) } },
+                    )
+                }
+            fallbackIds.isNotEmpty() ->
+                fallbackIds.forEach { id ->
+                    DocRow(
+                        icon = Icons.Filled.Description,
+                        title = id,
+                        subtitle = "метаданные недоступны",
+                        onClick = null,
+                    )
+                }
+            else ->
+                AppText(text = "нет привязанных файлов", style = AppTextStyle.Label)
+        }
+    }
+}
+
+@Composable
+private fun DocRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
     onClick: (() -> Unit)?,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = ClientSpacing.sm, vertical = ClientSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
     ) {
-        AppText(
-            text = label,
-            style = AppTextStyle.Label,
-            modifier = Modifier.weight(0.35f),
-        )
-        AppText(
-            text = value,
-            style = AppTextStyle.Body,
-            color =
+        AppIcon(
+            imageVector = icon,
+            contentDescription = null,
+            tint =
                 if (onClick != null) {
                     MaterialTheme.colorScheme.primary
                 } else {
-                    ColorUnspecified
+                    MaterialTheme.colorScheme.onSurfaceVariant
                 },
-            modifier =
-                Modifier
-                    .weight(0.65f)
-                    .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+            modifier = Modifier.size(20.dp),
         )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            AppText(
+                text = title,
+                style = AppTextStyle.Body,
+                color =
+                    if (onClick != null) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                maxLines = 1,
+            )
+            AppText(text = subtitle, style = AppTextStyle.Label, maxLines = 1)
+        }
+        if (onClick != null) {
+            AppIcon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
     }
 }
+
+@Composable
+private fun LinkedPprBlock(
+    linkedMap: MaintenanceMapDto,
+    onOpenLinkedPpr: ((MaintenanceMapDto) -> Unit)?,
+) {
+    val openPpr = onOpenLinkedPpr
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f))
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), MaterialTheme.shapes.medium)
+                .then(
+                    if (openPpr != null) {
+                        Modifier.clickable { openPpr(linkedMap) }
+                    } else {
+                        Modifier
+                    },
+                )
+                .padding(ClientSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SectionLabel("Связанный ППР")
+            AppStatusChip(
+                text = mapStatusLabel(linkedMap.status),
+                tone =
+                    if (linkedMap.status == "draft") {
+                        AppStatusChipTone.Accent
+                    } else {
+                        AppStatusChipTone.Neutral
+                    },
+                showDot = true,
+            )
+        }
+        AppText(text = linkedMap.title, style = AppTextStyle.Body)
+        AppText(
+            text = "${linkedMap.items.size} пунктов обслуживания",
+            style = AppTextStyle.Label,
+        )
+        linkedMap.items.take(3).forEach { item ->
+            AppText(text = "• ${item.title}", style = AppTextStyle.Label)
+        }
+        if (linkedMap.items.size > 3) {
+            AppText(text = "… ещё ${linkedMap.items.size - 3}", style = AppTextStyle.Label)
+        }
+        if (openPpr != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                AppText(
+                    text = "Открыть ППР",
+                    style = AppTextStyle.Label,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                AppIcon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    AppText(text = text, style = AppTextStyle.Label)
+}
+
+private fun categoryIcon(category: String?): ImageVector =
+    when (category) {
+        "lifting" -> Icons.Filled.PrecisionManufacturing
+        "refrigeration" -> Icons.Filled.AcUnit
+        else -> Icons.Filled.Build
+    }
 
 internal fun statusLabel(status: String): String =
     when (status) {

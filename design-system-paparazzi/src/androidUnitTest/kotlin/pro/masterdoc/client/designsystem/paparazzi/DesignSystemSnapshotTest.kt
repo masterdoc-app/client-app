@@ -36,6 +36,8 @@ import pro.masterdoc.client.designsystem.components.AppMenuItem
 import pro.masterdoc.client.designsystem.components.AppNavButton
 import pro.masterdoc.client.designsystem.components.AppNavButtonLayout
 import pro.masterdoc.client.designsystem.components.AppScaffold
+import pro.masterdoc.client.designsystem.components.AppStatusChip
+import pro.masterdoc.client.designsystem.components.AppStatusChipTone
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientColors
@@ -179,6 +181,17 @@ class DesignSystemSnapshotTest {
                     ),
                 onItemClick = {},
             )
+        }
+    }
+
+    @Test
+    fun appStatusChip_tones() {
+        snapshotFrame {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppStatusChip(text = "Черновик", tone = AppStatusChipTone.Accent)
+                AppStatusChip(text = "В базе", tone = AppStatusChipTone.Neutral)
+                AppStatusChip(text = "из AI", tone = AppStatusChipTone.Muted, showDot = false)
+            }
         }
     }
 
