@@ -83,7 +83,7 @@ class AuthRepositoryTest {
                     assertTrue(url.endsWith("/auth/url"))
                     GatewayHttpResponse(
                         200,
-                        """{"authUrl":"https://auth.formaverse.ru/oauth/v2/authorize"}""",
+                        """{"authUrl":"https://auth.fixaverse.ru/oauth/v2/authorize"}""",
                     )
                 }
             val tokens = InMemoryTokenStore()
@@ -110,7 +110,7 @@ class AuthRepositoryTest {
 
             val url = repo.logoutRedirectUrl()
 
-            assertTrue(url.startsWith("https://auth.formaverse.ru/oauth/v2/authorize?"))
+            assertTrue(url.startsWith("https://auth.fixaverse.ru/oauth/v2/authorize?"))
             assertTrue(url.contains("prompt=login"))
             assertTrue(url.contains("client_id=web-client"))
             assertEquals(null, tokens.read())

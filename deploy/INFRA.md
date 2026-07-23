@@ -15,7 +15,7 @@ Create A-record: `app.fixaverse.ru` → `91.207.75.72` (web VPS).
 On VPS `/etc/masterdoc-api-gateway/.env` (or equivalent), set:
 
 ```bash
-CORS_ORIGINS=https://app.fixaverse.ru,https://copilot.fixaverse.ru,https://copilot.formaverse.ru,https://copilot.masterdoc.pro,http://localhost:8080
+CORS_ORIGINS=https://app.fixaverse.ru,https://copilot.fixaverse.ru,https://copilot.masterdoc.pro,http://localhost:8080
 ```
 
 Redeploy / restart gateway so CORS picks up the origin.
