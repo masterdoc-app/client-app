@@ -1,6 +1,5 @@
 package pro.masterdoc.client.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,10 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,13 +24,10 @@ import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.FeatureDefinitionDto
 import pro.masterdoc.client.auth.GatewayHttpException
-import pro.masterdoc.client.auth.InviteUserRequest
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
-import pro.masterdoc.client.presentation.users.InviteFormError
-import pro.masterdoc.client.presentation.users.InviteFormValidator
 
 @Composable
 fun UsersScreen(
@@ -42,15 +35,11 @@ fun UsersScreen(
     currentUserId: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    var showInvite by remember { mutableStateOf(false) }
     var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     var featureCatalog by remember { mutableStateOf<List<FeatureDefinitionDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
-    var email by remember { mutableStateOf("") }
-    var givenName by remember { mutableStateOf("") }
-    var familyName by remember { mutableStateOf("") }
-    var selected by remember { mutableStateOf(setOf<String>()) }
-    var inviting by remember { mutableStateOf(false) }
     var deletingId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val titleById = remember(featureCatalog) { featureCatalog.associate { it.id to it.titleRu } }
@@ -72,7 +61,19 @@ fun UsersScreen(
         }
     }
 
-    LaunchedEffect(repository) { reload() }
+    LaunchedEffect(repository, showInvite) {
+        if (!showInvite) reload()
+    }
+
+    if (showInvite) {
+        InviteUserScreen(
+            repository = repository,
+            onBack = { showInvite = false },
+            onInvited = { showInvite = false },
+            modifier = modifier,
+        )
+        return
+    }
 
     AppScaffold(title = "Пользователи", modifier = modifier) { padding ->
         Column(
@@ -84,95 +85,9 @@ fun UsersScreen(
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            AppText(text = "Пригласить")
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = givenName,
-                onValueChange = { givenName = it },
-                label = { Text("Имя") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = familyName,
-                onValueChange = { familyName = it },
-                label = { Text("Фамилия") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            AppText(text = "Фичи")
-            when {
-                loading && featureCatalog.isEmpty() -> CircularProgressIndicator()
-                featureCatalog.isEmpty() -> AppText(text = "Каталог фич недоступен")
-                else ->
-                    featureCatalog.forEach { feature ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        selected =
-                                            if (feature.id in selected) {
-                                                selected - feature.id
-                                            } else {
-                                                selected + feature.id
-                                            }
-                                    },
-                        ) {
-                            Checkbox(
-                                checked = feature.id in selected,
-                                onCheckedChange = { checked ->
-                                    selected =
-                                        if (checked) selected + feature.id else selected - feature.id
-                                },
-                            )
-                            AppText(text = feature.titleRu)
-                        }
-                    }
-            }
             AppButton(
-                text = if (inviting) "Отправка…" else "Пригласить",
-                enabled = !inviting && featureCatalog.isNotEmpty(),
-                onClick = {
-                    val validation =
-                        InviteFormValidator.validate(email, givenName, familyName, selected)
-                    if (validation != null) {
-                        error = validation.toMessage()
-                        return@AppButton
-                    }
-                    scope.launch {
-                        inviting = true
-                        error = null
-                        try {
-                            repository.inviteUser(
-                                InviteUserRequest(
-                                    email = email.trim(),
-                                    givenName = givenName.trim(),
-                                    familyName = familyName.trim(),
-                                    features = selected.sorted(),
-                                ),
-                            )
-                            email = ""
-                            givenName = ""
-                            familyName = ""
-                            selected = emptySet()
-                            users = repository.listUsers().items
-                        } catch (e: GatewayHttpException) {
-                            error = humanAdminError(e, AdminUserAction.Invite)
-                        } catch (e: Exception) {
-                            error = e.message ?: "Ошибка приглашения"
-                        } finally {
-                            inviting = false
-                        }
-                    }
-                },
+                text = "Пригласить",
+                onClick = { showInvite = true },
             )
             error?.let { AppText(text = it) }
             AppText(text = "Список")
@@ -226,20 +141,15 @@ fun UsersScreen(
     }
 }
 
-private fun InviteFormError.toMessage(): String =
-    when (this) {
-        InviteFormError.EmailInvalid -> "Укажите корректный email"
-        InviteFormError.GivenNameRequired -> "Укажите имя"
-        InviteFormError.FamilyNameRequired -> "Укажите фамилию"
-        InviteFormError.FeaturesRequired -> "Выберите хотя бы одну фичу"
-    }
-
-private enum class AdminUserAction {
+internal enum class AdminUserAction {
     Invite,
     Delete,
 }
 
-private fun humanAdminError(e: GatewayHttpException, action: AdminUserAction = AdminUserAction.Invite): String =
+internal fun humanAdminError(
+    e: GatewayHttpException,
+    action: AdminUserAction = AdminUserAction.Invite,
+): String =
     when (e.status) {
         400 -> e.message.ifBlank { "Некорректный запрос" }
         403 -> "Нет доступа (нужна фича user_invite)"
