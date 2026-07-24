@@ -111,6 +111,18 @@ class WasmGatewayHttpClient : GatewayHttpClient {
             bodyBase64 = Base64Std.encode(body.encodeToByteArray()),
         )
 
+    override suspend fun put(
+        url: String,
+        body: String,
+        headers: Map<String, String>,
+    ): GatewayHttpResponse =
+        request(
+            method = "PUT",
+            url = url,
+            headers = headers,
+            bodyBase64 = Base64Std.encode(body.encodeToByteArray()),
+        )
+
     override suspend fun postBytes(
         url: String,
         body: ByteArray,

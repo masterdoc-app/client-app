@@ -2,6 +2,7 @@ package pro.masterdoc.client.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -23,8 +24,10 @@ import pro.masterdoc.client.auth.DocumentMetaDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.MaintenanceMapDto
+import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.TechnologistJobDto
 import pro.masterdoc.client.designsystem.components.AppButton
+import pro.masterdoc.client.designsystem.components.AppButtonVariant
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
@@ -40,6 +43,8 @@ fun EquipmentScreen(
     modifier: Modifier = Modifier,
 ) {
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
+    var sites by remember { mutableStateOf<List<SiteDto>>(emptyList()) }
+    var selectedSiteId by remember { mutableStateOf<String?>(null) }
     var mapsByAsset by remember { mutableStateOf<Map<String, MaintenanceMapDto>>(emptyMap()) }
     var documentsById by remember { mutableStateOf<Map<String, DocumentMetaDto>>(emptyMap()) }
     var documentsByFolder by remember { mutableStateOf<Map<String, List<DocumentMetaDto>>>(emptyMap()) }
@@ -51,11 +56,16 @@ fun EquipmentScreen(
     var busy by remember { mutableStateOf(false) }
     var actingId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val siteNameById = remember(sites) { sites.associate { it.id to it.name } }
 
     fun reload() {
         scope.launch {
             loading = true
             try {
+                sites = runCatching { repository.listSites().items }.getOrDefault(emptyList())
+                if (selectedSiteId == null || sites.none { it.id == selectedSiteId }) {
+                    selectedSiteId = sites.firstOrNull()?.id
+                }
                 assets = repository.listAssets().items
                 val maps = repository.listMaps().items
                 mapsByAsset =
@@ -161,6 +171,29 @@ fun EquipmentScreen(
                         "После подтверждения карточка попадает в базу.",
                 style = AppTextStyle.Label,
             )
+            if (sites.isEmpty()) {
+                AppText(
+                    text = "Нет площадок — создайте в Админ → Площадки, иначе Технолог не привяжет объект.",
+                    style = AppTextStyle.Label,
+                )
+            } else {
+                AppText(text = "Площадка для новой карточки", style = AppTextStyle.Label)
+                Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+                    sites.forEach { site ->
+                        AppButton(
+                            text = site.name,
+                            fillMaxWidth = false,
+                            variant =
+                                if (site.id == selectedSiteId) {
+                                    AppButtonVariant.Primary
+                                } else {
+                                    AppButtonVariant.Secondary
+                                },
+                            onClick = { selectedSiteId = site.id },
+                        )
+                    }
+                }
+            }
             AppButton(
                 text = "Выбрать PDF",
                 enabled = !busy,
@@ -185,16 +218,17 @@ fun EquipmentScreen(
             }
             AppButton(
                 text = if (busy) "Загрузка…" else "Загрузить и запустить Технолога",
-                enabled = !busy && picked != null,
+                enabled = !busy && picked != null && selectedSiteId != null,
                 onClick = {
                     val file = picked ?: return@AppButton
+                    val siteId = selectedSiteId ?: return@AppButton
                     scope.launch {
                         busy = true
                         error = null
                         try {
                             val doc = repository.uploadManualPdf(file.bytes, file.filename)
                             documentId = doc.id
-                            job = repository.startTechnologist(doc.id)
+                            job = repository.startTechnologist(doc.id, siteId = siteId)
                         } catch (e: GatewayHttpException) {
                             error = e.message
                         } catch (e: Exception) {
@@ -243,6 +277,11 @@ fun EquipmentScreen(
                     drafts.forEach { asset ->
                         EquipmentCard(
                             asset = asset,
+                            siteName = siteNameById[asset.siteId],
+                            moveTargets =
+                                sites
+                                    .filter { it.id != asset.siteId }
+                                    .map { it.id to it.name },
                             linkedMap = mapsByAsset[asset.id],
                             documents = asset.documentIds.mapNotNull { documentsById[it] },
                             folderDocuments = documentsByFolder[asset.orgId].orEmpty(),
@@ -250,6 +289,19 @@ fun EquipmentScreen(
                             onOpenLinkedPpr = onOpenLinkedPpr,
                             onOpenStorageFolder = ::openFolder,
                             onOpenDocument = ::openDocument,
+                            onMove = { targetSiteId ->
+                                scope.launch {
+                                    actingId = asset.id
+                                    try {
+                                        repository.moveAsset(asset.id, targetSiteId)
+                                        reload()
+                                    } catch (e: Exception) {
+                                        error = e.message
+                                    } finally {
+                                        actingId = null
+                                    }
+                                }
+                            },
                             onConfirm = {
                                 scope.launch {
                                     actingId = asset.id
@@ -298,12 +350,31 @@ fun EquipmentScreen(
                     active.forEach { asset ->
                         EquipmentCard(
                             asset = asset,
+                            siteName = siteNameById[asset.siteId],
+                            moveTargets =
+                                sites
+                                    .filter { it.id != asset.siteId }
+                                    .map { it.id to it.name },
                             linkedMap = mapsByAsset[asset.id],
                             documents = asset.documentIds.mapNotNull { documentsById[it] },
                             folderDocuments = documentsByFolder[asset.orgId].orEmpty(),
+                            acting = actingId == asset.id,
                             onOpenLinkedPpr = onOpenLinkedPpr,
                             onOpenStorageFolder = ::openFolder,
                             onOpenDocument = ::openDocument,
+                            onMove = { targetSiteId ->
+                                scope.launch {
+                                    actingId = asset.id
+                                    try {
+                                        repository.moveAsset(asset.id, targetSiteId)
+                                        reload()
+                                    } catch (e: Exception) {
+                                        error = e.message
+                                    } finally {
+                                        actingId = null
+                                    }
+                                }
+                            },
                         )
                     }
             }

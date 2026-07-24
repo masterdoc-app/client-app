@@ -56,17 +56,21 @@ import pro.masterdoc.client.designsystem.theme.ClientSpacing
 @Composable
 fun EquipmentCard(
     asset: AssetDto,
+    siteName: String? = null,
+    moveTargets: List<Pair<String, String>> = emptyList(),
     linkedMap: MaintenanceMapDto? = null,
     documents: List<DocumentMetaDto> = emptyList(),
     folderDocuments: List<DocumentMetaDto> = emptyList(),
     acting: Boolean = false,
     onConfirm: (() -> Unit)? = null,
     onReject: (() -> Unit)? = null,
+    onMove: ((String) -> Unit)? = null,
     onOpenLinkedPpr: ((MaintenanceMapDto) -> Unit)? = null,
     onOpenStorageFolder: ((String) -> Unit)? = null,
     onOpenDocument: ((DocumentMetaDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val siteLabel = siteName?.takeIf { it.isNotBlank() } ?: asset.siteId
     val isDraft = asset.status == "draft"
     val storageFolder =
         documents.firstOrNull()?.storageFolder()
@@ -137,7 +141,7 @@ fun EquipmentCard(
                     )
                 }
 
-                IdentityHeader(asset = asset)
+                IdentityHeader(asset = asset, siteLabel = siteLabel)
 
                 DescriptionBlock(asset = asset)
 
@@ -149,7 +153,7 @@ fun EquipmentCard(
                     ) {
                         PassportTile(
                             label = "Площадка",
-                            value = asset.siteId,
+                            value = siteLabel,
                             modifier = Modifier.weight(1f),
                         )
                         PassportTile(
@@ -195,13 +199,33 @@ fun EquipmentCard(
                         )
                     }
                 }
+
+                if (onMove != null && moveTargets.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs)) {
+                        SectionLabel("Перенести")
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                            verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
+                        ) {
+                            moveTargets.forEach { (id, label) ->
+                                AppButton(
+                                    text = label,
+                                    enabled = !acting,
+                                    fillMaxWidth = false,
+                                    variant = AppButtonVariant.Secondary,
+                                    onClick = { onMove(id) },
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun IdentityHeader(asset: AssetDto) {
+private fun IdentityHeader(asset: AssetDto, siteLabel: String) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -227,9 +251,9 @@ private fun IdentityHeader(asset: AssetDto) {
             AppText(
                 text =
                     if (inv != null) {
-                        "Инв. № $inv · ${asset.siteId}"
+                        "Инв. № $inv · $siteLabel"
                     } else {
-                        asset.siteId
+                        siteLabel
                     },
                 style = AppTextStyle.Label,
             )

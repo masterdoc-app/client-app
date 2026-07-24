@@ -22,6 +22,50 @@ data class AssetDto(
 data class AssetListDto(val items: List<AssetDto>)
 
 @Serializable
+data class SiteDto(
+    val id: String,
+    val orgId: String,
+    val name: String,
+    val address: String? = null,
+)
+
+@Serializable
+data class SiteListDto(val items: List<SiteDto>)
+
+@Serializable
+data class CreateSiteRequest(
+    val name: String,
+    val address: String? = null,
+    val id: String? = null,
+)
+
+@Serializable
+data class UpdateSiteRequest(
+    val name: String? = null,
+    val address: String? = null,
+)
+
+@Serializable
+data class MoveAssetRequest(val siteId: String)
+
+@Serializable
+data class AuditEventDto(
+    val id: String,
+    val orgId: String,
+    val userId: String,
+    val at: String,
+    val method: String,
+    val path: String,
+    val status: Int,
+    val action: String? = null,
+    val requestSummary: String? = null,
+    val responseSummary: String? = null,
+)
+
+@Serializable
+data class AuditEventListDto(val items: List<AuditEventDto>)
+
+@Serializable
 data class DocumentMetaDto(
     val id: String,
     val orgId: String,
@@ -96,6 +140,55 @@ class EquipmentRepository(
     private suspend fun bearer(): String =
         tokenStore.read()?.accessToken ?: throw GatewayHttpException(401, "Not authenticated")
 
+    suspend fun listSites(): SiteListDto {
+        val response =
+            http.get(
+                url = "${base()}/sites",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(SiteListDto.serializer(), response.body)
+    }
+
+    suspend fun createSite(request: CreateSiteRequest): SiteDto {
+        val response =
+            http.postForm(
+                url = "${base()}/sites",
+                body = json.encodeToString(CreateSiteRequest.serializer(), request),
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer ${bearer()}",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(SiteDto.serializer(), response.body)
+    }
+
+    suspend fun updateSite(id: String, request: UpdateSiteRequest): SiteDto {
+        val response =
+            http.put(
+                url = "${base()}/sites/$id",
+                body = json.encodeToString(UpdateSiteRequest.serializer(), request),
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer ${bearer()}",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(SiteDto.serializer(), response.body)
+    }
+
+    suspend fun deleteSite(id: String) {
+        val response =
+            http.delete(
+                url = "${base()}/sites/$id",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+    }
+
     suspend fun listAssets(): AssetListDto {
         val response =
             http.get(
@@ -104,6 +197,21 @@ class EquipmentRepository(
             )
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
         return json.decodeFromString(AssetListDto.serializer(), response.body)
+    }
+
+    suspend fun moveAsset(id: String, siteId: String): AssetDto {
+        val response =
+            http.postForm(
+                url = "${base()}/assets/$id/move",
+                body = json.encodeToString(MoveAssetRequest.serializer(), MoveAssetRequest(siteId)),
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer ${bearer()}",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(AssetDto.serializer(), response.body)
     }
 
     suspend fun confirmAsset(id: String): AssetDto {

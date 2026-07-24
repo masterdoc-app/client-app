@@ -112,4 +112,19 @@ class AdminUsersRepository(
             throw GatewayHttpException(response.status, "DELETE /admin/users/$userId failed: ${response.body}")
         }
     }
+
+    suspend fun listAudit(limit: Int = 100): AuditEventListDto {
+        val access =
+            tokenStore.read()?.accessToken
+                ?: throw GatewayHttpException(401, "Not authenticated")
+        val response =
+            http.get(
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/admin/audit?limit=$limit",
+                headers = mapOf("Authorization" to "Bearer $access"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "GET /admin/audit failed: ${response.body}")
+        }
+        return json.decodeFromString(AuditEventListDto.serializer(), response.body)
+    }
 }

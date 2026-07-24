@@ -16,6 +16,12 @@ class JvmGatewayHttpClient : GatewayHttpClient {
         headers: Map<String, String>,
     ): GatewayHttpResponse = execute("POST", url, headers, body.toByteArray(StandardCharsets.UTF_8))
 
+    override suspend fun put(
+        url: String,
+        body: String,
+        headers: Map<String, String>,
+    ): GatewayHttpResponse = execute("PUT", url, headers, body.toByteArray(StandardCharsets.UTF_8))
+
     override suspend fun postBytes(
         url: String,
         body: ByteArray,
