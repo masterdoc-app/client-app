@@ -23,9 +23,22 @@ actual suspend fun openAuthenticatedDocument(
     if (response.statusCode() !in 200..299) {
         throw IllegalStateException("HTTP ${response.statusCode()}")
     }
-    val safeName = filename.ifBlank { "document.pdf" }.replace('/', '_')
+    val bytes = response.body()
+    val safeBase = filename.ifBlank { "document.pdf" }.replace('/', '_')
+    val (safeName, payload) =
+        if (PdfBytes.looksLikeValidPdf(bytes)) {
+            safeBase to bytes
+        } else {
+            val textName =
+                if (safeBase.endsWith(".pdf", ignoreCase = true)) {
+                    safeBase.dropLast(4) + ".txt"
+                } else {
+                    "$safeBase.txt"
+                }
+            textName to PdfBytes.textPreviewFromBytes(bytes).encodeToByteArray()
+        }
     val temp = Files.createTempFile("fixaverse-", "-$safeName")
-    Files.write(temp, response.body())
+    Files.write(temp, payload)
     if (Desktop.isDesktopSupported()) {
         Desktop.getDesktop().open(temp.toFile())
     }
