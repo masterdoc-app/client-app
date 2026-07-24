@@ -56,7 +56,6 @@ private fun ProfileFields(user: SessionUser?) {
     if (email == null && givenName == null && familyName == null) return
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AppText(text = "Данные", style = AppTextStyle.Title)
         if (email != null) {
             ProfileRow(label = "Email", value = email)
         }

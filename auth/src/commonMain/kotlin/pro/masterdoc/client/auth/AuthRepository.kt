@@ -141,7 +141,10 @@ class MeRepository(
             println("[auth] GET /me failed status=${response.status} body=${response.body}")
             throw GatewayHttpException(response.status, "GET /me failed: ${response.body}")
         }
-        val me = json.decodeFromString<MeResponse>(response.body)
+        val me =
+            json
+                .decodeFromString<MeResponse>(response.body)
+                .withProfileFromIdToken(tokenStore.read()?.idToken)
         println(
             "[auth] GET /me ok id=${me.userInfo.id} email=${me.userInfo.email} " +
                 "features=${me.features} raw=${response.body}",

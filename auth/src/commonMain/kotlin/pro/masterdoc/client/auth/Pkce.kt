@@ -59,4 +59,14 @@ object Base64Url {
         }
         return out.toString()
     }
+
+    /** Decode Base64URL (JWT segment); padding optional. */
+    fun decode(text: String): ByteArray {
+        val padded =
+            buildString(text.length + 3) {
+                append(text.replace('-', '+').replace('_', '/'))
+                while (length % 4 != 0) append('=')
+            }
+        return Base64Std.decode(padded)
+    }
 }
