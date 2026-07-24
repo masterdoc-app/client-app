@@ -1,5 +1,6 @@
 package pro.masterdoc.client.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,11 +23,13 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.MaintenanceMapDto
+import pro.masterdoc.client.auth.DocumentMetaDto
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
+import pro.masterdoc.client.platform.openAuthenticatedDocument
 
 @Composable
 fun ChartsScreen(
@@ -35,6 +38,7 @@ fun ChartsScreen(
     modifier: Modifier = Modifier,
 ) {
     var maps by remember { mutableStateOf<List<MaintenanceMapDto>>(emptyList()) }
+    var sourceDocsByAssetId by remember { mutableStateOf<Map<String, List<SourceDocRef>>>(emptyMap()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var actingId by remember { mutableStateOf<String?>(null) }
@@ -45,11 +49,48 @@ fun ChartsScreen(
             loading = true
             try {
                 maps = repository.listMaps().items
+                val assets = repository.listAssets().items.associateBy { it.id }
+                val metaById = linkedMapOf<String, DocumentMetaDto>()
+                val byAsset = linkedMapOf<String, List<SourceDocRef>>()
+                maps.map { it.assetId }.distinct().forEach { assetId ->
+                    val ids = assets[assetId]?.documentIds.orEmpty()
+                    if (ids.isEmpty()) return@forEach
+                    byAsset[assetId] =
+                        ids.map { id ->
+                            val meta =
+                                metaById[id]
+                                    ?: runCatching { repository.getDocument(id) }
+                                        .onSuccess { metaById[id] = it }
+                                        .getOrNull()
+                            SourceDocRef(
+                                id = id,
+                                filename = meta?.filename ?: id,
+                                contentType = meta?.contentType.orEmpty(),
+                            )
+                        }
+                }
+                sourceDocsByAssetId = byAsset.toMap()
                 error = null
             } catch (e: Exception) {
                 error = e.message
             } finally {
                 loading = false
+            }
+        }
+    }
+
+    fun openDocument(doc: SourceDocRef) {
+        scope.launch {
+            try {
+                openAuthenticatedDocument(
+                    url = repository.documentContentUrl(doc.id),
+                    bearerToken = repository.accessToken(),
+                    filename = doc.filename,
+                    mimeType = doc.contentType.ifBlank { "application/pdf" },
+                )
+                error = null
+            } catch (e: Exception) {
+                error = e.message ?: "Не удалось открыть документ"
             }
         }
     }
@@ -78,7 +119,12 @@ fun ChartsScreen(
 
             if (focused != null) {
                 AppText(text = "Открыто по ссылке", style = AppTextStyle.Title)
-                MapSummary(map = focused, highlighted = true)
+                MapSummary(
+                    map = focused,
+                    sourceDocs = sourceDocsByAssetId[focused.assetId].orEmpty(),
+                    highlighted = true,
+                    onOpenDocument = ::openDocument,
+                )
             }
 
             AppText(text = "Черновики ППР", style = AppTextStyle.Title)
@@ -89,8 +135,10 @@ fun ChartsScreen(
                     drafts.forEach { map ->
                         MapDraftRow(
                             map = map,
+                            sourceDocs = sourceDocsByAssetId[map.assetId].orEmpty(),
                             acting = actingId == map.id,
                             highlighted = map.id == focusedMapId,
+                            onOpenDocument = ::openDocument,
                             onConfirm = {
                                 scope.launch {
                                     actingId = map.id
@@ -127,18 +175,31 @@ fun ChartsScreen(
                 active.isEmpty() -> AppText(text = "Пока пусто", style = AppTextStyle.Label)
                 else ->
                     active.forEach { map ->
-                        MapSummary(map = map, highlighted = map.id == focusedMapId)
+                        MapSummary(
+                            map = map,
+                            sourceDocs = sourceDocsByAssetId[map.assetId].orEmpty(),
+                            highlighted = map.id == focusedMapId,
+                            onOpenDocument = ::openDocument,
+                        )
                     }
             }
         }
     }
 }
 
+private data class SourceDocRef(
+    val id: String,
+    val filename: String,
+    val contentType: String,
+)
+
 @Composable
 private fun MapDraftRow(
     map: MaintenanceMapDto,
+    sourceDocs: List<SourceDocRef>,
     acting: Boolean,
     highlighted: Boolean = false,
+    onOpenDocument: (SourceDocRef) -> Unit,
     onConfirm: () -> Unit,
     onReject: () -> Unit,
 ) {
@@ -146,7 +207,12 @@ private fun MapDraftRow(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        MapSummary(map = map, highlighted = highlighted)
+        MapSummary(
+            map = map,
+            sourceDocs = sourceDocs,
+            highlighted = highlighted,
+            onOpenDocument = onOpenDocument,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AppButton(text = if (acting) "…" else "Подтвердить", enabled = !acting, onClick = onConfirm)
             AppButton(text = "Отклонить", enabled = !acting, onClick = onReject)
@@ -157,7 +223,9 @@ private fun MapDraftRow(
 @Composable
 private fun MapSummary(
     map: MaintenanceMapDto,
+    sourceDocs: List<SourceDocRef> = emptyList(),
     highlighted: Boolean = false,
+    onOpenDocument: ((SourceDocRef) -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         AppText(
@@ -178,6 +246,28 @@ private fun MapSummary(
             text = "Оборудование: ${map.assetId} · пунктов: ${map.items.size}",
             style = AppTextStyle.Label,
         )
+        when {
+            sourceDocs.isNotEmpty() ->
+                sourceDocs.forEach { doc ->
+                    val open = onOpenDocument
+                    AppText(
+                        text = "Документ: ${doc.filename}",
+                        style = AppTextStyle.Label,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier =
+                            if (open != null) {
+                                Modifier.clickable { open(doc) }
+                            } else {
+                                Modifier
+                            },
+                    )
+                }
+            map.source.equals("ai_generated", ignoreCase = true) ->
+                AppText(
+                    text = "Документ: не привязан к оборудованию",
+                    style = AppTextStyle.Label,
+                )
+        }
         map.items.take(5).forEach { item ->
             AppText(
                 text =
