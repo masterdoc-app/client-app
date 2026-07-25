@@ -15,6 +15,21 @@ pluginManagement {
     }
 }
 
+// Prefer sibling / CI checkout of fixaverse-design — GitHub Packages needs read:packages.
+val fixaverseDesignDir =
+    sequenceOf(
+        rootDir.resolve("fixaverse-design"),
+        rootDir.resolve("../fixaverse-design"),
+    ).firstOrNull { it.isDirectory && it.resolve("settings.gradle.kts").isFile }
+
+if (fixaverseDesignDir != null) {
+    includeBuild(fixaverseDesignDir) {
+        dependencySubstitution {
+            substitute(module("pro.fixaverse:design-theme")).using(project(":theme"))
+        }
+    }
+}
+
 dependencyResolutionManagement {
     repositories {
         google {
@@ -25,11 +40,17 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
-        maven {
-            url = uri("https://maven.pkg.github.com/masterdoc-app/fixaverse-design")
-            credentials {
-                username = providers.gradleProperty("gpr.user").orNull ?: System.getenv("GITHUB_ACTOR")
-                password = providers.gradleProperty("gpr.key").orNull ?: System.getenv("GITHUB_TOKEN")
+        val gprUser =
+            providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
+        val gprKey =
+            providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
+        if (!gprKey.isNullOrBlank()) {
+            maven {
+                url = uri("https://maven.pkg.github.com/masterdoc-app/fixaverse-design")
+                credentials {
+                    username = gprUser ?: "token"
+                    password = gprKey
+                }
             }
         }
     }
