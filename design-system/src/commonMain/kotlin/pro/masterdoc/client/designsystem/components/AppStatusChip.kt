@@ -28,7 +28,7 @@ enum class AppStatusChipTone {
 
 /**
  * Compact status / meta chip used on equipment and list cards.
- * Graphite+Cobalt: tones map to ColorScheme roles only.
+ * Fixaverse Lite: tones map to ColorScheme roles only.
  */
 @Composable
 fun AppStatusChip(

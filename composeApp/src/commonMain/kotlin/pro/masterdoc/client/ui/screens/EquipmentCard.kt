@@ -47,7 +47,7 @@ import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
 /**
- * Карточка единицы оборудования — scannable CMMS-style layout on Graphite+Cobalt DS.
+ * Карточка единицы оборудования — scannable CMMS-style layout on Fixaverse Lite DS.
  *
  * Hierarchy (Limble/MaintainX/Fiix pattern): status → identity → description →
  * passport tiles → documents → linked PPR → draft actions.
