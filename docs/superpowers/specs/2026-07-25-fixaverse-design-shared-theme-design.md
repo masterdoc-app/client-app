@@ -1,9 +1,11 @@
 # Shared Fixaverse design theme (`fixaverse-design`)
 
 **Date:** 2026-07-25  
-**Status:** Approved for planning (awaiting final spec review)  
+**Status:** Implemented  
 **Consumers:** `client-app`, `masterdocapp` (copilot)  
 **Brand sources:** [fixaverse.ru](https://fixaverse.ru), [copilot.fixaverse.ru](https://copilot.fixaverse.ru), `masterdoc-toir/landing` CSS
+
+Implementation note: `masterdoc-app/fixaverse-design` is public so consumer CI can access the published design package.
 
 ## Problem
 
