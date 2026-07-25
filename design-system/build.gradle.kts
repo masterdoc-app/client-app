@@ -24,6 +24,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            api(libs.fixaverse.design.theme)
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)

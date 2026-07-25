@@ -9,6 +9,10 @@ concurrency:
   group: deploy-app-fixaverse-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  packages: read
+
 env:
   DEPLOY_HOST: 91.207.75.72
   DEPLOY_PATH: /opt/fixaverse-app
@@ -32,6 +36,7 @@ jobs:
       - name: Build distribution
         env:
           FIXAVERSE_OIDC_WEB_CLIENT_ID: ${{ secrets.FIXAVERSE_OIDC_WEB_CLIENT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./gradlew \
             :auth:jvmTest \

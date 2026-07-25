@@ -1,18 +1,7 @@
 package pro.masterdoc.client.designsystem.theme
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import pro.fixaverse.design.theme.FixaverseTheme
 
 @Composable
-fun ClientTheme(
-    /** Product default is light graphite; opt into dark explicitly (not OS auto). */
-    darkTheme: Boolean = false,
-    content: @Composable () -> Unit,
-) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) clientDarkColorScheme() else clientLightColorScheme(),
-        typography = ClientTypography,
-        shapes = ClientShapes,
-        content = content,
-    )
-}
+fun ClientTheme(content: @Composable () -> Unit) = FixaverseTheme(content)
