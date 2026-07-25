@@ -19,11 +19,15 @@ import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlinx.coroutines.launch
+import pro.masterdoc.client.analytics.AnalyticsSink
+import pro.masterdoc.client.analytics.GatewayAnalyticsSink
+import pro.masterdoc.client.analytics.NoopAnalyticsSink
 import pro.masterdoc.client.auth.AdminUsersRepository
-import pro.masterdoc.client.auth.EquipmentRepository
-import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.BrowserNav
+import pro.masterdoc.client.auth.ClientEventsRepository
+import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.parseQueryParams
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppText
@@ -62,10 +66,15 @@ fun AuthenticatedApp(
     adminUsersRepository: AdminUsersRepository,
     equipmentRepository: EquipmentRepository,
     workOrdersRepository: WorkOrdersRepository,
+    clientEventsRepository: ClientEventsRepository? = null,
 ) {
     ClientTheme {
         var state by remember { mutableStateOf<ShellUiState>(ShellUiState.Loading) }
         val scope = rememberCoroutineScope()
+        val analyticsSink: AnalyticsSink =
+            remember(clientEventsRepository) {
+                clientEventsRepository?.let { GatewayAnalyticsSink(it) } ?: NoopAnalyticsSink
+            }
 
         fun logoutAndRestart() {
             scope.launch {
@@ -80,8 +89,8 @@ fun AuthenticatedApp(
             }
         }
 
-        LaunchedEffect(coordinator) {
-            state = bootstrap(coordinator)
+        LaunchedEffect(coordinator, analyticsSink) {
+            state = bootstrap(coordinator, analyticsSink)
         }
 
         when (val s = state) {
@@ -109,7 +118,7 @@ fun AuthenticatedApp(
                         onClick = {
                             scope.launch {
                                 state = ShellUiState.Loading
-                                state = bootstrap(coordinator)
+                                state = bootstrap(coordinator, analyticsSink)
                             }
                         },
                     )
@@ -122,13 +131,20 @@ fun AuthenticatedApp(
     }
 }
 
-private fun rootForSession(session: ClientSession): RootComponent =
+private fun rootForSession(
+    session: ClientSession,
+    analyticsSink: AnalyticsSink,
+): RootComponent =
     DefaultRootComponent(
         componentContext = DefaultComponentContext(LifecycleRegistry()),
         session = session,
+        analyticsSink = analyticsSink,
     )
 
-private suspend fun bootstrap(coordinator: AuthCoordinator): ShellUiState {
+private suspend fun bootstrap(
+    coordinator: AuthCoordinator,
+    analyticsSink: AnalyticsSink,
+): ShellUiState {
     val path = BrowserNav.currentPath()
     if (path.contains("/auth/callback")) {
         val params = parseQueryParams(BrowserNav.currentSearch())
@@ -142,7 +158,7 @@ private suspend fun bootstrap(coordinator: AuthCoordinator): ShellUiState {
         return try {
             val me = coordinator.completeCallback(code, params["state"])
             BrowserNav.replaceTo("/")
-            ShellUiState.Ready(rootForSession(ClientSession.fromMe(me)))
+            ShellUiState.Ready(rootForSession(ClientSession.fromMe(me), analyticsSink))
         } catch (e: Exception) {
             ShellUiState.Error(e.message ?: "Ошибка обмена кода")
         }
@@ -154,7 +170,7 @@ private suspend fun bootstrap(coordinator: AuthCoordinator): ShellUiState {
 
     return try {
         val me = coordinator.loadMe()
-        ShellUiState.Ready(rootForSession(ClientSession.fromMe(me)))
+        ShellUiState.Ready(rootForSession(ClientSession.fromMe(me), analyticsSink))
     } catch (_: Exception) {
         coordinator.logout()
         startLoginOrError(coordinator)

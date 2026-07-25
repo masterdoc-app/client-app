@@ -5,9 +5,10 @@ import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.document
 import org.koin.core.context.startKoin
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.AuthCoordinator
+import pro.masterdoc.client.auth.ClientEventsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
-import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.authModule
 import pro.masterdoc.client.auth.createDefaultGatewayHttpClient
 
@@ -26,12 +27,14 @@ fun main() {
     val adminUsers = koinApp.koin.get<AdminUsersRepository>()
     val equipment = koinApp.koin.get<EquipmentRepository>()
     val workOrders = koinApp.koin.get<WorkOrdersRepository>()
+    val clientEvents = koinApp.koin.get<ClientEventsRepository>()
     ComposeViewport(document.body!!) {
         AuthenticatedApp(
             coordinator = coordinator,
             adminUsersRepository = adminUsers,
             equipmentRepository = equipment,
             workOrdersRepository = workOrders,
+            clientEventsRepository = clientEvents,
         )
     }
 }
