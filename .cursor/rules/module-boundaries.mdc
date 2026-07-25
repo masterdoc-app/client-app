@@ -16,6 +16,5 @@ If a cohesive group of classes is actively used by other classes (other layers/f
 
 ## Examples in this repo
 
-- tokens + base UI → `:design-system`
-- Paparazzi snapshots → `:design-system-paparazzi` (test consumer; not inside design-system)
+- tokens + base UI → `:design-system` (consumes shared `design-theme` artifact)
 - nav models → package in `:shared` until a second consumer needs a dedicated module

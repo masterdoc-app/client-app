@@ -15,8 +15,7 @@ Roles live in Zitadel (grants/invite). `feature-service` maps roles → union of
 | Module | Purpose |
 |--------|---------|
 | `:auth` | OIDC PKCE, token store, `/me` |
-| `:design-system` | Colors, typography, shapes, base Compose UI |
-| `:design-system-paparazzi` | Paparazzi snapshot tests |
+| `:design-system` | Shared Fixaverse theme + base Compose UI |
 | `:shared` | Feature nav models, session, Decompose shell |
 | `:composeApp` | Single entry (Wasm / Desktop / Android) |
 
