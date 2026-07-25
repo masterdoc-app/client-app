@@ -190,6 +190,12 @@ private class FakeGatewayHttpClient(
         headers: Map<String, String>,
     ): GatewayHttpResponse = handler("PUT", url, headers, body)
 
+    override suspend fun patch(
+        url: String,
+        body: String,
+        headers: Map<String, String>,
+    ): GatewayHttpResponse = handler("PATCH", url, headers, body)
+
     override suspend fun postBytes(
         url: String,
         body: ByteArray,

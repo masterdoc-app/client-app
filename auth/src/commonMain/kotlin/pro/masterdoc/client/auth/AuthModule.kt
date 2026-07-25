@@ -44,6 +44,13 @@ fun authModule(
             )
         }
         single {
+            WorkOrdersRepository(
+                config = get(),
+                http = get(),
+                tokenStore = get(),
+            )
+        }
+        single {
             AuthCoordinator(
                 authRepository = get(),
                 meRepository = get(),

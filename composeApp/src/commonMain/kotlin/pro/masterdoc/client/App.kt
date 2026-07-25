@@ -21,6 +21,7 @@ import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.parseQueryParams
@@ -61,6 +62,7 @@ fun AuthenticatedApp(
     coordinator: AuthCoordinator,
     adminUsersRepository: AdminUsersRepository,
     equipmentRepository: EquipmentRepository,
+    workOrdersRepository: WorkOrdersRepository,
 ) {
     ClientTheme(darkTheme = false) {
         var state by remember { mutableStateOf<ShellUiState>(ShellUiState.Loading) }
@@ -94,6 +96,7 @@ fun AuthenticatedApp(
                     onLogout = ::logoutAndRestart,
                     adminUsersRepository = adminUsersRepository,
                     equipmentRepository = equipmentRepository,
+                    workOrdersRepository = workOrdersRepository,
                 )
             is ShellUiState.Error ->
                 Column(

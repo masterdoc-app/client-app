@@ -27,6 +27,7 @@ import com.arkivanov.decompose.router.pages.ChildPages
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.designsystem.components.AppNavBar
 import pro.masterdoc.client.designsystem.components.AppNavItem
 import pro.masterdoc.client.designsystem.components.AppNavRail
@@ -36,6 +37,7 @@ import pro.masterdoc.client.navigation.NavItemSpec
 import pro.masterdoc.client.navigation.toHash
 import pro.masterdoc.client.presentation.shell.MainShellComponent
 import pro.masterdoc.client.session.ClientSession
+import pro.masterdoc.client.ui.screens.BoardScreen
 import pro.masterdoc.client.ui.screens.ChartsScreen
 import pro.masterdoc.client.ui.screens.EquipmentScreen
 import pro.masterdoc.client.ui.screens.ProfileScreen
@@ -52,6 +54,7 @@ fun MainShellContent(
     onLogout: () -> Unit = {},
     adminUsersRepository: AdminUsersRepository? = null,
     equipmentRepository: EquipmentRepository? = null,
+    workOrdersRepository: WorkOrdersRepository? = null,
 ) {
     val pages by component.pages.subscribeAsState()
     val focusedMapId by component.focusedMapId.subscribeAsState()
@@ -75,6 +78,7 @@ fun MainShellContent(
                         onLogout = onLogout,
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
+                        workOrdersRepository = workOrdersRepository,
                         focusedMapId = focusedMapId,
                         onOpenLinkedPpr = { map ->
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
@@ -97,6 +101,7 @@ fun MainShellContent(
                         onLogout = onLogout,
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
+                        workOrdersRepository = workOrdersRepository,
                         focusedMapId = focusedMapId,
                         onOpenLinkedPpr = { map ->
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
@@ -116,6 +121,7 @@ private fun ActivePage(
     onLogout: () -> Unit,
     adminUsersRepository: AdminUsersRepository?,
     equipmentRepository: EquipmentRepository?,
+    workOrdersRepository: WorkOrdersRepository?,
     focusedMapId: String?,
     onOpenLinkedPpr: (pro.masterdoc.client.auth.MaintenanceMapDto) -> Unit,
 ) {
@@ -154,6 +160,12 @@ private fun ActivePage(
                             repository = equipmentRepository,
                             focusedMapId = focusedMapId?.takeIf { it.isNotBlank() },
                         )
+                    } else {
+                        StubDestinationScreen(active.destination)
+                    }
+                NavDestinationId.Board ->
+                    if (workOrdersRepository != null) {
+                        BoardScreen(repository = workOrdersRepository)
                     } else {
                         StubDestinationScreen(active.destination)
                     }

@@ -22,6 +22,12 @@ class JvmGatewayHttpClient : GatewayHttpClient {
         headers: Map<String, String>,
     ): GatewayHttpResponse = execute("PUT", url, headers, body.toByteArray(StandardCharsets.UTF_8))
 
+    override suspend fun patch(
+        url: String,
+        body: String,
+        headers: Map<String, String>,
+    ): GatewayHttpResponse = executePatch(url, headers, body.toByteArray(StandardCharsets.UTF_8))
+
     override suspend fun postBytes(
         url: String,
         body: ByteArray,
@@ -32,6 +38,25 @@ class JvmGatewayHttpClient : GatewayHttpClient {
         url: String,
         headers: Map<String, String>,
     ): GatewayHttpResponse = execute("DELETE", url, headers, null)
+
+    /** HttpURLConnection rejects PATCH; use java.net.http.HttpClient. */
+    private fun executePatch(
+        url: String,
+        headers: Map<String, String>,
+        body: ByteArray,
+    ): GatewayHttpResponse {
+        val client = java.net.http.HttpClient.newHttpClient()
+        val builder =
+            java.net.http.HttpRequest.newBuilder(URI.create(url))
+                .timeout(java.time.Duration.ofSeconds(30))
+                .method(
+                    "PATCH",
+                    java.net.http.HttpRequest.BodyPublishers.ofByteArray(body),
+                )
+        headers.forEach { (k, v) -> builder.header(k, v) }
+        val response = client.send(builder.build(), java.net.http.HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+        return GatewayHttpResponse(status = response.statusCode(), body = response.body())
+    }
 
     private fun execute(
         method: String,
