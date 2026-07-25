@@ -57,7 +57,7 @@ fixaverse-design/
 
 Package: `pro.fixaverse.design.theme`
 
-- `FixaverseTokens` (or keep name `FixaverseLiteTokens` for easier migration) — raw colors
+- `FixaverseLiteTokens` — raw colors (same names as today’s copilot module)
 - `fixaverseLightColorScheme()` — Material3 `ColorScheme`
 - `FixaverseTypography` — sans scale (no serif italic display in v1)
 - `FixaverseShapes` / `FixaverseSpacing`
