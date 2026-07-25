@@ -5,7 +5,10 @@
 **Consumers:** `client-app`, `masterdocapp` (copilot)  
 **Brand sources:** [fixaverse.ru](https://fixaverse.ru), [copilot.fixaverse.ru](https://copilot.fixaverse.ru), `masterdoc-toir/landing` CSS
 
-Implementation note: `masterdoc-app/fixaverse-design` is public so consumer CI can access the published design package.
+Implementation notes (2026-07-25):
+- Repo `masterdoc-app/fixaverse-design` is **PUBLIC**.
+- **Primary resolve path:** `includeBuild` of sibling/`./fixaverse-design` (no Packages token). See `fixaverse-design/docs/consumer-resolution.md`.
+- GitHub Packages remains optional fallback; always needs `read:packages` (401 without auth).
 
 ## Problem
 
