@@ -13,6 +13,6 @@ class FeatureLabelsTest {
         assertEquals("Оборудование", FeatureId.Equipment.titleRu())
         assertEquals("Профиль", FeatureId.Profile.titleRu())
         assertEquals("Наставник", FeatureId.Copilot.titleRu())
-        assertEquals("Пользователи", FeatureId.Users.titleRu())
+        assertEquals("Админ", FeatureId.Users.titleRu())
     }
 }
