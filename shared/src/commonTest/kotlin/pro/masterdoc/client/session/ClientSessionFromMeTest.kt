@@ -15,13 +15,14 @@ class ClientSessionFromMeTest {
             ClientSession.fromMe(
                 MeResponse(
                     userInfo = UserInfoDto(id = "u1"),
-                    features = listOf("charts", "equipment", "user_invite"),
+                    features = listOf("charts", "equipment", "admin"),
                 ),
             )
         assertEquals(
             setOf(FeatureId.Charts, FeatureId.Equipment, FeatureId.Users, FeatureId.Profile),
             session.features,
         )
+        assertEquals("admin", FeatureId.Users.wireValue)
         assertTrue(FeatureId.Users in session.features)
         assertEquals("u1", session.user?.id)
         assertNull(session.user?.email)

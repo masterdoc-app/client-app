@@ -416,7 +416,7 @@ internal fun humanAdminError(
 ): String =
     when (e.status) {
         400 -> e.message.ifBlank { "Некорректный запрос" }
-        403 -> "Нет доступа (нужна фича user_invite)"
+        403 -> "Нет доступа (нужна фича admin)"
         404 -> "Пользователь не найден"
         409 ->
             when (action) {

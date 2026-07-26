@@ -21,7 +21,7 @@ Roles live in Zitadel (grants/invite). `feature-service` maps roles → union of
 
 ## Features
 
-Wire strings align with feature-service (`board`, `user_invite`, `charts`, …). Nav is filtered by `ClientSession.features` (`FeatureId` + `NavCatalog`).
+Wire strings align with feature-service (`board`, `admin`, `charts`, …). Nav is filtered by `ClientSession.features` (`FeatureId` + `NavCatalog`).
 
 Production features come from `GET https://api.masterdoc.pro/me`.
 

@@ -71,7 +71,7 @@ class AdminUsersRepositoryTest {
                     assertEquals("Bearer at", headers["Authorization"])
                     GatewayHttpResponse(
                         200,
-                        """{"items":[{"id":"board","titleRu":"Доска"},{"id":"user_invite","titleRu":"Админ"}]}""",
+                        """{"items":[{"id":"board","titleRu":"Доска"},{"id":"admin","titleRu":"Админ"}]}""",
                     )
                 }
             val repo =

@@ -22,7 +22,7 @@ Redeploy / restart gateway so CORS picks up the origin.
 
 ## feature-service
 
-Deploy build that maps roles → features (`technologist` → `charts`/`equipment`, `admin` → `user_invite`, …).
+Deploy build that maps roles → features (`technologist` → `charts`/`equipment`, grant `admin` for Админ, …).
 
 ## Web deploy
 

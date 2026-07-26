@@ -16,8 +16,8 @@ enum class FeatureId(val wireValue: String) {
     /** Reserved for future masterdoc / Atlant copilot tab; not enabled in MVP fixtures. */
     Copilot("copilot"),
 
-    /** Admin invite / user management (`user_invite` from feature-service). */
-    Users("user_invite"),
+    /** Admin invite / user management (`admin` from feature-service). */
+    Users("admin"),
     ;
 
     companion object {
