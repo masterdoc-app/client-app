@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AuditEventDto
+import pro.masterdoc.client.presentation.audit.AuditEventDescription
 import pro.masterdoc.client.auth.CreateSiteRequest
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.FeatureDefinitionDto
@@ -388,20 +389,31 @@ private fun JournalTab(repository: AdminUsersRepository) {
                 events.forEach { e ->
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         AppText(
-                            text = "${e.at} · ${e.userId}",
-                            style = AppTextStyle.Label,
+                            text =
+                                AuditEventDescription.title(
+                                    action = e.action,
+                                    method = e.method,
+                                    path = e.path,
+                                    requestSummary = e.requestSummary,
+                                ),
                         )
                         AppText(
-                            text =
-                                listOfNotNull(
-                                    e.action,
-                                    "${e.method} ${e.path}",
-                                    e.status.toString(),
-                                ).joinToString(" · "),
+                            text = "${formatAuditAt(e.at)} · ${e.status}",
+                            style = AppTextStyle.Label,
                         )
                     }
                 }
         }
+    }
+}
+
+/** Compact UTC timestamp for journal rows: `2026-07-26 04:51`. */
+internal fun formatAuditAt(raw: String): String {
+    val normalized = raw.trim().replace('T', ' ')
+    return when {
+        normalized.length >= 16 -> normalized.take(16)
+        normalized.isNotEmpty() -> normalized
+        else -> "—"
     }
 }
 
