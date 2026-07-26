@@ -233,9 +233,9 @@ private fun WeekGrid(
             ) {
                 laneItems
                     .groupBy { it.lane }
-                    .toSortedMap()
-                    .values
-                    .forEach { lane ->
+                    .toList()
+                    .sortedBy { (laneIndex, _) -> laneIndex }
+                    .forEach { (_, lane) ->
                         BoardLane(lane.sortedBy { it.clip.startColumn }, onOpen)
                     }
             }
