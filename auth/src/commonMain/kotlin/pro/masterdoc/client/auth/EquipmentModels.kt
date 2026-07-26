@@ -113,6 +113,7 @@ data class DocumentValidationResponse(
     val status: String,
     val explanation: String? = null,
     val obsoleteDocumentIds: List<String> = emptyList(),
+    val draftAssetId: String? = null,
 )
 
 @Serializable
@@ -125,6 +126,7 @@ data class ConfirmReplaceRequest(
 data class EquipmentCardRequest(
     val documentId: String,
     val siteId: String,
+    val assetId: String,
 )
 
 @Serializable
@@ -419,11 +421,11 @@ class EquipmentRepository(
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
     }
 
-    suspend fun createEquipmentCard(documentId: String, siteId: String): EquipmentCardResponse {
+    suspend fun createEquipmentCard(documentId: String, siteId: String, assetId: String): EquipmentCardResponse {
         val body =
             json.encodeToString(
                 EquipmentCardRequest.serializer(),
-                EquipmentCardRequest(documentId = documentId, siteId = siteId),
+                EquipmentCardRequest(documentId = documentId, siteId = siteId, assetId = assetId),
             )
         val response =
             http.postForm(

@@ -52,6 +52,7 @@ fun EquipmentScreen(
     var picked by remember { mutableStateOf<PickedPdf?>(null) }
     var documentId by remember { mutableStateOf("") }
     var pendingDocumentId by remember { mutableStateOf<String?>(null) }
+    var pendingDraftAssetId by remember { mutableStateOf<String?>(null) }
     var replaceExplanation by remember { mutableStateOf<String?>(null) }
     var obsoleteDocumentIds by remember { mutableStateOf<List<String>>(emptyList()) }
     var job by remember { mutableStateOf<TechnologistJobDto?>(null) }
@@ -115,9 +116,9 @@ fun EquipmentScreen(
         return current
     }
 
-    suspend fun runEquipmentCard(docId: String, siteId: String) {
-        statusHint = "Создаём черновик оборудования…"
-        val card = repository.createEquipmentCard(docId, siteId)
+    suspend fun runEquipmentCard(docId: String, siteId: String, assetId: String) {
+        statusHint = "Уточняем черновик оборудования…"
+        val card = repository.createEquipmentCard(docId, siteId, assetId)
         documentId = docId
         statusHint = "Черновик оборудования готов (${card.draftAssetId.take(8)}…). Подтвердите карточку — затем запустится ППР."
         reload()
@@ -127,13 +128,22 @@ fun EquipmentScreen(
         statusHint = "Проверяем документ…"
         val validation = repository.validateDocument(docId, siteId, assetId)
         when (validation.status) {
-            "ok" -> runEquipmentCard(docId, siteId)
+            "ok" -> {
+                val draftId = validation.draftAssetId
+                if (draftId.isNullOrBlank()) {
+                    error = "Валидатор не вернул draftAssetId"
+                    statusHint = null
+                } else {
+                    runEquipmentCard(docId, siteId, draftId)
+                }
+            }
             "reject" -> {
                 error = validation.explanation ?: "Документ отклонён валидатором"
                 statusHint = null
             }
             "needs_replace" -> {
                 pendingDocumentId = docId
+                pendingDraftAssetId = validation.draftAssetId
                 replaceExplanation = validation.explanation
                 obsoleteDocumentIds = validation.obsoleteDocumentIds
                 statusHint = "Найдены устаревшие документы — подтвердите замену"
@@ -301,11 +311,17 @@ fun EquipmentScreen(
                                 busy = true
                                 error = null
                                 try {
+                                    val draftId = pendingDraftAssetId
                                     repository.confirmReplaceDocuments(docId, obsoleteDocumentIds)
                                     replaceExplanation = null
                                     obsoleteDocumentIds = emptyList()
                                     pendingDocumentId = null
-                                    runEquipmentCard(docId, siteId)
+                                    pendingDraftAssetId = null
+                                    if (draftId.isNullOrBlank()) {
+                                        error = "Нет draftAssetId после валидации — загрузите документ снова"
+                                    } else {
+                                        runEquipmentCard(docId, siteId, draftId)
+                                    }
                                 } catch (e: Exception) {
                                     error = e.message
                                 } finally {
@@ -320,6 +336,7 @@ fun EquipmentScreen(
                         enabled = !busy,
                         onClick = {
                             pendingDocumentId = null
+                            pendingDraftAssetId = null
                             replaceExplanation = null
                             obsoleteDocumentIds = emptyList()
                             statusHint = null
