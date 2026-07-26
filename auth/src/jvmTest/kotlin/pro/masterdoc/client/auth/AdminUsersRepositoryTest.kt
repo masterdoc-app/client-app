@@ -132,6 +132,35 @@ class AdminUsersRepositoryTest {
                 )
             repo.deleteUser("u-1")
         }
+
+    @Test
+    fun listAudit_appendsLimitOffsetAndUserId() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, headers, _ ->
+                    assertEquals("GET", method)
+                    assertEquals("Bearer at", headers["Authorization"])
+                    assertTrue(url.contains("/admin/audit?"))
+                    assertTrue(url.contains("limit=30"))
+                    assertTrue(url.contains("offset=60"))
+                    assertTrue(url.contains("userId=u9"))
+                    GatewayHttpResponse(
+                        200,
+                        """{"items":[{"id":"1","orgId":"o","userId":"u9","at":"2026-07-26T09:00:00Z","method":"GET","path":"/x","status":200}]}""",
+                    )
+                }
+            val repo =
+                AdminUsersRepository(
+                    config = AuthConfig(clientId = "web"),
+                    http = http,
+                    tokenStore = tokens,
+                )
+            val list = repo.listAudit(limit = 30, offset = 60, userId = "u9")
+            assertEquals(1, list.items.size)
+            assertEquals("u9", list.items[0].userId)
+        }
 }
 
 internal class RecordingGatewayHttpClient(
