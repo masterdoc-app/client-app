@@ -87,6 +87,7 @@ data class TechnologistJobDto(
     val orgId: String,
     val documentId: String,
     val siteId: String,
+    val assetId: String? = null,
     val status: String,
     val draftAssetId: String? = null,
     val draftMapId: String? = null,
@@ -97,6 +98,38 @@ data class TechnologistJobDto(
 data class StartTechnologistJobRequest(
     val documentId: String,
     val siteId: String? = null,
+    val assetId: String,
+)
+
+@Serializable
+data class DocumentValidationRequest(
+    val documentId: String,
+    val siteId: String,
+    val assetId: String? = null,
+)
+
+@Serializable
+data class DocumentValidationResponse(
+    val status: String,
+    val explanation: String? = null,
+    val obsoleteDocumentIds: List<String> = emptyList(),
+)
+
+@Serializable
+data class ConfirmReplaceRequest(
+    val documentId: String,
+    val obsoleteDocumentIds: List<String>,
+)
+
+@Serializable
+data class EquipmentCardRequest(
+    val documentId: String,
+    val siteId: String,
+)
+
+@Serializable
+data class EquipmentCardResponse(
+    val draftAssetId: String,
 )
 
 @Serializable
@@ -319,11 +352,15 @@ class EquipmentRepository(
 
     suspend fun accessToken(): String = bearer()
 
-    suspend fun startTechnologist(documentId: String, siteId: String = "default-site"): TechnologistJobDto {
+    suspend fun startTechnologist(
+        documentId: String,
+        siteId: String = "default-site",
+        assetId: String,
+    ): TechnologistJobDto {
         val body =
             json.encodeToString(
                 StartTechnologistJobRequest.serializer(),
-                StartTechnologistJobRequest(documentId = documentId, siteId = siteId),
+                StartTechnologistJobRequest(documentId = documentId, siteId = siteId, assetId = assetId),
             )
         val response =
             http.postForm(
@@ -337,6 +374,69 @@ class EquipmentRepository(
             )
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
         return json.decodeFromString(TechnologistJobDto.serializer(), response.body)
+    }
+
+    suspend fun validateDocument(
+        documentId: String,
+        siteId: String,
+        assetId: String? = null,
+    ): DocumentValidationResponse {
+        val body =
+            json.encodeToString(
+                DocumentValidationRequest.serializer(),
+                DocumentValidationRequest(documentId = documentId, siteId = siteId, assetId = assetId),
+            )
+        val response =
+            http.postForm(
+                url = "${base()}/ai/document-validator",
+                body = body,
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer ${bearer()}",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(DocumentValidationResponse.serializer(), response.body)
+    }
+
+    suspend fun confirmReplaceDocuments(documentId: String, obsoleteDocumentIds: List<String>) {
+        val body =
+            json.encodeToString(
+                ConfirmReplaceRequest.serializer(),
+                ConfirmReplaceRequest(documentId = documentId, obsoleteDocumentIds = obsoleteDocumentIds),
+            )
+        val response =
+            http.postForm(
+                url = "${base()}/ai/document-validator/confirm-replace",
+                body = body,
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer ${bearer()}",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+    }
+
+    suspend fun createEquipmentCard(documentId: String, siteId: String): EquipmentCardResponse {
+        val body =
+            json.encodeToString(
+                EquipmentCardRequest.serializer(),
+                EquipmentCardRequest(documentId = documentId, siteId = siteId),
+            )
+        val response =
+            http.postForm(
+                url = "${base()}/ai/equipment-card",
+                body = body,
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer ${bearer()}",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(EquipmentCardResponse.serializer(), response.body)
     }
 
     suspend fun getJob(id: String): TechnologistJobDto {

@@ -51,12 +51,56 @@ fun EquipmentScreen(
     var loading by remember { mutableStateOf(true) }
     var picked by remember { mutableStateOf<PickedPdf?>(null) }
     var documentId by remember { mutableStateOf("") }
+    var pendingDocumentId by remember { mutableStateOf<String?>(null) }
+    var replaceExplanation by remember { mutableStateOf<String?>(null) }
+    var obsoleteDocumentIds by remember { mutableStateOf<List<String>>(emptyList()) }
     var job by remember { mutableStateOf<TechnologistJobDto?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var actingId by remember { mutableStateOf<String?>(null) }
+    var statusHint by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val siteNameById = remember(sites) { sites.associate { it.id to it.name } }
+
+    suspend fun pollJob(id: String): TechnologistJobDto {
+        var current = repository.getJob(id)
+        repeat(60) {
+            if (current.status == "succeeded" || current.status == "failed") return current
+            delay(1_000)
+            current = repository.getJob(id)
+        }
+        return current
+    }
+
+    suspend fun runEquipmentCard(docId: String, siteId: String) {
+        statusHint = "Создаём черновик оборудования…"
+        val card = repository.createEquipmentCard(docId, siteId)
+        documentId = docId
+        statusHint = "Черновик оборудования готов (${card.draftAssetId.take(8)}…). Подтвердите карточку — затем запустится ППР."
+        reload()
+    }
+
+    suspend fun runValidateThenCard(docId: String, siteId: String, assetId: String? = null) {
+        statusHint = "Проверяем документ…"
+        val validation = repository.validateDocument(docId, siteId, assetId)
+        when (validation.status) {
+            "ok" -> runEquipmentCard(docId, siteId)
+            "reject" -> {
+                error = validation.explanation ?: "Документ отклонён валидатором"
+                statusHint = null
+            }
+            "needs_replace" -> {
+                pendingDocumentId = docId
+                replaceExplanation = validation.explanation
+                obsoleteDocumentIds = validation.obsoleteDocumentIds
+                statusHint = "Найдены устаревшие документы — подтвердите замену"
+            }
+            else -> {
+                error = "Неизвестный ответ валидатора: ${validation.status}"
+                statusHint = null
+            }
+        }
+    }
 
     fun reload() {
         scope.launch {
@@ -217,7 +261,7 @@ fun EquipmentScreen(
                 )
             }
             AppButton(
-                text = if (busy) "Загрузка…" else "Загрузить и запустить Технолога",
+                text = if (busy) "Загрузка…" else "Загрузить PDF и создать черновик",
                 enabled = !busy && picked != null && selectedSiteId != null,
                 onClick = {
                     val file = picked ?: return@AppButton
@@ -225,44 +269,75 @@ fun EquipmentScreen(
                     scope.launch {
                         busy = true
                         error = null
+                        replaceExplanation = null
+                        obsoleteDocumentIds = emptyList()
+                        pendingDocumentId = null
                         try {
                             val doc = repository.uploadManualPdf(file.bytes, file.filename)
                             documentId = doc.id
-                            job = repository.startTechnologist(doc.id, siteId = siteId)
+                            runValidateThenCard(doc.id, siteId)
                         } catch (e: GatewayHttpException) {
                             error = e.message
+                            statusHint = null
                         } catch (e: Exception) {
                             error = e.message
+                            statusHint = null
                         } finally {
                             busy = false
                         }
                     }
                 },
             )
-            if (documentId.isNotBlank()) {
-                AppText(text = "ID документа: $documentId", style = AppTextStyle.Label)
-            }
-            job?.let { j ->
-                AppText(text = "Задача: ${jobStatusLabel(j.status)}")
-                j.error?.let { AppText(text = it) }
-                if (j.status == "succeeded") {
-                    AppText(
-                        text = "Черновики готовы. Проверьте карточку ниже и подтвердите или отклоните.",
-                        style = AppTextStyle.Label,
-                    )
+            if (replaceExplanation != null && pendingDocumentId != null) {
+                AppText(text = replaceExplanation!!, style = AppTextStyle.Label)
+                Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
                     AppButton(
-                        text = "Подтвердить пакет (оборудование + ППР)",
+                        text = "Заменить старые документы",
+                        enabled = !busy,
                         onClick = {
+                            val docId = pendingDocumentId ?: return@AppButton
+                            val siteId = selectedSiteId ?: return@AppButton
                             scope.launch {
+                                busy = true
+                                error = null
                                 try {
-                                    repository.confirmPackage(j.id)
-                                    reload()
-                                    error = null
+                                    repository.confirmReplaceDocuments(docId, obsoleteDocumentIds)
+                                    replaceExplanation = null
+                                    obsoleteDocumentIds = emptyList()
+                                    pendingDocumentId = null
+                                    runEquipmentCard(docId, siteId)
                                 } catch (e: Exception) {
                                     error = e.message
+                                } finally {
+                                    busy = false
                                 }
                             }
                         },
+                    )
+                    AppButton(
+                        text = "Отмена",
+                        variant = AppButtonVariant.Secondary,
+                        enabled = !busy,
+                        onClick = {
+                            pendingDocumentId = null
+                            replaceExplanation = null
+                            obsoleteDocumentIds = emptyList()
+                            statusHint = null
+                        },
+                    )
+                }
+            }
+            if (documentId.isNotBlank()) {
+                AppText(text = "ID документа: $documentId", style = AppTextStyle.Label)
+            }
+            statusHint?.let { AppText(text = it, style = AppTextStyle.Label) }
+            job?.let { j ->
+                AppText(text = "Задача ППР: ${jobStatusLabel(j.status)}")
+                j.error?.let { AppText(text = it) }
+                if (j.status == "succeeded") {
+                    AppText(
+                        text = "Черновик ППР готов. Подтвердите карту на карточке оборудования.",
+                        style = AppTextStyle.Label,
                     )
                 }
             }
@@ -306,11 +381,31 @@ fun EquipmentScreen(
                                 scope.launch {
                                     actingId = asset.id
                                     try {
-                                        repository.confirmAsset(asset.id)
-                                        mapsByAsset[asset.id]?.let { map ->
-                                            if (map.status == "draft") {
-                                                runCatching { repository.confirmMap(map.id) }
+                                        val linked = mapsByAsset[asset.id]
+                                        if (linked == null || linked.status != "draft") {
+                                            val docId =
+                                                asset.documentIds.firstOrNull()
+                                                    ?: documentId.takeIf { it.isNotBlank() }
+                                                    ?: throw IllegalStateException("Нет documentId для технолога")
+                                            statusHint = "Карточка принята — формируем ППР…"
+                                            val started =
+                                                repository.startTechnologist(
+                                                    documentId = docId,
+                                                    siteId = asset.siteId,
+                                                    assetId = asset.id,
+                                                )
+                                            job = pollJob(started.id)
+                                            if (job?.status == "failed") {
+                                                error = job?.error ?: "Технолог завершился с ошибкой"
+                                            } else {
+                                                statusHint =
+                                                    "Черновик ППР готов. Нажмите «В базу» ещё раз, чтобы опубликовать оборудование и карту."
                                             }
+                                        } else {
+                                            repository.confirmAsset(asset.id)
+                                            runCatching { repository.confirmMap(linked.id) }
+                                            statusHint = "Оборудование и ППР в базе."
+                                            job = null
                                         }
                                         reload()
                                     } catch (e: Exception) {
