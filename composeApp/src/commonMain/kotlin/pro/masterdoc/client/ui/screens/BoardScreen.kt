@@ -37,8 +37,7 @@ import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+import pro.masterdoc.client.platform.localEpochDay
 
 internal data class BoardLaneItem(
     val order: WorkOrderDto,
@@ -287,9 +286,11 @@ private fun BoardLane(
     }
 }
 
-@OptIn(ExperimentalTime::class)
 private fun currentMondayIso(): String {
-    val epochDay = Clock.System.now().toEpochMilliseconds() / MILLIS_PER_DAY
+    return mondayIsoForEpochDay(localEpochDay())
+}
+
+internal fun mondayIsoForEpochDay(epochDay: Long): String {
     val daysSinceMonday = IsoDates.dayOfWeekIso(epochDay) - 1
     return IsoDates.formatEpochDay(epochDay - daysSinceMonday)
 }
@@ -301,5 +302,3 @@ private fun shiftWeek(
     val epochDay = IsoDates.parseToEpochDay(isoDate) ?: return isoDate
     return IsoDates.formatEpochDay(epochDay + days)
 }
-
-private const val MILLIS_PER_DAY = 86_400_000L

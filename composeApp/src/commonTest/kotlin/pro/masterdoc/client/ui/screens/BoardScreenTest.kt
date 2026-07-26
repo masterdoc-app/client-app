@@ -2,10 +2,20 @@ package pro.masterdoc.client.ui.screens
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import pro.masterdoc.client.auth.IsoDates
 import pro.masterdoc.client.auth.WeekClip
 import pro.masterdoc.client.auth.WorkOrderDto
 
 class BoardScreenTest {
+    @Test
+    fun mondayIsoForEpochDayUsesCalendarDateWeek() {
+        val monday = IsoDates.parseToEpochDay("2026-07-27")!!
+        val sunday = IsoDates.parseToEpochDay("2026-08-02")!!
+
+        assertEquals("2026-07-27", mondayIsoForEpochDay(monday))
+        assertEquals("2026-07-27", mondayIsoForEpochDay(sunday))
+    }
+
     @Test
     fun assignLanesReusesLaneAfterNonOverlappingItem() {
         val first = order("first")
