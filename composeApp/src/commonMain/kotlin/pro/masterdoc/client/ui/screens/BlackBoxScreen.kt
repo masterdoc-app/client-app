@@ -33,6 +33,7 @@ import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 import pro.masterdoc.client.presentation.audit.AuditEventDescription
+import pro.masterdoc.client.presentation.audit.formatAuditAt
 
 private const val PageSize = 30
 
@@ -200,15 +201,5 @@ fun BlackBoxScreen(
                 }
             }
         }
-    }
-}
-
-/** Compact UTC timestamp for journal rows: `2026-07-26 04:51`. */
-internal fun formatAuditAt(raw: String): String {
-    val normalized = raw.trim().replace('T', ' ')
-    return when {
-        normalized.length >= 16 -> normalized.take(16)
-        normalized.isNotEmpty() -> normalized
-        else -> "—"
     }
 }
