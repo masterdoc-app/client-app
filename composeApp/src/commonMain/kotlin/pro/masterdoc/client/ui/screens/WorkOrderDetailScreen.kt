@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.GatewayHttpException
+import pro.masterdoc.client.auth.WorkOrderDuration
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
@@ -126,7 +127,14 @@ fun WorkOrderDetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
                         val parsedDuration = durationDraft.toIntOrNull()
-                        if (parsedDuration != null && parsedDuration >= 1 && parsedDuration != wo.durationHours) {
+                        if (parsedDuration != null && parsedDuration > WorkOrderDuration.MAX_DURATION_HOURS) {
+                            AppText(text = "Длительность не может превышать ${WorkOrderDuration.MAX_DURATION_HOURS} ч")
+                        }
+                        if (
+                            parsedDuration != null &&
+                            parsedDuration in 1..WorkOrderDuration.MAX_DURATION_HOURS &&
+                            parsedDuration != wo.durationHours
+                        ) {
                             AppButton(
                                 text = if (acting) "…" else "Сохранить длительность",
                                 onClick = {

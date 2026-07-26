@@ -11,6 +11,13 @@ class WorkOrderDurationTest {
         assertEquals(2, WorkOrderDuration.spanDays(9))
         assertEquals(2, WorkOrderDuration.spanDays(16))
         assertEquals(3, WorkOrderDuration.spanDays(17))
+        assertEquals(30, WorkOrderDuration.spanDays(240))
+    }
+
+    @Test
+    fun excessiveDurationIsCappedAtThirtyWorkdays() {
+        assertEquals(30, WorkOrderDuration.spanDays(Int.MAX_VALUE))
+        assertEquals(30, WorkOrderDuration.occupiedDates("2026-07-24", Int.MAX_VALUE).size)
     }
 
     @Test

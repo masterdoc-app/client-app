@@ -3,8 +3,11 @@ package pro.masterdoc.client.auth
 data class WeekClip(val startColumn: Int, val spanColumns: Int)
 
 object WorkOrderDuration {
+    /** Maximum supported duration: 30 working days at 8 hours per day. */
+    const val MAX_DURATION_HOURS = 240
+
     fun spanDays(durationHours: Int): Int {
-        val h = maxOf(1, durationHours)
+        val h = durationHours.coerceIn(1, MAX_DURATION_HOURS)
         return (h + 7) / 8
     }
 
