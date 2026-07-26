@@ -211,10 +211,6 @@ private fun WeekGrid(
         verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
     ) {
         DayHeaders(weekMonday)
-        if (laneItems.isEmpty()) {
-            AppText(text = "Нет заявок", style = AppTextStyle.Body)
-            return
-        }
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
             Row(Modifier.fillMaxSize()) {
                 repeat(7) {
