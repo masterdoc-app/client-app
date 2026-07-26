@@ -240,10 +240,10 @@ fun EquipmentScreen(
                 },
             )
             if (documentId.isNotBlank()) {
-                AppText(text = "Document ID: $documentId", style = AppTextStyle.Label)
+                AppText(text = "ID документа: $documentId", style = AppTextStyle.Label)
             }
             job?.let { j ->
-                AppText(text = "Job: ${j.status}")
+                AppText(text = "Задача: ${jobStatusLabel(j.status)}")
                 j.error?.let { AppText(text = it) }
                 if (j.status == "succeeded") {
                     AppText(
@@ -381,3 +381,12 @@ fun EquipmentScreen(
         }
     }
 }
+
+private fun jobStatusLabel(status: String): String =
+    when (status) {
+        "queued" -> "в очереди"
+        "running" -> "выполняется"
+        "succeeded" -> "завершена"
+        "failed" -> "ошибка"
+        else -> status
+    }
