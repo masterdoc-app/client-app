@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,7 +36,7 @@ import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrderDuration
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.designsystem.components.AppButton
-import pro.masterdoc.client.designsystem.components.AppButtonVariant
+import pro.masterdoc.client.designsystem.components.AppIcon
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
@@ -175,23 +179,23 @@ private fun WeekNavigation(
         horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AppButton(
-            text = "←",
-            onClick = onPrevious,
-            variant = AppButtonVariant.Secondary,
-            fillMaxWidth = false,
-        )
+        IconButton(onClick = onPrevious) {
+            AppIcon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = "Предыдущая неделя",
+            )
+        }
         AppText(
             text = "$weekMonday — ${shiftWeek(weekMonday, 6)}",
             style = AppTextStyle.Title,
             modifier = Modifier.weight(1f),
         )
-        AppButton(
-            text = "→",
-            onClick = onNext,
-            variant = AppButtonVariant.Secondary,
-            fillMaxWidth = false,
-        )
+        IconButton(onClick = onNext) {
+            AppIcon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "Следующая неделя",
+            )
+        }
     }
 }
 
