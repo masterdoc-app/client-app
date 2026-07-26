@@ -36,6 +36,67 @@ class WorkOrdersRepositoryTest {
         }
 
     @Test
+    fun getBoardDecodesDurationHours() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertTrue(url.contains("/work-orders/board"))
+                    GatewayHttpResponse(
+                        200,
+                        """
+                        {
+                          "weeks": [{
+                            "weekStart": "2026-07-20",
+                            "items": [{
+                              "id": "wo-1",
+                              "orgId": "o",
+                              "type": "emergency",
+                              "status": "new",
+                              "title": "T",
+                              "assetId": "a",
+                              "siteId": "s",
+                              "dueAt": "2026-07-22",
+                              "durationHours": 16,
+                              "source": "api",
+                              "createdAt": "t",
+                              "updatedAt": "t"
+                            }]
+                          }]
+                        }
+                        """.trimIndent(),
+                    )
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+            val board = repo.getBoard(weeks = 1)
+            assertEquals(16, board.weeks[0].items[0].durationHours)
+        }
+
+    @Test
+    fun patchSendsDurationHours() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            var body: String? = null
+            val http =
+                RecordingGatewayHttpClient { method, url, _, b ->
+                    assertEquals("PATCH", method)
+                    assertTrue(url.endsWith("/work-orders/wo-1"))
+                    body = b
+                    GatewayHttpResponse(
+                        200,
+                        """{"id":"wo-1","orgId":"o","type":"emergency","status":"new","title":"T","assetId":"a","siteId":"s","dueAt":"2026-07-22","durationHours":24,"source":"api","createdAt":"t","updatedAt":"t"}""",
+                    )
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+            repo.patch("wo-1", durationHours = 24)
+            val json = Json.parseToJsonElement(body!!).jsonObject
+            assertEquals(24, json["durationHours"]!!.toString().toInt())
+        }
+
+    @Test
     fun patchSendsNullAssignee() =
         runBlocking {
             val tokens = InMemoryTokenStore()
@@ -48,7 +109,7 @@ class WorkOrdersRepositoryTest {
                     body = b
                     GatewayHttpResponse(
                         200,
-                        """{"id":"wo-1","orgId":"o","type":"emergency","status":"new","title":"T","assetId":"a","siteId":"s","dueAt":"2026-07-22","assigneeId":null,"source":"api","createdAt":"t","updatedAt":"t"}""",
+                        """{"id":"wo-1","orgId":"o","type":"emergency","status":"new","title":"T","assetId":"a","siteId":"s","dueAt":"2026-07-22","durationHours":8,"assigneeId":null,"source":"api","createdAt":"t","updatedAt":"t"}""",
                     )
                 }
             val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)

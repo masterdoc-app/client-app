@@ -17,6 +17,7 @@ data class WorkOrderDto(
     val assetId: String,
     val siteId: String,
     val dueAt: String,
+    val durationHours: Int = 8,
     val assigneeId: String? = null,
     val maintenanceMapId: String? = null,
     val maintenanceMapItemId: String? = null,
@@ -41,6 +42,7 @@ data class CreateWorkOrderRequest(
     val assetId: String,
     val siteId: String,
     val dueAt: String,
+    val durationHours: Int? = null,
     val maintenanceMapId: String? = null,
     val maintenanceMapItemId: String? = null,
     val source: String = "manual",
@@ -113,6 +115,7 @@ class WorkOrdersRepository(
         status: String? = null,
         title: String? = null,
         dueAt: String? = null,
+        durationHours: Int? = null,
         assigneeId: String? = null,
         clearAssignee: Boolean = false,
     ): WorkOrderDto {
@@ -121,6 +124,7 @@ class WorkOrdersRepository(
                 if (status != null) put("status", JsonPrimitive(status))
                 if (title != null) put("title", JsonPrimitive(title))
                 if (dueAt != null) put("dueAt", JsonPrimitive(dueAt))
+                if (durationHours != null) put("durationHours", JsonPrimitive(durationHours))
                 when {
                     clearAssignee -> put("assigneeId", JsonNull)
                     assigneeId != null -> put("assigneeId", JsonPrimitive(assigneeId))
