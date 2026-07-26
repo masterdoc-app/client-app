@@ -113,13 +113,23 @@ class AdminUsersRepository(
         }
     }
 
-    suspend fun listAudit(limit: Int = 100): AuditEventListDto {
+    suspend fun listAudit(
+        limit: Int = 30,
+        offset: Int = 0,
+        userId: String? = null,
+    ): AuditEventListDto {
         val access =
             tokenStore.read()?.accessToken
                 ?: throw GatewayHttpException(401, "Not authenticated")
+        val query =
+            buildString {
+                append("limit=").append(limit)
+                append("&offset=").append(offset.coerceAtLeast(0))
+                if (!userId.isNullOrBlank()) append("&userId=").append(userId)
+            }
         val response =
             http.get(
-                url = "${config.gatewayBaseUrl.trimEnd('/')}/admin/audit?limit=$limit",
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/admin/audit?$query",
                 headers = mapOf("Authorization" to "Bearer $access"),
             )
         if (!response.isSuccessful) {

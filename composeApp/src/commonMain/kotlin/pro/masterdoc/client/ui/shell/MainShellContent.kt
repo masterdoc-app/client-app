@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.PrecisionManufacturing
 import androidx.compose.material.icons.filled.SmartToy
@@ -37,6 +38,7 @@ import pro.masterdoc.client.navigation.NavItemSpec
 import pro.masterdoc.client.navigation.toHash
 import pro.masterdoc.client.presentation.shell.MainShellComponent
 import pro.masterdoc.client.session.ClientSession
+import pro.masterdoc.client.ui.screens.BlackBoxScreen
 import pro.masterdoc.client.ui.screens.BoardScreen
 import pro.masterdoc.client.ui.screens.ChartsScreen
 import pro.masterdoc.client.ui.screens.EquipmentScreen
@@ -145,6 +147,12 @@ private fun ActivePage(
                     } else {
                         StubDestinationScreen(active.destination)
                     }
+                NavDestinationId.BlackBox ->
+                    if (adminUsersRepository != null) {
+                        BlackBoxScreen(repository = adminUsersRepository)
+                    } else {
+                        StubDestinationScreen(active.destination)
+                    }
                 NavDestinationId.Equipment ->
                     if (equipmentRepository != null) {
                         EquipmentScreen(
@@ -197,5 +205,6 @@ private fun iconFor(destination: NavDestinationId): ImageVector =
         NavDestinationId.Equipment -> Icons.Filled.PrecisionManufacturing
         NavDestinationId.Profile -> Icons.Filled.Person
         NavDestinationId.Copilot -> Icons.Filled.SmartToy
+        NavDestinationId.BlackBox -> Icons.Filled.History
         NavDestinationId.Users -> Icons.Filled.AdminPanelSettings
     }

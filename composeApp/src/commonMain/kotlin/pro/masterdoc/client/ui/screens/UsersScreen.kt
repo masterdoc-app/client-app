@@ -22,8 +22,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
-import pro.masterdoc.client.auth.AuditEventDto
-import pro.masterdoc.client.presentation.audit.AuditEventDescription
 import pro.masterdoc.client.auth.CreateSiteRequest
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.FeatureDefinitionDto
@@ -38,7 +36,7 @@ import pro.masterdoc.client.designsystem.components.AppTextField
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
-private enum class AdminTab { Users, Sites, Journal }
+private enum class AdminTab { Users, Sites }
 
 @Composable
 fun UsersScreen(
@@ -76,7 +74,6 @@ fun UsersScreen(
                             when (t) {
                                 AdminTab.Users -> "Пользователи"
                                 AdminTab.Sites -> "Площадки"
-                                AdminTab.Journal -> "Журнал"
                             },
                         onClick = { tab = t },
                         variant = if (tab == t) AppButtonVariant.Primary else AppButtonVariant.Secondary,
@@ -97,7 +94,6 @@ fun UsersScreen(
                     } else {
                         AppText(text = "Каталог площадок недоступен")
                     }
-                AdminTab.Journal -> JournalTab(repository = repository)
             }
         }
     }
@@ -350,70 +346,6 @@ private fun SitesTab(equipmentRepository: EquipmentRepository) {
                     }
                 }
         }
-    }
-}
-
-@Composable
-private fun JournalTab(repository: AdminUsersRepository) {
-    var events by remember { mutableStateOf<List<AuditEventDto>>(emptyList()) }
-    var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-
-    fun reload() {
-        scope.launch {
-            loading = true
-            error = null
-            try {
-                events = repository.listAudit().items
-            } catch (e: Exception) {
-                error = e.message ?: "Ошибка журнала"
-            } finally {
-                loading = false
-            }
-        }
-    }
-
-    LaunchedEffect(repository) { reload() }
-
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        AppButton(text = "Обновить", onClick = { reload() }, fillMaxWidth = false)
-        error?.let { AppText(text = it) }
-        when {
-            loading -> CircularProgressIndicator()
-            events.isEmpty() -> AppText(text = "Пока нет событий", style = AppTextStyle.Label)
-            else ->
-                events.forEach { e ->
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        AppText(
-                            text =
-                                AuditEventDescription.title(
-                                    action = e.action,
-                                    method = e.method,
-                                    path = e.path,
-                                    requestSummary = e.requestSummary,
-                                ),
-                        )
-                        AppText(
-                            text = "${formatAuditAt(e.at)} · ${e.status}",
-                            style = AppTextStyle.Label,
-                        )
-                    }
-                }
-        }
-    }
-}
-
-/** Compact UTC timestamp for journal rows: `2026-07-26 04:51`. */
-internal fun formatAuditAt(raw: String): String {
-    val normalized = raw.trim().replace('T', ' ')
-    return when {
-        normalized.length >= 16 -> normalized.take(16)
-        normalized.isNotEmpty() -> normalized
-        else -> "—"
     }
 }
 

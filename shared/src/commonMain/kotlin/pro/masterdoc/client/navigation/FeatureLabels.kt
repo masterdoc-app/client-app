@@ -10,5 +10,6 @@ fun FeatureId.titleRu(): String =
         FeatureId.Equipment -> "Оборудование"
         FeatureId.Profile -> "Профиль"
         FeatureId.Copilot -> "Наставник"
+        FeatureId.BlackBox -> "Чёрный ящик"
         FeatureId.Users -> "Админ"
     }

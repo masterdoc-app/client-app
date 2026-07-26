@@ -16,6 +16,8 @@ object FeatureSetFixtures {
         setOf(FeatureId.Charts, FeatureId.Equipment, FeatureId.Profile)
 
     fun usersAdmin(): Set<FeatureId> = setOf(FeatureId.Users, FeatureId.Profile)
+
+    fun blackBox(): Set<FeatureId> = setOf(FeatureId.BlackBox, FeatureId.Profile)
 }
 
 /**

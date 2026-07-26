@@ -16,6 +16,9 @@ enum class FeatureId(val wireValue: String) {
     /** Reserved for future masterdoc / Atlant copilot tab; not enabled in MVP fixtures. */
     Copilot("copilot"),
 
+    /** Audit journal («Чёрный ящик»). */
+    BlackBox("black_box"),
+
     /** Admin invite / user management (`admin` from feature-service). */
     Users("admin"),
     ;
@@ -38,6 +41,7 @@ enum class NavDestinationId {
     Equipment,
     Profile,
     Copilot,
+    BlackBox,
     Users,
 }
 

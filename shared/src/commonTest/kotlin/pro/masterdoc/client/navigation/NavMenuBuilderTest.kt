@@ -48,11 +48,21 @@ class NavMenuBuilderTest {
     }
 
     @Test
+    fun blackBox_hasBlackBoxAndProfile() {
+        val items = builder.build(FeatureSetFixtures.blackBox())
+        assertEquals(
+            listOf(NavDestinationId.BlackBox, NavDestinationId.Profile),
+            items.map { it.destination },
+        )
+    }
+
+    @Test
     fun multiFeatureUnion_includesAllMatchingNavItems() {
         val features =
             FeatureSetFixtures.chartsEquipment() +
                 FeatureSetFixtures.usersAdmin() +
                 FeatureSetFixtures.board() +
+                FeatureSetFixtures.blackBox() +
                 FeatureId.Map
         val items = builder.build(features)
         assertEquals(
@@ -61,6 +71,7 @@ class NavMenuBuilderTest {
                 NavDestinationId.Map,
                 NavDestinationId.Charts,
                 NavDestinationId.Equipment,
+                NavDestinationId.BlackBox,
                 NavDestinationId.Users,
                 NavDestinationId.Profile,
             ),

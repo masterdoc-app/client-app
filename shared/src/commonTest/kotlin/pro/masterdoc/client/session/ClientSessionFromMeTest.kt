@@ -29,6 +29,22 @@ class ClientSessionFromMeTest {
     }
 
     @Test
+    fun fromMe_mapsBlackBoxFeature() {
+        val session =
+            ClientSession.fromMe(
+                MeResponse(
+                    userInfo = UserInfoDto(id = "u1"),
+                    features = listOf("black_box", "board"),
+                ),
+            )
+        assertEquals(
+            setOf(FeatureId.BlackBox, FeatureId.Board, FeatureId.Profile),
+            session.features,
+        )
+        assertEquals("black_box", FeatureId.BlackBox.wireValue)
+    }
+
+    @Test
     fun fromMe_ignoresUnknownWireFeatures() {
         val session =
             ClientSession.fromMe(
