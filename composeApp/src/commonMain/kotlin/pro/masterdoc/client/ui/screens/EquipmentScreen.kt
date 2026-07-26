@@ -62,46 +62,6 @@ fun EquipmentScreen(
     val scope = rememberCoroutineScope()
     val siteNameById = remember(sites) { sites.associate { it.id to it.name } }
 
-    suspend fun pollJob(id: String): TechnologistJobDto {
-        var current = repository.getJob(id)
-        repeat(60) {
-            if (current.status == "succeeded" || current.status == "failed") return current
-            delay(1_000)
-            current = repository.getJob(id)
-        }
-        return current
-    }
-
-    suspend fun runEquipmentCard(docId: String, siteId: String) {
-        statusHint = "Создаём черновик оборудования…"
-        val card = repository.createEquipmentCard(docId, siteId)
-        documentId = docId
-        statusHint = "Черновик оборудования готов (${card.draftAssetId.take(8)}…). Подтвердите карточку — затем запустится ППР."
-        reload()
-    }
-
-    suspend fun runValidateThenCard(docId: String, siteId: String, assetId: String? = null) {
-        statusHint = "Проверяем документ…"
-        val validation = repository.validateDocument(docId, siteId, assetId)
-        when (validation.status) {
-            "ok" -> runEquipmentCard(docId, siteId)
-            "reject" -> {
-                error = validation.explanation ?: "Документ отклонён валидатором"
-                statusHint = null
-            }
-            "needs_replace" -> {
-                pendingDocumentId = docId
-                replaceExplanation = validation.explanation
-                obsoleteDocumentIds = validation.obsoleteDocumentIds
-                statusHint = "Найдены устаревшие документы — подтвердите замену"
-            }
-            else -> {
-                error = "Неизвестный ответ валидатора: ${validation.status}"
-                statusHint = null
-            }
-        }
-    }
-
     fun reload() {
         scope.launch {
             loading = true
@@ -141,6 +101,46 @@ fun EquipmentScreen(
                 error = e.message
             } finally {
                 loading = false
+            }
+        }
+    }
+
+    suspend fun pollJob(id: String): TechnologistJobDto {
+        var current = repository.getJob(id)
+        repeat(60) {
+            if (current.status == "succeeded" || current.status == "failed") return current
+            delay(1_000)
+            current = repository.getJob(id)
+        }
+        return current
+    }
+
+    suspend fun runEquipmentCard(docId: String, siteId: String) {
+        statusHint = "Создаём черновик оборудования…"
+        val card = repository.createEquipmentCard(docId, siteId)
+        documentId = docId
+        statusHint = "Черновик оборудования готов (${card.draftAssetId.take(8)}…). Подтвердите карточку — затем запустится ППР."
+        reload()
+    }
+
+    suspend fun runValidateThenCard(docId: String, siteId: String, assetId: String? = null) {
+        statusHint = "Проверяем документ…"
+        val validation = repository.validateDocument(docId, siteId, assetId)
+        when (validation.status) {
+            "ok" -> runEquipmentCard(docId, siteId)
+            "reject" -> {
+                error = validation.explanation ?: "Документ отклонён валидатором"
+                statusHint = null
+            }
+            "needs_replace" -> {
+                pendingDocumentId = docId
+                replaceExplanation = validation.explanation
+                obsoleteDocumentIds = validation.obsoleteDocumentIds
+                statusHint = "Найдены устаревшие документы — подтвердите замену"
+            }
+            else -> {
+                error = "Неизвестный ответ валидатора: ${validation.status}"
+                statusHint = null
             }
         }
     }
