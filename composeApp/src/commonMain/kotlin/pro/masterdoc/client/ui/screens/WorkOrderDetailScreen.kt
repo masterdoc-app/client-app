@@ -31,6 +31,7 @@ import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppStatusChip
 import pro.masterdoc.client.designsystem.components.AppStatusChipTone
 import pro.masterdoc.client.designsystem.components.AppText
+import pro.masterdoc.client.designsystem.components.AppTextField
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
@@ -112,7 +113,43 @@ fun WorkOrderDetailScreen(
                         )
                     }
                     AppText(text = wo.title, style = AppTextStyle.Title)
-                    DetailRow("Срок", wo.dueAt)
+                    if (wo.status == "closed") {
+                        DetailRow("Длительность, ч", wo.durationHours.toString())
+                    } else {
+                        var durationDraft by remember(wo.id, wo.durationHours) {
+                            mutableStateOf(wo.durationHours.toString())
+                        }
+                        AppTextField(
+                            value = durationDraft,
+                            onValueChange = { durationDraft = it.filter { ch -> ch.isDigit() } },
+                            label = "Длительность, ч",
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        val parsedDuration = durationDraft.toIntOrNull()
+                        if (parsedDuration != null && parsedDuration >= 1 && parsedDuration != wo.durationHours) {
+                            AppButton(
+                                text = if (acting) "…" else "Сохранить длительность",
+                                onClick = {
+                                    scope.launch {
+                                        acting = true
+                                        error = null
+                                        try {
+                                            order = repository.patch(wo.id, durationHours = parsedDuration)
+                                            onChanged()
+                                        } catch (e: Exception) {
+                                            error = e.message
+                                        } finally {
+                                            acting = false
+                                        }
+                                    }
+                                },
+                                enabled = !acting,
+                                variant = AppButtonVariant.Secondary,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                    DetailRow("Начало", wo.dueAt)
                     DetailRow("Площадка", wo.siteId)
                     DetailRow("Оборудование", wo.assetId)
                     DetailRow("Исполнитель", wo.assigneeId ?: "не назначен")
