@@ -36,6 +36,7 @@ object AuditEventDescription {
             "asset.move" -> "Переместил оборудование на другую площадку"
             "asset.confirm" -> "Подтвердил карточку оборудования"
             "asset.reject" -> "Отклонил черновик оборудования"
+            "asset.delete" -> "Удалил оборудование"
             "ui.Root.open" -> "Открыл приложение"
             "ui.Root.close" -> "Закрыл приложение"
             "ui.MainShell.open" -> "Открыл главный экран"
