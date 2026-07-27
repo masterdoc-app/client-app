@@ -86,6 +86,10 @@ fun MainShellContent(
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
                             component.navigateTo(NavDestinationId.Charts, mapId = map.id)
                         },
+                        onPprDraftReady = { mapId ->
+                            BrowserNav.setHash(AppDeepLink.Ppr(mapId).toHash())
+                            component.navigateTo(NavDestinationId.Charts, mapId = mapId)
+                        },
                     )
                 }
             }
@@ -109,6 +113,10 @@ fun MainShellContent(
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
                             component.navigateTo(NavDestinationId.Charts, mapId = map.id)
                         },
+                        onPprDraftReady = { mapId ->
+                            BrowserNav.setHash(AppDeepLink.Ppr(mapId).toHash())
+                            component.navigateTo(NavDestinationId.Charts, mapId = mapId)
+                        },
                     )
                 }
             }
@@ -126,6 +134,7 @@ private fun ActivePage(
     workOrdersRepository: WorkOrdersRepository?,
     focusedMapId: String?,
     onOpenLinkedPpr: (pro.masterdoc.client.auth.MaintenanceMapDto) -> Unit,
+    onPprDraftReady: (mapId: String) -> Unit,
 ) {
     val active = pages.items.getOrNull(pages.selectedIndex)?.instance ?: return
     when (active) {
@@ -158,6 +167,7 @@ private fun ActivePage(
                         EquipmentScreen(
                             repository = equipmentRepository,
                             onOpenLinkedPpr = onOpenLinkedPpr,
+                            onPprDraftReady = onPprDraftReady,
                         )
                     } else {
                         StubDestinationScreen(active.destination)

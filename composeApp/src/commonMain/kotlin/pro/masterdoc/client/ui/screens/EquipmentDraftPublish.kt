@@ -1,11 +1,18 @@
 package pro.masterdoc.client.ui.screens
 
 /**
- * Resolves which maintenance-map id to confirm together with the equipment asset
- * on a single «В базу» click. Prefer an already linked draft map; otherwise use
- * the map id returned by the technologist job.
+ * After the user approves equipment («В базу»), we publish the asset immediately and
+ * then ensure a PPR draft exists for the Charts / ППР feature.
+ *
+ * - If a draft map is already linked → open it (no new agent run).
+ * - Otherwise → start technologist; use the job's draftMapId.
  */
-fun mapIdToConfirmWithAsset(
-    linkedDraftMapId: String?,
+fun resolvePprDraftMapId(
+    existingDraftMapId: String?,
     technologistDraftMapId: String?,
-): String? = linkedDraftMapId?.takeIf { it.isNotBlank() } ?: technologistDraftMapId?.takeIf { it.isNotBlank() }
+): String? =
+    existingDraftMapId?.takeIf { it.isNotBlank() }
+        ?: technologistDraftMapId?.takeIf { it.isNotBlank() }
+
+fun needsTechnologistForPprDraft(existingDraftMapId: String?): Boolean =
+    existingDraftMapId.isNullOrBlank()

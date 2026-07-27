@@ -2,37 +2,43 @@ package pro.masterdoc.client.ui.screens
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class EquipmentDraftPublishTest {
     @Test
-    fun prefersExistingDraftMapOverTechnologistId() {
+    fun launchesAgentWhenNoDraftMap() {
+        assertTrue(needsTechnologistForPprDraft(null))
+        assertTrue(needsTechnologistForPprDraft(""))
+        assertTrue(needsTechnologistForPprDraft("   "))
+    }
+
+    @Test
+    fun skipsAgentWhenDraftMapAlreadyLinked() {
+        assertFalse(needsTechnologistForPprDraft("map-1"))
+    }
+
+    @Test
+    fun prefersExistingDraftOverJobId() {
         assertEquals(
             "map-linked",
-            mapIdToConfirmWithAsset(
-                linkedDraftMapId = "map-linked",
+            resolvePprDraftMapId(
+                existingDraftMapId = "map-linked",
                 technologistDraftMapId = "map-job",
             ),
         )
     }
 
     @Test
-    fun usesTechnologistMapWhenNoLinkedDraft() {
+    fun usesJobDraftMapWhenNoneLinked() {
         assertEquals(
             "map-job",
-            mapIdToConfirmWithAsset(
-                linkedDraftMapId = null,
+            resolvePprDraftMapId(
+                existingDraftMapId = null,
                 technologistDraftMapId = "map-job",
             ),
         )
-    }
-
-    @Test
-    fun blankIdsAreIgnored() {
-        assertNull(mapIdToConfirmWithAsset(linkedDraftMapId = "  ", technologistDraftMapId = ""))
-        assertEquals(
-            "map-job",
-            mapIdToConfirmWithAsset(linkedDraftMapId = "", technologistDraftMapId = "map-job"),
-        )
+        assertNull(resolvePprDraftMapId(existingDraftMapId = "  ", technologistDraftMapId = ""))
     }
 }

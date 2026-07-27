@@ -41,6 +41,7 @@ import pro.masterdoc.client.platform.pickPdfFile
 fun EquipmentScreen(
     repository: EquipmentRepository,
     onOpenLinkedPpr: (MaintenanceMapDto) -> Unit = {},
+    onPprDraftReady: (mapId: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
@@ -121,7 +122,7 @@ fun EquipmentScreen(
         statusHint = "Уточняем черновик оборудования…"
         val card = repository.createEquipmentCard(docId, siteId, assetId)
         documentId = docId
-        statusHint = "Черновик оборудования готов (${card.draftAssetId.take(8)}…). Нажмите «В базу» — опубликуем карточку и ППР."
+        statusHint = "Черновик оборудования готов (${card.draftAssetId.take(8)}…). Нажмите «В базу» — затем сформируем черновик ППР."
         reload()
     }
 
@@ -222,8 +223,8 @@ fun EquipmentScreen(
             AppText(text = "Загрузка руководства", style = AppTextStyle.Title)
             AppText(
                 text =
-                    "PDF руководства -> Технолог собирает карточку оборудования и черновик ППР. " +
-                        "После подтверждения карточка попадает в базу.",
+                    "PDF руководства -> Технолог собирает карточку оборудования. " +
+                        "После «В базу» оборудование публикуется, и сразу формируется черновик ППР.",
                 style = AppTextStyle.Label,
             )
             if (sites.isEmpty()) {
@@ -354,7 +355,7 @@ fun EquipmentScreen(
                 j.error?.let { AppText(text = it) }
                 if (j.status == "succeeded") {
                     AppText(
-                        text = "Черновик ППР готов — публикуем вместе с оборудованием.",
+                        text = "Черновик ППР готов — смотрите в разделе ППР.",
                         style = AppTextStyle.Label,
                     )
                 }
@@ -406,20 +407,23 @@ fun EquipmentScreen(
                                                 inventoryNo = editedInventoryNo,
                                             ),
                                         )
-                                        // Fresh list — don't trust stale mapsByAsset (reload is async).
-                                        val linkedDraftId =
+                                        repository.confirmAsset(asset.id)
+                                        statusHint = "Оборудование в базе — формируем черновик ППР…"
+                                        reload()
+
+                                        val existingDraftId =
                                             runCatching { repository.listMaps(asset.id).items }
                                                 .getOrDefault(emptyList())
                                                 .firstOrNull { it.status == "draft" }
                                                 ?.id
                                                 ?: mapsByAsset[asset.id]?.takeIf { it.status == "draft" }?.id
+
                                         var technologistMapId: String? = null
-                                        if (linkedDraftId == null) {
+                                        if (needsTechnologistForPprDraft(existingDraftId)) {
                                             val docId =
                                                 asset.documentIds.firstOrNull()
                                                     ?: documentId.takeIf { it.isNotBlank() }
                                                     ?: throw IllegalStateException("Нет documentId для технолога")
-                                            statusHint = "Карточка принята — формируем ППР…"
                                             val started =
                                                 repository.startTechnologist(
                                                     documentId = docId,
@@ -429,26 +433,23 @@ fun EquipmentScreen(
                                             val done = pollJob(started.id)
                                             job = done
                                             if (done.status == "failed") {
-                                                throw IllegalStateException(done.error ?: "Технолог завершился с ошибкой")
+                                                throw IllegalStateException(
+                                                    done.error ?: "Технолог завершился с ошибкой",
+                                                )
                                             }
                                             technologistMapId = done.draftMapId
                                         }
-                                        val mapId =
-                                            mapIdToConfirmWithAsset(
-                                                linkedDraftMapId = linkedDraftId,
+
+                                        val draftMapId =
+                                            resolvePprDraftMapId(
+                                                existingDraftMapId = existingDraftId,
                                                 technologistDraftMapId = technologistMapId,
                                             )
-                                        repository.confirmAsset(asset.id)
-                                        if (mapId != null) {
-                                            runCatching { repository.confirmMap(mapId) }
-                                        }
-                                        statusHint =
-                                            if (mapId != null) {
-                                                "Оборудование и ППР в базе."
-                                            } else {
-                                                "Оборудование в базе."
-                                            }
-                                        job = null
+                                                ?: throw IllegalStateException(
+                                                    "Технолог не вернул draftMapId — черновик ППР не создан",
+                                                )
+                                        statusHint = "Черновик ППР готов — открываем раздел ППР."
+                                        onPprDraftReady(draftMapId)
                                         reload()
                                     } catch (e: Exception) {
                                         error = e.message
