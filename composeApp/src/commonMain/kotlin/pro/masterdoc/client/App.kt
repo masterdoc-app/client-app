@@ -74,64 +74,64 @@ fun AuthenticatedApp(
     AppTextSelection {
         ClientTheme {
             var state by remember { mutableStateOf<ShellUiState>(ShellUiState.Loading) }
-        val scope = rememberCoroutineScope()
-        val analyticsSink: AnalyticsSink =
-            remember(clientEventsRepository) {
-                clientEventsRepository?.let { GatewayAnalyticsSink(it) } ?: NoopAnalyticsSink
+            val scope = rememberCoroutineScope()
+            val analyticsSink: AnalyticsSink =
+                remember(clientEventsRepository) {
+                    clientEventsRepository?.let { GatewayAnalyticsSink(it) } ?: NoopAnalyticsSink
+                }
+
+            fun logoutAndRestart() {
+                scope.launch {
+                    state = ShellUiState.Loading
+                    runCatching { coordinator.logoutRedirectUrl() }
+                        .onSuccess { BrowserNav.navigateTo(it) }
+                        .onFailure {
+                            // Local clear even if end_session URL cannot be built.
+                            coordinator.logout()
+                            state = ShellUiState.Error(it.message ?: "Не удалось выйти")
+                        }
+                }
             }
 
-        fun logoutAndRestart() {
-            scope.launch {
-                state = ShellUiState.Loading
-                runCatching { coordinator.logoutRedirectUrl() }
-                    .onSuccess { BrowserNav.navigateTo(it) }
-                    .onFailure {
-                        // Local clear even if end_session URL cannot be built.
-                        coordinator.logout()
-                        state = ShellUiState.Error(it.message ?: "Не удалось выйти")
+            LaunchedEffect(coordinator, analyticsSink) {
+                state = bootstrap(coordinator, analyticsSink)
+            }
+
+            when (val s = state) {
+                ShellUiState.Loading ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                is ShellUiState.Ready ->
+                    MainShellContent(
+                        component = s.root.shell,
+                        onLogout = ::logoutAndRestart,
+                        adminUsersRepository = adminUsersRepository,
+                        equipmentRepository = equipmentRepository,
+                        workOrdersRepository = workOrdersRepository,
+                    )
+                is ShellUiState.Error ->
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        AppText(text = s.message)
+                        AppButton(
+                            text = "Повторить",
+                            onClick = {
+                                scope.launch {
+                                    state = ShellUiState.Loading
+                                    state = bootstrap(coordinator, analyticsSink)
+                                }
+                            },
+                        )
+                        AppButton(
+                            text = "Выйти",
+                            onClick = ::logoutAndRestart,
+                        )
                     }
             }
-        }
-
-        LaunchedEffect(coordinator, analyticsSink) {
-            state = bootstrap(coordinator, analyticsSink)
-        }
-
-        when (val s = state) {
-            ShellUiState.Loading ->
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            is ShellUiState.Ready ->
-                MainShellContent(
-                    component = s.root.shell,
-                    onLogout = ::logoutAndRestart,
-                    adminUsersRepository = adminUsersRepository,
-                    equipmentRepository = equipmentRepository,
-                    workOrdersRepository = workOrdersRepository,
-                )
-            is ShellUiState.Error ->
-                Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    AppText(text = s.message)
-                    AppButton(
-                        text = "Повторить",
-                        onClick = {
-                            scope.launch {
-                                state = ShellUiState.Loading
-                                state = bootstrap(coordinator, analyticsSink)
-                            }
-                        },
-                    )
-                    AppButton(
-                        text = "Выйти",
-                        onClick = ::logoutAndRestart,
-                    )
-                }
-        }
         }
     }
 }
