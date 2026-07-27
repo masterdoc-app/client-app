@@ -195,6 +195,7 @@ private fun ActivePage(
                             equipmentRepository = equipmentRepository,
                             adminUsersRepository = adminUsersRepository,
                             hasAdminUsers = FeatureId.Users in session.features,
+                            dispatcherMode = FeatureId.Board in session.features,
                         )
                     } else {
                         StubDestinationScreen(active.destination)

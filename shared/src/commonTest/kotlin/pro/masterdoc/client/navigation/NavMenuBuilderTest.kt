@@ -33,7 +33,25 @@ class NavMenuBuilderTest {
     fun chartsEquipment_hasChartsEquipmentProfile() {
         val items = builder.build(FeatureSetFixtures.chartsEquipment())
         assertEquals(
-            listOf(NavDestinationId.Charts, NavDestinationId.Equipment, NavDestinationId.Profile),
+            listOf(NavDestinationId.Board, NavDestinationId.Charts, NavDestinationId.Equipment, NavDestinationId.Profile),
+            items.map { it.destination },
+        )
+    }
+
+    @Test
+    fun engineerEquipment_hasBoardEquipmentProfile() {
+        val items = builder.build(FeatureSetFixtures.engineerEquipment())
+        assertEquals(
+            listOf(NavDestinationId.Board, NavDestinationId.Equipment, NavDestinationId.Profile),
+            items.map { it.destination },
+        )
+    }
+
+    @Test
+    fun engineerCopilot_hasBoardAndCopilotProfile() {
+        val items = builder.build(FeatureSetFixtures.engineerCopilot())
+        assertEquals(
+            listOf(NavDestinationId.Board, NavDestinationId.Copilot, NavDestinationId.Profile),
             items.map { it.destination },
         )
     }

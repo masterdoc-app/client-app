@@ -85,6 +85,8 @@ fun BoardScreen(
     equipmentRepository: EquipmentRepository? = null,
     adminUsersRepository: AdminUsersRepository? = null,
     hasAdminUsers: Boolean = false,
+    /** Full dispatcher board (`board` feature); otherwise read-only scoped engineer view. */
+    dispatcherMode: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var weeks by remember { mutableStateOf<List<BoardWeekDto>>(emptyList()) }
@@ -123,13 +125,14 @@ fun BoardScreen(
             userScopesRepository = userScopesRepository,
             adminUsersRepository = adminUsersRepository,
             hasAdminUsers = hasAdminUsers,
-            editableAssignee = userScopesRepository != null,
+            editableAssignee = dispatcherMode && userScopesRepository != null,
+            readOnly = !dispatcherMode,
             modifier = modifier,
         )
         return
     }
 
-    if (showScopeEditor && userScopesRepository != null && equipmentRepository != null) {
+    if (dispatcherMode && showScopeEditor && userScopesRepository != null && equipmentRepository != null) {
         val recentAssignees =
             weeks
                 .flatMap { it.items }
@@ -173,7 +176,7 @@ fun BoardScreen(
                     if (error != null) {
                         AppText(text = error!!)
                     }
-                    if (userScopesRepository != null && equipmentRepository != null) {
+                    if (dispatcherMode && userScopesRepository != null && equipmentRepository != null) {
                         AppButton(
                             text = "Привязка инженеров",
                             variant = AppButtonVariant.Secondary,

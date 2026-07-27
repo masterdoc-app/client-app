@@ -57,6 +57,7 @@ fun WorkOrderDetailScreen(
     adminUsersRepository: AdminUsersRepository? = null,
     hasAdminUsers: Boolean = false,
     editableAssignee: Boolean = false,
+    readOnly: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     var order by remember { mutableStateOf<WorkOrderDto?>(null) }
@@ -128,7 +129,7 @@ fun WorkOrderDetailScreen(
                         )
                     }
                     AppText(text = wo.title, style = AppTextStyle.Title)
-                    if (wo.status == "closed") {
+                    if (wo.status == "closed" || readOnly) {
                         DetailRow("Длительность, ч", wo.durationHours.toString())
                     } else {
                         var durationDraft by remember(wo.id, wo.durationHours) {
@@ -200,48 +201,50 @@ fun WorkOrderDetailScreen(
                     if (error != null) {
                         AppText(text = error!!)
                     }
-                    when (wo.status) {
-                        "new" ->
-                            AppButton(
-                                text = if (acting) "…" else "В работу",
-                                onClick = {
-                                    scope.launch {
-                                        acting = true
-                                        error = null
-                                        try {
-                                            order = repository.patch(wo.id, status = "in_progress")
-                                            onChanged()
-                                        } catch (e: Exception) {
-                                            error = e.message
-                                        } finally {
-                                            acting = false
+                    if (!readOnly) {
+                        when (wo.status) {
+                            "new" ->
+                                AppButton(
+                                    text = if (acting) "…" else "В работу",
+                                    onClick = {
+                                        scope.launch {
+                                            acting = true
+                                            error = null
+                                            try {
+                                                order = repository.patch(wo.id, status = "in_progress")
+                                                onChanged()
+                                            } catch (e: Exception) {
+                                                error = e.message
+                                            } finally {
+                                                acting = false
+                                            }
                                         }
-                                    }
-                                },
-                                enabled = !acting,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        "in_progress" ->
-                            AppButton(
-                                text = if (acting) "…" else "Закрыть",
-                                onClick = {
-                                    scope.launch {
-                                        acting = true
-                                        error = null
-                                        try {
-                                            order = repository.patch(wo.id, status = "closed")
-                                            onChanged()
-                                        } catch (e: Exception) {
-                                            error = e.message
-                                        } finally {
-                                            acting = false
+                                    },
+                                    enabled = !acting,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            "in_progress" ->
+                                AppButton(
+                                    text = if (acting) "…" else "Закрыть",
+                                    onClick = {
+                                        scope.launch {
+                                            acting = true
+                                            error = null
+                                            try {
+                                                order = repository.patch(wo.id, status = "closed")
+                                                onChanged()
+                                            } catch (e: Exception) {
+                                                error = e.message
+                                            } finally {
+                                                acting = false
+                                            }
                                         }
-                                    }
-                                },
-                                enabled = !acting,
-                                variant = AppButtonVariant.Secondary,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
+                                    },
+                                    enabled = !acting,
+                                    variant = AppButtonVariant.Secondary,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                        }
                     }
                 }
             }
