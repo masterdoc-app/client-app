@@ -51,6 +51,13 @@ fun authModule(
             )
         }
         single {
+            UserScopesRepository(
+                config = get(),
+                http = get(),
+                tokenStore = get(),
+            )
+        }
+        single {
             ClientEventsRepository(
                 config = get(),
                 http = get(),

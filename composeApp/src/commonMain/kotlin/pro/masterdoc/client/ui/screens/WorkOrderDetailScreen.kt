@@ -160,6 +160,7 @@ fun WorkOrderDetailScreen(
                     DetailRow("Начало", wo.dueAt)
                     DetailRow("Площадка", wo.siteId)
                     DetailRow("Оборудование", wo.assetId)
+                    // U6: scope-constrained assignee picker will replace read-only assigneeId display.
                     DetailRow("Исполнитель", wo.assigneeId ?: "не назначен")
                     DetailRow("Источник", wo.source)
                     if (wo.type == "ppr") {

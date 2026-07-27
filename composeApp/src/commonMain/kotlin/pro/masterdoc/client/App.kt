@@ -27,6 +27,7 @@ import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.ClientEventsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.parseQueryParams
 import pro.masterdoc.client.designsystem.components.AppButton
@@ -69,6 +70,7 @@ fun AuthenticatedApp(
     adminUsersRepository: AdminUsersRepository,
     equipmentRepository: EquipmentRepository,
     workOrdersRepository: WorkOrdersRepository,
+    userScopesRepository: UserScopesRepository,
     clientEventsRepository: ClientEventsRepository? = null,
 ) {
     AppTextSelection {
@@ -109,6 +111,7 @@ fun AuthenticatedApp(
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
+                        userScopesRepository = userScopesRepository,
                     )
                 is ShellUiState.Error ->
                     Column(
