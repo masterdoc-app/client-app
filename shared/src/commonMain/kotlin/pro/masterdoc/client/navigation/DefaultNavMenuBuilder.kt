@@ -8,9 +8,15 @@ class DefaultNavMenuBuilder(
     private val catalog: List<NavItemSpec> = NavCatalog.all,
 ) : NavMenuBuilder {
     override fun build(features: Set<FeatureId>): List<NavItemSpec> {
-        val items = catalog
-            .filter { it.featureId in features }
-            .sortedBy { it.order }
+        val items =
+            catalog
+                .filter { spec ->
+                    when (spec.destination) {
+                        NavDestinationId.Board -> features.canAccessWorkOrderBoard()
+                        else -> spec.featureId in features
+                    }
+                }
+                .sortedBy { it.order }
         require(items.size <= NavMenuBuilder.MAX_ITEMS) {
             "Primary nav may have at most ${NavMenuBuilder.MAX_ITEMS} items, got ${items.size}"
         }

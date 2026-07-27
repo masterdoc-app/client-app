@@ -34,8 +34,12 @@ import pro.masterdoc.client.auth.IsoDates
 import pro.masterdoc.client.auth.WeekClip
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrderDuration
+import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.designsystem.components.AppButton
+import pro.masterdoc.client.designsystem.components.AppButtonVariant
 import pro.masterdoc.client.designsystem.components.AppIcon
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
@@ -77,12 +81,19 @@ internal fun assignLanes(items: List<Pair<WorkOrderDto, WeekClip>>): List<BoardL
 @Composable
 fun BoardScreen(
     repository: WorkOrdersRepository,
+    userScopesRepository: UserScopesRepository? = null,
+    equipmentRepository: EquipmentRepository? = null,
+    adminUsersRepository: AdminUsersRepository? = null,
+    hasAdminUsers: Boolean = false,
+    /** Full dispatcher board (`board` feature); otherwise read-only scoped engineer view. */
+    dispatcherMode: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var weeks by remember { mutableStateOf<List<BoardWeekDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedId by remember { mutableStateOf<String?>(null) }
+    var showScopeEditor by remember { mutableStateOf(false) }
     var weekMonday by remember { mutableStateOf(currentMondayIso()) }
     var reloadKey by remember { mutableStateOf(0) }
 
@@ -111,6 +122,30 @@ fun BoardScreen(
             orderId = detailId,
             onBack = { selectedId = null },
             onChanged = { reloadKey++ },
+            userScopesRepository = userScopesRepository,
+            adminUsersRepository = adminUsersRepository,
+            hasAdminUsers = hasAdminUsers,
+            editableAssignee = dispatcherMode && userScopesRepository != null,
+            readOnly = !dispatcherMode,
+            modifier = modifier,
+        )
+        return
+    }
+
+    if (dispatcherMode && showScopeEditor && userScopesRepository != null && equipmentRepository != null) {
+        val recentAssignees =
+            weeks
+                .flatMap { it.items }
+                .mapNotNull { it.assigneeId?.takeIf { id -> id.isNotBlank() } }
+                .distinct()
+                .take(8)
+        EngineerScopeScreen(
+            userScopesRepository = userScopesRepository,
+            equipmentRepository = equipmentRepository,
+            adminUsersRepository = adminUsersRepository,
+            hasAdminUsers = hasAdminUsers,
+            recentAssigneeIds = recentAssignees,
+            onBack = { showScopeEditor = false },
             modifier = modifier,
         )
         return
@@ -140,6 +175,13 @@ fun BoardScreen(
                 else -> {
                     if (error != null) {
                         AppText(text = error!!)
+                    }
+                    if (dispatcherMode && userScopesRepository != null && equipmentRepository != null) {
+                        AppButton(
+                            text = "Привязка инженеров",
+                            variant = AppButtonVariant.Secondary,
+                            onClick = { showScopeEditor = true },
+                        )
                     }
                     WeekNavigation(
                         weekMonday = weekMonday,

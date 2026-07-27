@@ -118,4 +118,27 @@ class WorkOrdersRepositoryTest {
             assertTrue(json.containsKey("assigneeId"))
             assertEquals("null", json["assigneeId"].toString())
         }
+
+    @Test
+    fun patchSendsAssigneeId() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            var body: String? = null
+            val http =
+                RecordingGatewayHttpClient { method, url, _, b ->
+                    assertEquals("PATCH", method)
+                    assertTrue(url.endsWith("/work-orders/wo-1"))
+                    body = b
+                    GatewayHttpResponse(
+                        200,
+                        """{"id":"wo-1","orgId":"o","type":"emergency","status":"new","title":"T","assetId":"a","siteId":"s","dueAt":"2026-07-22","durationHours":8,"assigneeId":"engineer-1","source":"api","createdAt":"t","updatedAt":"t"}""",
+                    )
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+            val updated = repo.patch("wo-1", assigneeId = "engineer-1")
+            val json = Json.parseToJsonElement(body!!).jsonObject
+            assertEquals("engineer-1", json["assigneeId"]!!.toString().trim('"'))
+            assertEquals("engineer-1", updated.assigneeId)
+        }
 }

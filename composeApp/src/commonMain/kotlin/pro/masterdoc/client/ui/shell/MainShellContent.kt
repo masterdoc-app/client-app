@@ -28,7 +28,9 @@ import com.arkivanov.decompose.router.pages.ChildPages
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
+import pro.masterdoc.client.navigation.FeatureId
 import pro.masterdoc.client.designsystem.components.AppNavBar
 import pro.masterdoc.client.designsystem.components.AppNavItem
 import pro.masterdoc.client.designsystem.components.AppNavRail
@@ -57,6 +59,7 @@ fun MainShellContent(
     adminUsersRepository: AdminUsersRepository? = null,
     equipmentRepository: EquipmentRepository? = null,
     workOrdersRepository: WorkOrdersRepository? = null,
+    userScopesRepository: UserScopesRepository? = null,
 ) {
     val pages by component.pages.subscribeAsState()
     val focusedMapId by component.focusedMapId.subscribeAsState()
@@ -81,6 +84,7 @@ fun MainShellContent(
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
+                        userScopesRepository = userScopesRepository,
                         focusedMapId = focusedMapId,
                         onOpenLinkedPpr = { map ->
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
@@ -108,6 +112,7 @@ fun MainShellContent(
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
+                        userScopesRepository = userScopesRepository,
                         focusedMapId = focusedMapId,
                         onOpenLinkedPpr = { map ->
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
@@ -132,6 +137,7 @@ private fun ActivePage(
     adminUsersRepository: AdminUsersRepository?,
     equipmentRepository: EquipmentRepository?,
     workOrdersRepository: WorkOrdersRepository?,
+    userScopesRepository: UserScopesRepository?,
     focusedMapId: String?,
     onOpenLinkedPpr: (pro.masterdoc.client.auth.MaintenanceMapDto) -> Unit,
     onPprDraftReady: (mapId: String) -> Unit,
@@ -183,7 +189,14 @@ private fun ActivePage(
                     }
                 NavDestinationId.Board ->
                     if (workOrdersRepository != null) {
-                        BoardScreen(repository = workOrdersRepository)
+                        BoardScreen(
+                            repository = workOrdersRepository,
+                            userScopesRepository = userScopesRepository,
+                            equipmentRepository = equipmentRepository,
+                            adminUsersRepository = adminUsersRepository,
+                            hasAdminUsers = FeatureId.Users in session.features,
+                            dispatcherMode = FeatureId.Board in session.features,
+                        )
                     } else {
                         StubDestinationScreen(active.destination)
                     }

@@ -55,3 +55,7 @@ data class NavItemSpec(
     val iconKey: String,
     val order: Int,
 )
+
+/** Board nav for dispatchers (`board`) and scoped engineers (`equipment` / `copilot`). */
+fun Set<FeatureId>.canAccessWorkOrderBoard(): Boolean =
+    FeatureId.Board in this || FeatureId.Equipment in this || FeatureId.Copilot in this
