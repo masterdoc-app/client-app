@@ -231,7 +231,7 @@ private fun MapSummary(
         AppText(
             text =
                 buildString {
-                    if (highlighted) append("→ ")
+                    if (highlighted) append("> ")
                     append("${map.title} · ${ruStatus(map.status)} · ${ruSource(map.source)}")
                 },
             style = AppTextStyle.Body,
