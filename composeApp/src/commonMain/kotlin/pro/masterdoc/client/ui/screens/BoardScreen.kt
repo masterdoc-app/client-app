@@ -120,6 +120,10 @@ fun BoardScreen(
             orderId = detailId,
             onBack = { selectedId = null },
             onChanged = { reloadKey++ },
+            userScopesRepository = userScopesRepository,
+            adminUsersRepository = adminUsersRepository,
+            hasAdminUsers = hasAdminUsers,
+            editableAssignee = userScopesRepository != null,
             modifier = modifier,
         )
         return

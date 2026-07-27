@@ -18,6 +18,11 @@ data class PutUserScopeRequest(
     val assetIds: List<String> = emptyList(),
 )
 
+@Serializable
+data class ScopeCandidatesResponse(
+    val userIds: List<String> = emptyList(),
+)
+
 class UserScopesRepository(
     private val config: AuthConfig,
     private val http: GatewayHttpClient,
@@ -58,5 +63,17 @@ class UserScopesRepository(
             throw GatewayHttpException(response.status, response.body.ifBlank { "put user scope failed" })
         }
         return json.decodeFromString(UserScopeDto.serializer(), response.body)
+    }
+
+    suspend fun getCandidates(assetId: String): List<String> {
+        val response =
+            http.get(
+                url = "${base()}/user-scopes/candidates/$assetId",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, response.body.ifBlank { "get scope candidates failed" })
+        }
+        return json.decodeFromString(ScopeCandidatesResponse.serializer(), response.body).userIds
     }
 }

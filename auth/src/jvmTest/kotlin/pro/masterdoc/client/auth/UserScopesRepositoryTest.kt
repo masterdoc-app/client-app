@@ -88,4 +88,23 @@ class UserScopesRepositoryTest {
             assertEquals(listOf("s2"), siteIds)
             assertTrue("s1" !in siteIds)
         }
+
+    @Test
+    fun getCandidatesDecodesUserIds() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertTrue(url.endsWith("/user-scopes/candidates/asset-1"))
+                    GatewayHttpResponse(
+                        200,
+                        """{"userIds":["engineer-1","engineer-2"]}""",
+                    )
+                }
+            val repo = UserScopesRepository(config = config, http = http, tokenStore = tokens)
+            val candidates = repo.getCandidates("asset-1")
+            assertEquals(listOf("engineer-1", "engineer-2"), candidates)
+        }
 }
