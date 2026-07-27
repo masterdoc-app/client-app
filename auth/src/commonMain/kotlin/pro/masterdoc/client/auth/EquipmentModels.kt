@@ -49,6 +49,15 @@ data class UpdateSiteRequest(
 data class MoveAssetRequest(val siteId: String)
 
 @Serializable
+data class UpdateAssetRequest(
+    val name: String? = null,
+    val inventoryNo: String? = null,
+    val category: String? = null,
+    val description: String? = null,
+    val documentIds: List<String>? = null,
+)
+
+@Serializable
 data class AuditEventDto(
     val id: String,
     val orgId: String,
@@ -239,6 +248,21 @@ class EquipmentRepository(
             http.postForm(
                 url = "${base()}/assets/$id/move",
                 body = json.encodeToString(MoveAssetRequest.serializer(), MoveAssetRequest(siteId)),
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer ${bearer()}",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(AssetDto.serializer(), response.body)
+    }
+
+    suspend fun updateAsset(id: String, request: UpdateAssetRequest): AssetDto {
+        val response =
+            http.patch(
+                url = "${base()}/assets/$id",
+                body = json.encodeToString(UpdateAssetRequest.serializer(), request),
                 headers =
                     mapOf(
                         "Authorization" to "Bearer ${bearer()}",

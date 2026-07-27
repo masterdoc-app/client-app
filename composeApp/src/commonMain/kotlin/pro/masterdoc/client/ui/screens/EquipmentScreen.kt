@@ -26,6 +26,7 @@ import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.TechnologistJobDto
+import pro.masterdoc.client.auth.UpdateAssetRequest
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppButtonVariant
 import pro.masterdoc.client.designsystem.components.AppScaffold
@@ -394,10 +395,17 @@ fun EquipmentScreen(
                                     }
                                 }
                             },
-                            onConfirm = {
+                            onConfirm = { editedName, editedInventoryNo ->
                                 scope.launch {
                                     actingId = asset.id
                                     try {
+                                        repository.updateAsset(
+                                            asset.id,
+                                            UpdateAssetRequest(
+                                                name = editedName,
+                                                inventoryNo = editedInventoryNo,
+                                            ),
+                                        )
                                         val linked = mapsByAsset[asset.id]
                                         if (linked == null || linked.status != "draft") {
                                             val docId =

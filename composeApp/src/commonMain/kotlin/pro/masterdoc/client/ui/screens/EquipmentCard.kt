@@ -29,6 +29,10 @@ import androidx.compose.material.icons.filled.PrecisionManufacturing
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +47,7 @@ import pro.masterdoc.client.designsystem.components.AppIcon
 import pro.masterdoc.client.designsystem.components.AppStatusChip
 import pro.masterdoc.client.designsystem.components.AppStatusChipTone
 import pro.masterdoc.client.designsystem.components.AppText
+import pro.masterdoc.client.designsystem.components.AppTextField
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
@@ -62,7 +67,7 @@ fun EquipmentCard(
     documents: List<DocumentMetaDto> = emptyList(),
     folderDocuments: List<DocumentMetaDto> = emptyList(),
     acting: Boolean = false,
-    onConfirm: (() -> Unit)? = null,
+    onConfirm: ((name: String, inventoryNo: String) -> Unit)? = null,
     onReject: (() -> Unit)? = null,
     onMove: ((String) -> Unit)? = null,
     onOpenLinkedPpr: ((MaintenanceMapDto) -> Unit)? = null,
@@ -72,11 +77,16 @@ fun EquipmentCard(
 ) {
     val siteLabel = siteName?.takeIf { it.isNotBlank() } ?: asset.siteId
     val isDraft = asset.status == "draft"
+    var draftName by remember(asset.id, asset.name) { mutableStateOf(asset.name) }
+    var draftInventoryNo by remember(asset.id, asset.inventoryNo) {
+        mutableStateOf(asset.inventoryNo.orEmpty())
+    }
     val storageFolder =
         documents.firstOrNull()?.storageFolder()
             ?: folderDocuments.firstOrNull()?.storageFolder()
             ?: asset.orgId
-    val shownDocs = (documents + folderDocuments).distinctBy { it.id }
+    // Equipment keeps a single document; ignore folder siblings on the card.
+    val shownDocs = documents.distinctBy { it.id }.take(1)
     val accent =
         if (isDraft) {
             MaterialTheme.colorScheme.primary
@@ -141,7 +151,26 @@ fun EquipmentCard(
                     )
                 }
 
-                IdentityHeader(asset = asset, siteLabel = siteLabel)
+                if (isDraft) {
+                    Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+                        AppTextField(
+                            value = draftName,
+                            onValueChange = { draftName = it },
+                            label = "Название оборудования",
+                        )
+                        AppTextField(
+                            value = draftInventoryNo,
+                            onValueChange = { draftInventoryNo = it },
+                            label = "Инвентарный номер",
+                        )
+                        AppText(
+                            text = siteLabel,
+                            style = AppTextStyle.Label,
+                        )
+                    }
+                } else {
+                    IdentityHeader(asset = asset, siteLabel = siteLabel)
+                }
 
                 DescriptionBlock(asset = asset)
 
@@ -158,7 +187,12 @@ fun EquipmentCard(
                         )
                         PassportTile(
                             label = "Инв. №",
-                            value = asset.inventoryNo?.takeIf { it.isNotBlank() } ?: "не указан",
+                            value =
+                                if (isDraft) {
+                                    draftInventoryNo.takeIf { it.isNotBlank() } ?: "не указан"
+                                } else {
+                                    asset.inventoryNo?.takeIf { it.isNotBlank() } ?: "не указан"
+                                },
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -167,7 +201,7 @@ fun EquipmentCard(
                 DocumentsSection(
                     storageFolder = storageFolder,
                     shownDocs = shownDocs,
-                    fallbackIds = asset.documentIds,
+                    fallbackIds = asset.documentIds.take(1),
                     onOpenStorageFolder = onOpenStorageFolder,
                     onOpenDocument = onOpenDocument,
                 )
@@ -183,8 +217,8 @@ fun EquipmentCard(
                     Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
                         AppButton(
                             text = if (acting) "…" else "В базу",
-                            enabled = !acting,
-                            onClick = onConfirm,
+                            enabled = !acting && draftName.isNotBlank(),
+                            onClick = { onConfirm(draftName.trim(), draftInventoryNo.trim()) },
                             variant = AppButtonVariant.Primary,
                             fillMaxWidth = false,
                             modifier = Modifier.weight(1f),
