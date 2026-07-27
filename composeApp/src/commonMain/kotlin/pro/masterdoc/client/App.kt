@@ -32,6 +32,7 @@ import pro.masterdoc.client.auth.parseQueryParams
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.theme.ClientTheme
+import pro.masterdoc.client.platform.AppTextSelection
 import pro.masterdoc.client.presentation.shell.DefaultRootComponent
 import pro.masterdoc.client.presentation.shell.RootComponent
 import pro.masterdoc.client.session.ClientSession
@@ -47,8 +48,10 @@ private sealed interface ShellUiState {
 
 @Composable
 fun App(root: RootComponent) {
-    ClientTheme {
-        MainShellContent(component = root.shell)
+    AppTextSelection {
+        ClientTheme {
+            MainShellContent(component = root.shell)
+        }
     }
 }
 
@@ -68,8 +71,9 @@ fun AuthenticatedApp(
     workOrdersRepository: WorkOrdersRepository,
     clientEventsRepository: ClientEventsRepository? = null,
 ) {
-    ClientTheme {
-        var state by remember { mutableStateOf<ShellUiState>(ShellUiState.Loading) }
+    AppTextSelection {
+        ClientTheme {
+            var state by remember { mutableStateOf<ShellUiState>(ShellUiState.Loading) }
         val scope = rememberCoroutineScope()
         val analyticsSink: AnalyticsSink =
             remember(clientEventsRepository) {
@@ -127,6 +131,7 @@ fun AuthenticatedApp(
                         onClick = ::logoutAndRestart,
                     )
                 }
+        }
         }
     }
 }
