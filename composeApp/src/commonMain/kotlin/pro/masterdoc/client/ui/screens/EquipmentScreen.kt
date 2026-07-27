@@ -121,7 +121,7 @@ fun EquipmentScreen(
         statusHint = "Уточняем черновик оборудования…"
         val card = repository.createEquipmentCard(docId, siteId, assetId)
         documentId = docId
-        statusHint = "Черновик оборудования готов (${card.draftAssetId.take(8)}…). Подтвердите карточку — затем запустится ППР."
+        statusHint = "Черновик оборудования готов (${card.draftAssetId.take(8)}…). Нажмите «В базу» — опубликуем карточку и ППР."
         reload()
     }
 
@@ -354,7 +354,7 @@ fun EquipmentScreen(
                 j.error?.let { AppText(text = it) }
                 if (j.status == "succeeded") {
                     AppText(
-                        text = "Черновик ППР готов. Подтвердите карту на карточке оборудования.",
+                        text = "Черновик ППР готов — публикуем вместе с оборудованием.",
                         style = AppTextStyle.Label,
                     )
                 }
@@ -406,8 +406,15 @@ fun EquipmentScreen(
                                                 inventoryNo = editedInventoryNo,
                                             ),
                                         )
-                                        val linked = mapsByAsset[asset.id]
-                                        if (linked == null || linked.status != "draft") {
+                                        // Fresh list — don't trust stale mapsByAsset (reload is async).
+                                        val linkedDraftId =
+                                            runCatching { repository.listMaps(asset.id).items }
+                                                .getOrDefault(emptyList())
+                                                .firstOrNull { it.status == "draft" }
+                                                ?.id
+                                                ?: mapsByAsset[asset.id]?.takeIf { it.status == "draft" }?.id
+                                        var technologistMapId: String? = null
+                                        if (linkedDraftId == null) {
                                             val docId =
                                                 asset.documentIds.firstOrNull()
                                                     ?: documentId.takeIf { it.isNotBlank() }
@@ -419,19 +426,29 @@ fun EquipmentScreen(
                                                     siteId = asset.siteId,
                                                     assetId = asset.id,
                                                 )
-                                            job = pollJob(started.id)
-                                            if (job?.status == "failed") {
-                                                error = job?.error ?: "Технолог завершился с ошибкой"
-                                            } else {
-                                                statusHint =
-                                                    "Черновик ППР готов. Нажмите «В базу» ещё раз, чтобы опубликовать оборудование и карту."
+                                            val done = pollJob(started.id)
+                                            job = done
+                                            if (done.status == "failed") {
+                                                throw IllegalStateException(done.error ?: "Технолог завершился с ошибкой")
                                             }
-                                        } else {
-                                            repository.confirmAsset(asset.id)
-                                            runCatching { repository.confirmMap(linked.id) }
-                                            statusHint = "Оборудование и ППР в базе."
-                                            job = null
+                                            technologistMapId = done.draftMapId
                                         }
+                                        val mapId =
+                                            mapIdToConfirmWithAsset(
+                                                linkedDraftMapId = linkedDraftId,
+                                                technologistDraftMapId = technologistMapId,
+                                            )
+                                        repository.confirmAsset(asset.id)
+                                        if (mapId != null) {
+                                            runCatching { repository.confirmMap(mapId) }
+                                        }
+                                        statusHint =
+                                            if (mapId != null) {
+                                                "Оборудование и ППР в базе."
+                                            } else {
+                                                "Оборудование в базе."
+                                            }
+                                        job = null
                                         reload()
                                     } catch (e: Exception) {
                                         error = e.message
