@@ -99,7 +99,6 @@ fun ChartsScreen(
 
     val drafts = maps.filter { it.status == "draft" }
     val active = maps.filter { it.status == "active" }
-    val focused = focusedMapId?.let { id -> maps.firstOrNull { it.id == id } }
 
     AppScaffold(title = "ППР", modifier = modifier) { padding ->
         Column(
@@ -116,16 +115,6 @@ fun ChartsScreen(
                 style = AppTextStyle.Label,
             )
             error?.let { AppText(text = it) }
-
-            if (focused != null) {
-                AppText(text = "Открыто по ссылке", style = AppTextStyle.Title)
-                MapSummary(
-                    map = focused,
-                    sourceDocs = sourceDocsByAssetId[focused.assetId].orEmpty(),
-                    highlighted = true,
-                    onOpenDocument = ::openDocument,
-                )
-            }
 
             AppText(text = "Черновики ППР", style = AppTextStyle.Title)
             when {
