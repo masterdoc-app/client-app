@@ -271,7 +271,7 @@ private fun MapSummary(
         map.items.take(5).forEach { item ->
             AppText(
                 text =
-                    "• ${item.title} (${ruKind(item.kind)}, каждые ${item.interval.every} ${ruIntervalUnit(item.interval.every, item.interval.unit)})",
+                    "- ${item.title} (${ruKind(item.kind)}, каждые ${item.interval.every} ${ruIntervalUnit(item.interval.every, item.interval.unit)})",
                 style = AppTextStyle.Label,
             )
         }

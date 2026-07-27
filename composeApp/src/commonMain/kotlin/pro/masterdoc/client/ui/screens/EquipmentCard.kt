@@ -475,7 +475,7 @@ private fun LinkedPprBlock(
             style = AppTextStyle.Label,
         )
         linkedMap.items.take(3).forEach { item ->
-            AppText(text = "• ${item.title}", style = AppTextStyle.Label)
+            AppText(text = "- ${item.title}", style = AppTextStyle.Label)
         }
         if (linkedMap.items.size > 3) {
             AppText(text = "… ещё ${linkedMap.items.size - 3}", style = AppTextStyle.Label)
