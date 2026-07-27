@@ -69,6 +69,7 @@ fun EquipmentCard(
     acting: Boolean = false,
     onConfirm: ((name: String, inventoryNo: String) -> Unit)? = null,
     onReject: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
     onMove: ((String) -> Unit)? = null,
     onOpenLinkedPpr: ((MaintenanceMapDto) -> Unit)? = null,
     onOpenStorageFolder: ((String) -> Unit)? = null,
@@ -232,6 +233,16 @@ fun EquipmentCard(
                             modifier = Modifier.weight(1f),
                         )
                     }
+                }
+
+                if (!isDraft && onDelete != null) {
+                    AppButton(
+                        text = if (acting) "…" else "Удалить",
+                        enabled = !acting,
+                        onClick = onDelete,
+                        variant = AppButtonVariant.Secondary,
+                        fillMaxWidth = false,
+                    )
                 }
 
                 if (onMove != null && moveTargets.isNotEmpty()) {

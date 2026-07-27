@@ -224,7 +224,8 @@ fun EquipmentScreen(
             AppText(
                 text =
                     "PDF руководства -> Технолог собирает карточку оборудования. " +
-                        "После «В базу» оборудование публикуется, и сразу формируется черновик ППР.",
+                        "У оборудования один документ; чтобы загрузить PDF заново — удалите оборудование. " +
+                        "После «В базу» формируется черновик ППР.",
                 style = AppTextStyle.Label,
             )
             if (sites.isEmpty()) {
@@ -500,6 +501,20 @@ fun EquipmentScreen(
                             onOpenLinkedPpr = onOpenLinkedPpr,
                             onOpenStorageFolder = ::openFolder,
                             onOpenDocument = ::openDocument,
+                            onDelete = {
+                                scope.launch {
+                                    actingId = asset.id
+                                    try {
+                                        repository.deleteAsset(asset.id)
+                                        statusHint = "Оборудование удалено. Можно загрузить PDF заново."
+                                        reload()
+                                    } catch (e: Exception) {
+                                        error = e.message
+                                    } finally {
+                                        actingId = null
+                                    }
+                                }
+                            },
                             onMove = { targetSiteId ->
                                 scope.launch {
                                     actingId = asset.id

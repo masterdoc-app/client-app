@@ -294,6 +294,15 @@ class EquipmentRepository(
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
     }
 
+    suspend fun deleteAsset(id: String) {
+        val response =
+            http.delete(
+                url = "${base()}/assets/$id",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+    }
+
     suspend fun listMaps(assetId: String? = null): MaintenanceMapListDto {
         val q = assetId?.let { "?assetId=$it" } ?: ""
         val response =
