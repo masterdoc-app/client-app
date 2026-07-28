@@ -41,25 +41,34 @@ class NavMenuBuilderTest {
     }
 
     @Test
-    fun chartsEquipment_hasChartsEquipmentProfile() {
+    fun chartsEquipment_hasChartsEquipmentProfile_withoutBoard() {
         val items = builder.build(FeatureSetFixtures.chartsEquipment())
         assertEquals(
-            listOf(NavDestinationId.Board, NavDestinationId.Charts, NavDestinationId.Equipment, NavDestinationId.Profile),
+            listOf(NavDestinationId.Charts, NavDestinationId.Equipment, NavDestinationId.Profile),
             items.map { it.destination },
         )
     }
 
     @Test
-    fun engineerEquipment_hasBoardEquipmentProfile_withoutCopilot() {
+    fun engineerEquipment_hasMyWorkOrdersEquipmentProfile_withoutBoardOrCopilot() {
         val features = FeatureSetFixtures.engineerEquipment()
         val items = builder.build(features)
         assertEquals(
-            listOf(NavDestinationId.Board, NavDestinationId.Equipment, NavDestinationId.Profile),
+            listOf(NavDestinationId.MyWorkOrders, NavDestinationId.Equipment, NavDestinationId.Profile),
             items.map { it.destination },
         )
-        assertTrue(features.canAccessWorkOrderBoard())
+        assertFalse(features.canAccessWorkOrderBoard())
         assertTrue(NavCatalog.all.none { it.destination.name == "Copilot" })
         assertFalse(items.any { it.titleKey.contains("copilot", ignoreCase = true) })
+    }
+
+    @Test
+    fun engineerOnly_hasMyWorkOrdersAndProfile() {
+        val features = setOf(FeatureId.Engineer, FeatureId.Profile)
+        assertEquals(
+            listOf(NavDestinationId.MyWorkOrders, NavDestinationId.Profile),
+            builder.build(features).map { it.destination },
+        )
     }
 
     @Test

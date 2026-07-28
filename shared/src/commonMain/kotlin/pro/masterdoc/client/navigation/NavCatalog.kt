@@ -20,6 +20,13 @@ object NavCatalog {
             order = 20,
         ),
         NavItemSpec(
+            destination = NavDestinationId.MyWorkOrders,
+            featureId = FeatureId.Engineer,
+            titleKey = "nav.my_work_orders",
+            iconKey = "my_work_orders",
+            order = 25,
+        ),
+        NavItemSpec(
             destination = NavDestinationId.Map,
             featureId = FeatureId.Map,
             titleKey = "nav.map",

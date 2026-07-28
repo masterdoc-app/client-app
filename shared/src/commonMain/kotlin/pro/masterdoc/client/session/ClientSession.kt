@@ -15,7 +15,7 @@ object FeatureSetFixtures {
     fun chartsEquipment(): Set<FeatureId> =
         setOf(FeatureId.Charts, FeatureId.Equipment, FeatureId.Profile)
 
-    fun engineerEquipment(): Set<FeatureId> = setOf(FeatureId.Equipment, FeatureId.Profile)
+    fun engineerEquipment(): Set<FeatureId> = setOf(FeatureId.Engineer, FeatureId.Equipment, FeatureId.Profile)
 
     fun usersAdmin(): Set<FeatureId> = setOf(FeatureId.Users, FeatureId.Profile)
 

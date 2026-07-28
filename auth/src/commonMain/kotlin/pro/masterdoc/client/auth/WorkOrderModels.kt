@@ -82,6 +82,19 @@ class WorkOrdersRepository(
         return json.decodeFromString(BoardResponseDto.serializer(), response.body)
     }
 
+    suspend fun list(assigneeId: String? = null): List<WorkOrderDto> {
+        val query = assigneeId?.takeIf { it.isNotBlank() }?.let { "?assigneeId=$it" }.orEmpty()
+        val response =
+            http.get(
+                url = "${base()}/work-orders$query",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, response.body.ifBlank { "list work orders failed" })
+        }
+        return json.decodeFromString(response.body)
+    }
+
     suspend fun get(id: String): WorkOrderDto {
         val response =
             http.get(

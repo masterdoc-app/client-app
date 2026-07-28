@@ -5,6 +5,7 @@ fun FeatureId.titleRu(): String =
     when (this) {
         FeatureId.Tickets -> "Заявки"
         FeatureId.Board -> "Доска"
+        FeatureId.Engineer -> "Инженер"
         FeatureId.Map -> "Карта"
         FeatureId.Charts -> "ППР"
         FeatureId.Equipment -> "Оборудование"

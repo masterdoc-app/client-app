@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.PrecisionManufacturing
+import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -44,6 +45,7 @@ import pro.masterdoc.client.ui.screens.BoardScreen
 import pro.masterdoc.client.ui.screens.ChartsScreen
 import pro.masterdoc.client.ui.screens.EquipmentScreen
 import pro.masterdoc.client.ui.screens.ProfileScreen
+import pro.masterdoc.client.ui.screens.MyWorkOrdersScreen
 import pro.masterdoc.client.ui.screens.StubDestinationScreen
 import pro.masterdoc.client.ui.screens.UsersScreen
 import pro.masterdoc.client.ui.screens.destinationTitle
@@ -143,6 +145,15 @@ private fun ActivePage(
 ) {
     val active = pages.items.getOrNull(pages.selectedIndex)?.instance ?: return
     when (active) {
+        is MainShellComponent.PageChild.MyWorkOrders ->
+            if (workOrdersRepository != null) {
+                MyWorkOrdersScreen(
+                    repository = workOrdersRepository,
+                    currentUserId = session.user?.id,
+                )
+            } else {
+                StubDestinationScreen(active.destination)
+            }
         is MainShellComponent.PageChild.Stub ->
             when (active.destination) {
                 NavDestinationId.Profile ->
@@ -223,6 +234,7 @@ private fun iconFor(destination: NavDestinationId): ImageVector =
     when (destination) {
         NavDestinationId.Tickets -> Icons.Filled.Assignment
         NavDestinationId.Board -> Icons.Filled.Dashboard
+        NavDestinationId.MyWorkOrders -> Icons.Filled.ListAlt
         NavDestinationId.Map -> Icons.Filled.Map
         NavDestinationId.Charts -> Icons.Filled.BarChart
         NavDestinationId.Equipment -> Icons.Filled.PrecisionManufacturing
