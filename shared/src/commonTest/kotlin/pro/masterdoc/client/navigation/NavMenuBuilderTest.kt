@@ -3,6 +3,7 @@ package pro.masterdoc.client.navigation
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import pro.masterdoc.client.session.FeatureSetFixtures
 
@@ -10,8 +11,8 @@ class NavMenuBuilderTest {
     private val builder: NavMenuBuilder = DefaultNavMenuBuilder()
 
     @Test
-    fun copilotFixture_hasTicketsAndProfile() {
-        val items = builder.build(FeatureSetFixtures.copilot())
+    fun ticketsFixture_hasTicketsAndProfile() {
+        val items = builder.build(FeatureSetFixtures.tickets())
         assertEquals(
             listOf(NavDestinationId.Tickets, NavDestinationId.Profile),
             items.map { it.destination },
@@ -30,6 +31,16 @@ class NavMenuBuilderTest {
     }
 
     @Test
+    fun boardOnly_hasBoardAndProfile() {
+        val items = builder.build(FeatureSetFixtures.board())
+        assertEquals(
+            listOf(NavDestinationId.Board, NavDestinationId.Profile),
+            items.map { it.destination },
+        )
+        assertTrue(FeatureSetFixtures.board().canAccessWorkOrderBoard())
+    }
+
+    @Test
     fun chartsEquipment_hasChartsEquipmentProfile() {
         val items = builder.build(FeatureSetFixtures.chartsEquipment())
         assertEquals(
@@ -39,21 +50,16 @@ class NavMenuBuilderTest {
     }
 
     @Test
-    fun engineerEquipment_hasBoardEquipmentProfile() {
-        val items = builder.build(FeatureSetFixtures.engineerEquipment())
+    fun engineerEquipment_hasBoardEquipmentProfile_withoutCopilot() {
+        val features = FeatureSetFixtures.engineerEquipment()
+        val items = builder.build(features)
         assertEquals(
             listOf(NavDestinationId.Board, NavDestinationId.Equipment, NavDestinationId.Profile),
             items.map { it.destination },
         )
-    }
-
-    @Test
-    fun engineerCopilot_hasBoardAndCopilotProfile() {
-        val items = builder.build(FeatureSetFixtures.engineerCopilot())
-        assertEquals(
-            listOf(NavDestinationId.Board, NavDestinationId.Copilot, NavDestinationId.Profile),
-            items.map { it.destination },
-        )
+        assertTrue(features.canAccessWorkOrderBoard())
+        assertTrue(NavCatalog.all.none { it.destination.name == "Copilot" })
+        assertFalse(items.any { it.titleKey.contains("copilot", ignoreCase = true) })
     }
 
     @Test
@@ -119,11 +125,5 @@ class NavMenuBuilderTest {
         assertFailsWith<IllegalArgumentException> {
             limited.build(setOf(FeatureId.Profile))
         }
-    }
-
-    @Test
-    fun copilotReserved_notInCopilotTicketFixture() {
-        val items = builder.build(FeatureSetFixtures.copilot())
-        assertTrue(items.none { it.destination == NavDestinationId.Copilot })
     }
 }

@@ -2,6 +2,7 @@ package pro.masterdoc.client.navigation
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class FeatureLabelsTest {
     @Test
@@ -12,8 +13,10 @@ class FeatureLabelsTest {
         assertEquals("ППР", FeatureId.Charts.titleRu())
         assertEquals("Оборудование", FeatureId.Equipment.titleRu())
         assertEquals("Профиль", FeatureId.Profile.titleRu())
-        assertEquals("Наставник", FeatureId.Copilot.titleRu())
         assertEquals("Чёрный ящик", FeatureId.BlackBox.titleRu())
         assertEquals("Админ", FeatureId.Users.titleRu())
+        assertEquals(FeatureId.entries.size, FeatureId.entries.map { it.titleRu() }.size)
+        assertTrue(FeatureId.entries.none { it.wireValue == "copilot" })
+        assertTrue(FeatureId.entries.none { it.titleRu() == "Наставник" })
     }
 }

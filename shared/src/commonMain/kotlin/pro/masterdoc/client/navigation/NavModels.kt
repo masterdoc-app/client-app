@@ -13,9 +13,6 @@ enum class FeatureId(val wireValue: String) {
     Equipment("equipment"),
     Profile("profile"),
 
-    /** Reserved for future masterdoc / Atlant copilot tab; not enabled in MVP fixtures. */
-    Copilot("copilot"),
-
     /** Audit journal («Чёрный ящик»). */
     BlackBox("black_box"),
 
@@ -40,7 +37,6 @@ enum class NavDestinationId {
     Charts,
     Equipment,
     Profile,
-    Copilot,
     BlackBox,
     Users,
 }
@@ -56,6 +52,6 @@ data class NavItemSpec(
     val order: Int,
 )
 
-/** Board nav for dispatchers (`board`) and scoped engineers (`equipment` / `copilot`). */
+/** Board nav for dispatchers (`board`) and scoped engineers (`equipment`). */
 fun Set<FeatureId>.canAccessWorkOrderBoard(): Boolean =
-    FeatureId.Board in this || FeatureId.Equipment in this || FeatureId.Copilot in this
+    FeatureId.Board in this || FeatureId.Equipment in this

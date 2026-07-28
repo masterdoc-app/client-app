@@ -10,14 +10,12 @@ import pro.masterdoc.client.navigation.FeatureId
 object FeatureSetFixtures {
     fun board(): Set<FeatureId> = setOf(FeatureId.Board, FeatureId.Profile)
 
-    fun copilot(): Set<FeatureId> = setOf(FeatureId.Tickets, FeatureId.Profile)
+    fun tickets(): Set<FeatureId> = setOf(FeatureId.Tickets, FeatureId.Profile)
 
     fun chartsEquipment(): Set<FeatureId> =
         setOf(FeatureId.Charts, FeatureId.Equipment, FeatureId.Profile)
 
     fun engineerEquipment(): Set<FeatureId> = setOf(FeatureId.Equipment, FeatureId.Profile)
-
-    fun engineerCopilot(): Set<FeatureId> = setOf(FeatureId.Copilot, FeatureId.Profile)
 
     fun usersAdmin(): Set<FeatureId> = setOf(FeatureId.Users, FeatureId.Profile)
 

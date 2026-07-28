@@ -85,6 +85,7 @@ fun BoardScreen(
     equipmentRepository: EquipmentRepository? = null,
     adminUsersRepository: AdminUsersRepository? = null,
     hasAdminUsers: Boolean = false,
+    currentUserId: String? = null,
     /** Full dispatcher board (`board` feature); otherwise read-only scoped engineer view. */
     dispatcherMode: Boolean = true,
     modifier: Modifier = Modifier,
@@ -124,6 +125,8 @@ fun BoardScreen(
             onChanged = { reloadKey++ },
             userScopesRepository = userScopesRepository,
             adminUsersRepository = adminUsersRepository,
+            equipmentRepository = equipmentRepository,
+            currentUserId = currentUserId,
             hasAdminUsers = hasAdminUsers,
             editableAssignee = dispatcherMode && userScopesRepository != null,
             readOnly = !dispatcherMode,
