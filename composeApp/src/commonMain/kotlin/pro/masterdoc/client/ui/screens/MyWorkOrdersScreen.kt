@@ -89,7 +89,7 @@ fun MyWorkOrdersScreen(
             currentUserId = currentUserId,
             equipmentRepository = equipmentRepository,
             onOpenMentor = { mentorOpen = true },
-            readOnly = true,
+            readOnly = false,
             modifier = modifier,
         )
         return
