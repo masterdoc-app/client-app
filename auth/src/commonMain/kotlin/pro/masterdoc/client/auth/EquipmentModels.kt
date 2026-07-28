@@ -144,6 +144,24 @@ data class EquipmentCardResponse(
 )
 
 @Serializable
+data class MentorHistoryTurn(
+    val role: String,
+    val content: String,
+)
+
+@Serializable
+data class MentorRequest(
+    val workOrderId: String,
+    val message: String,
+    val history: List<MentorHistoryTurn> = emptyList(),
+)
+
+@Serializable
+data class MentorResponse(
+    val reply: String,
+)
+
+@Serializable
 data class IntervalDto(
     val every: Int,
     val unit: String,
@@ -492,5 +510,29 @@ class EquipmentRepository(
                 headers = mapOf("Authorization" to "Bearer ${bearer()}"),
             )
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+    }
+
+    suspend fun askMentor(
+        workOrderId: String,
+        message: String,
+        history: List<MentorHistoryTurn> = emptyList(),
+    ): MentorResponse {
+        val body =
+            json.encodeToString(
+                MentorRequest.serializer(),
+                MentorRequest(workOrderId = workOrderId, message = message, history = history),
+            )
+        val response =
+            http.postForm(
+                url = "${base()}/ai/mentor",
+                body = body,
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer ${bearer()}",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(MentorResponse.serializer(), response.body)
     }
 }

@@ -194,6 +194,7 @@ private fun ActivePage(
                             equipmentRepository = equipmentRepository,
                             adminUsersRepository = adminUsersRepository,
                             hasAdminUsers = FeatureId.Users in session.features,
+                            currentUserId = session.user?.id,
                             dispatcherMode = FeatureId.Board in session.features,
                         )
                     } else {

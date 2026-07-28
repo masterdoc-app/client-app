@@ -29,6 +29,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrderDuration
@@ -55,6 +56,8 @@ fun WorkOrderDetailScreen(
     onChanged: () -> Unit = {},
     userScopesRepository: UserScopesRepository? = null,
     adminUsersRepository: AdminUsersRepository? = null,
+    equipmentRepository: EquipmentRepository? = null,
+    currentUserId: String? = null,
     hasAdminUsers: Boolean = false,
     editableAssignee: Boolean = false,
     readOnly: Boolean = false,
@@ -64,6 +67,8 @@ fun WorkOrderDetailScreen(
     var loading by remember { mutableStateOf(true) }
     var acting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var assistantOpen by remember(orderId) { mutableStateOf(false) }
+    var assistantHidden by remember(orderId) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     fun reload() {
@@ -200,6 +205,30 @@ fun WorkOrderDetailScreen(
                     }
                     if (error != null) {
                         AppText(text = error!!)
+                    }
+                    val showAssistant =
+                        !assistantHidden &&
+                            equipmentRepository != null &&
+                            shouldShowWoAssistant(wo.assigneeId, currentUserId)
+                    if (showAssistant) {
+                        AppButton(
+                            text = "Ассистент",
+                            onClick = { assistantOpen = true },
+                            variant = AppButtonVariant.Secondary,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (assistantOpen && equipmentRepository != null) {
+                        WorkOrderAssistantDialog(
+                            workOrderId = wo.id,
+                            repository = equipmentRepository,
+                            onDismiss = { assistantOpen = false },
+                            onAssigneeForbidden = {
+                                assistantHidden = true
+                                assistantOpen = false
+                                reload()
+                            },
+                        )
                     }
                     if (!readOnly) {
                         when (wo.status) {
