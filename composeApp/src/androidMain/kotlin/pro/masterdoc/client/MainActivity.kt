@@ -5,11 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.decompose.defaultComponentContext
+import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import pro.masterdoc.client.di.initClientKoin
-import pro.masterdoc.client.navigation.NavMenuBuilder
 import pro.masterdoc.client.presentation.shell.DefaultRootComponent
 import pro.masterdoc.client.presentation.shell.RootComponent
 import pro.masterdoc.client.session.ClientSession
@@ -34,12 +35,10 @@ class MainActivity : ComponentActivity(), KoinComponent {
 @Composable
 actual fun rememberRootComponent(
     session: ClientSession,
-): RootComponent {
-    val componentContext = defaultComponentContext()
-    return remember(session) {
+): RootComponent =
+    remember(session) {
         DefaultRootComponent(
-            componentContext = componentContext,
+            componentContext = DefaultComponentContext(LifecycleRegistry()),
             session = session,
         )
     }
-}
