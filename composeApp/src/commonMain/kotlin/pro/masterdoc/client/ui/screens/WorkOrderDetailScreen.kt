@@ -354,7 +354,7 @@ private fun AssigneePickerRow(
                         currentAssignee != null -> userLabel(currentAssignee)
                         else -> "не назначен"
                     }
-                val eligibleCandidates = filterEquipmentEligibleAssignees(candidates, users)
+                val eligibleCandidates = filterEngineerEligibleAssignees(candidates, users)
                 ExposedDropdownMenuBox(
                     expanded = menuExpanded,
                     onExpandedChange = { if (!acting) menuExpanded = it },
@@ -425,11 +425,11 @@ internal fun formatAssigneeLabel(
 }
 
 /**
- * When admin user directory is available, hide board-only candidates (no `equipment`).
+ * When admin user directory is available, hide board-only candidates (no `engineer`).
  * Unknown ids (not in [users]) are kept — server hard-enforces on PATCH.
  * If [users] is empty (no admin access), return candidates unchanged.
  */
-internal fun filterEquipmentEligibleAssignees(
+internal fun filterEngineerEligibleAssignees(
     candidates: List<String>,
     users: List<AdminUser>,
 ): List<String> {
@@ -437,7 +437,7 @@ internal fun filterEquipmentEligibleAssignees(
     val byId = users.associateBy { it.id }
     return candidates.filter { id ->
         val user = byId[id] ?: return@filter true
-        "equipment" in user.features
+        "engineer" in user.features
     }
 }
 

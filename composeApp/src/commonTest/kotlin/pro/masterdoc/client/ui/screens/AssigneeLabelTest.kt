@@ -27,7 +27,7 @@ class AssigneeLabelTest {
     }
 
     @Test
-    fun filterEquipmentEligibleAssigneesDropsBoardOnlyWhenUsersKnown() {
+    fun filterEngineerEligibleAssigneesDropsBoardOnlyWhenUsersKnown() {
         val users =
             listOf(
                 AdminUser(
@@ -35,7 +35,7 @@ class AssigneeLabelTest {
                     email = "e@x.com",
                     givenName = "E",
                     familyName = "N",
-                    features = listOf("equipment", "board"),
+                    features = listOf("engineer", "board"),
                     state = "active",
                 ),
                 AdminUser(
@@ -49,15 +49,15 @@ class AssigneeLabelTest {
             )
         assertEquals(
             listOf("eng", "unknown"),
-            filterEquipmentEligibleAssignees(listOf("eng", "disp", "unknown"), users),
+            filterEngineerEligibleAssignees(listOf("eng", "disp", "unknown"), users),
         )
     }
 
     @Test
-    fun filterEquipmentEligibleAssigneesPassthroughWithoutUsers() {
+    fun filterEngineerEligibleAssigneesPassthroughWithoutUsers() {
         assertEquals(
             listOf("a", "b"),
-            filterEquipmentEligibleAssignees(listOf("a", "b"), emptyList()),
+            filterEngineerEligibleAssignees(listOf("a", "b"), emptyList()),
         )
     }
 }
