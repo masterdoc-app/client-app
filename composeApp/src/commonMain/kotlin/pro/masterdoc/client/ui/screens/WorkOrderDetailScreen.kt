@@ -339,6 +339,7 @@ private fun AssigneePickerRow(
                         currentAssignee != null -> userLabel(currentAssignee)
                         else -> "не назначен"
                     }
+                val eligibleCandidates = filterEquipmentEligibleAssignees(candidates, users)
                 ExposedDropdownMenuBox(
                     expanded = menuExpanded,
                     onExpandedChange = { if (!acting) menuExpanded = it },
@@ -370,7 +371,7 @@ private fun AssigneePickerRow(
                                 }
                             },
                         )
-                        candidates.forEach { userId ->
+                        eligibleCandidates.forEach { userId ->
                             DropdownMenuItem(
                                 text = { Text(userLabel(userId)) },
                                 onClick = {
@@ -383,7 +384,7 @@ private fun AssigneePickerRow(
                         }
                     }
                 }
-                if (currentAssignee != null && currentAssignee !in candidates) {
+                if (currentAssignee != null && currentAssignee !in eligibleCandidates) {
                     AppText(
                         text = "Текущий исполнитель вне зоны ответственности для этого оборудования",
                         style = AppTextStyle.Label,
@@ -405,6 +406,23 @@ internal fun formatAssigneeLabel(
         user.email.isNotBlank() -> user.email
         name.isNotBlank() -> name
         else -> userId
+    }
+}
+
+/**
+ * When admin user directory is available, hide board-only candidates (no `equipment`).
+ * Unknown ids (not in [users]) are kept — server hard-enforces on PATCH.
+ * If [users] is empty (no admin access), return candidates unchanged.
+ */
+internal fun filterEquipmentEligibleAssignees(
+    candidates: List<String>,
+    users: List<AdminUser>,
+): List<String> {
+    if (users.isEmpty()) return candidates
+    val byId = users.associateBy { it.id }
+    return candidates.filter { id ->
+        val user = byId[id] ?: return@filter true
+        "equipment" in user.features
     }
 }
 

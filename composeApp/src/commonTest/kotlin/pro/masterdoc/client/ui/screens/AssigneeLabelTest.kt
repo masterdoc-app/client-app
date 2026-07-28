@@ -25,4 +25,39 @@ class AssigneeLabelTest {
     fun formatAssigneeLabelFallsBackToUserId() {
         assertEquals("unknown-id", formatAssigneeLabel("unknown-id", emptyList()))
     }
+
+    @Test
+    fun filterEquipmentEligibleAssigneesDropsBoardOnlyWhenUsersKnown() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "eng",
+                    email = "e@x.com",
+                    givenName = "E",
+                    familyName = "N",
+                    features = listOf("equipment", "board"),
+                    state = "active",
+                ),
+                AdminUser(
+                    id = "disp",
+                    email = "d@x.com",
+                    givenName = "D",
+                    familyName = "S",
+                    features = listOf("board"),
+                    state = "active",
+                ),
+            )
+        assertEquals(
+            listOf("eng", "unknown"),
+            filterEquipmentEligibleAssignees(listOf("eng", "disp", "unknown"), users),
+        )
+    }
+
+    @Test
+    fun filterEquipmentEligibleAssigneesPassthroughWithoutUsers() {
+        assertEquals(
+            listOf("a", "b"),
+            filterEquipmentEligibleAssignees(listOf("a", "b"), emptyList()),
+        )
+    }
 }
