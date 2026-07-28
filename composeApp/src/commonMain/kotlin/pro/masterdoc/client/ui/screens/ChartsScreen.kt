@@ -216,6 +216,14 @@ private fun MapSummary(
     highlighted: Boolean = false,
     onOpenDocument: ((SourceDocRef) -> Unit)? = null,
 ) {
+    var itemsExpanded by remember(map.id) { mutableStateOf(false) }
+    val visibleItems = visibleMapItems(map.items, expanded = itemsExpanded, previewLimit = MAP_ITEMS_PREVIEW_LIMIT)
+    val overflowLabel =
+        mapItemsOverflowLabel(
+            total = map.items.size,
+            previewLimit = MAP_ITEMS_PREVIEW_LIMIT,
+            expanded = itemsExpanded,
+        )
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         AppText(
             text =
@@ -257,18 +265,42 @@ private fun MapSummary(
                     style = AppTextStyle.Label,
                 )
         }
-        map.items.take(5).forEach { item ->
+        visibleItems.forEach { item ->
             AppText(
                 text =
                     "- ${item.title} (${ruKind(item.kind)}, каждые ${item.interval.every} ${ruIntervalUnit(item.interval.every, item.interval.unit)})",
                 style = AppTextStyle.Label,
             )
         }
-        if (map.items.size > 5) {
-            AppText(text = "… ещё ${map.items.size - 5}", style = AppTextStyle.Label)
+        if (overflowLabel != null) {
+            AppText(
+                text = overflowLabel,
+                style = AppTextStyle.Label,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable { itemsExpanded = !itemsExpanded },
+            )
         }
     }
 }
+
+internal const val MAP_ITEMS_PREVIEW_LIMIT = 5
+
+internal fun <T> visibleMapItems(
+    items: List<T>,
+    expanded: Boolean,
+    previewLimit: Int = MAP_ITEMS_PREVIEW_LIMIT,
+): List<T> = if (expanded || items.size <= previewLimit) items else items.take(previewLimit)
+
+internal fun mapItemsOverflowLabel(
+    total: Int,
+    previewLimit: Int = MAP_ITEMS_PREVIEW_LIMIT,
+    expanded: Boolean,
+): String? =
+    when {
+        total <= previewLimit -> null
+        expanded -> "Свернуть"
+        else -> "… ещё ${total - previewLimit}"
+    }
 
 internal fun ruStatus(status: String): String =
     when (status.lowercase()) {
