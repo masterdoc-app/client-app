@@ -3,6 +3,7 @@ name: Deploy app.fixaverse.ru
 on:
   push:
     branches: [main, trunk]
+  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -20,9 +21,38 @@ env:
   SITE_HOST: app.fixaverse.ru
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout fixaverse-design (includeBuild, no Packages token)
+        uses: actions/checkout@v4
+        with:
+          repository: masterdoc-app/fixaverse-design
+          path: fixaverse-design
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: chmod +x gradlew
+
+      - name: JVM / Desktop tests
+        run: |
+          ./gradlew \
+            :auth:jvmTest \
+            :shared:jvmTest \
+            :composeApp:desktopTest \
+            --stacktrace
+
   build:
     name: Build composeApp Wasm
     runs-on: ubuntu-latest
+    # Artifact only needed for deploy (and manual dispatch).
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
 
@@ -44,8 +74,6 @@ jobs:
           FIXAVERSE_OIDC_WEB_CLIENT_ID: ${{ secrets.FIXAVERSE_OIDC_WEB_CLIENT_ID }}
         run: |
           ./gradlew \
-            :auth:jvmTest \
-            :shared:jvmTest \
             :composeApp:wasmJsBrowserDistribution \
             --stacktrace
 
@@ -57,7 +85,8 @@ jobs:
 
   deploy:
     name: Deploy to app.fixaverse.ru
-    needs: build
+    needs: [test, build]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/trunk')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -137,4 +166,3 @@ jobs:
              echo "HTTP $code"
              grep -F "src=\"/composeApp.js\"" /tmp/app-index.html
              curl -fsS -o /dev/null -w "js=%{http_code}\n" https://'"${SITE_HOST}"'/composeApp.js'
-
