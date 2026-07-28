@@ -86,7 +86,6 @@ object AuditEventDescription {
             "Board", "board" -> "Доска"
             "Charts", "charts" -> "ППР"
             "Equipment", "equipment" -> "Оборудование"
-            "Copilot", "copilot" -> "Наставник"
             "Users", "users", "user_invite" -> "Админ"
             "Profile", "profile" -> "Профиль"
             "Tickets", "tickets" -> "Заявки"

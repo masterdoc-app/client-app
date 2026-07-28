@@ -41,13 +41,6 @@ object NavCatalog {
             order = 50,
         ),
         NavItemSpec(
-            destination = NavDestinationId.Copilot,
-            featureId = FeatureId.Copilot,
-            titleKey = "nav.copilot",
-            iconKey = "copilot",
-            order = 60,
-        ),
-        NavItemSpec(
             destination = NavDestinationId.BlackBox,
             featureId = FeatureId.BlackBox,
             titleKey = "nav.black_box",
