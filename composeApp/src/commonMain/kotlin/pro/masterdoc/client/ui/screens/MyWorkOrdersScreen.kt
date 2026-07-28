@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.GatewayHttpException
+import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
@@ -33,6 +34,7 @@ import pro.masterdoc.client.designsystem.theme.ClientSpacing
 @Composable
 fun MyWorkOrdersScreen(
     repository: WorkOrdersRepository,
+    equipmentRepository: EquipmentRepository?,
     currentUserId: String?,
     modifier: Modifier = Modifier,
 ) {
@@ -40,6 +42,7 @@ fun MyWorkOrdersScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedId by remember { mutableStateOf<String?>(null) }
+    var mentorOpen by remember { mutableStateOf(false) }
     var reloadKey by remember { mutableStateOf(0) }
 
     LaunchedEffect(repository, currentUserId, reloadKey) {
@@ -64,13 +67,28 @@ fun MyWorkOrdersScreen(
         }
     }
 
+    if (mentorOpen && selectedId != null && equipmentRepository != null) {
+        WorkOrderMentorScreen(
+            workOrderId = selectedId!!,
+            repository = equipmentRepository,
+            onBack = { mentorOpen = false },
+            modifier = modifier,
+        )
+        return
+    }
+
     selectedId?.let { orderId ->
         WorkOrderDetailScreen(
             repository = repository,
             orderId = orderId,
-            onBack = { selectedId = null },
+            onBack = {
+                mentorOpen = false
+                selectedId = null
+            },
             onChanged = { reloadKey++ },
             currentUserId = currentUserId,
+            equipmentRepository = equipmentRepository,
+            onOpenMentor = { mentorOpen = true },
             readOnly = true,
             modifier = modifier,
         )

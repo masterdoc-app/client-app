@@ -149,6 +149,7 @@ private fun ActivePage(
             if (workOrdersRepository != null) {
                 MyWorkOrdersScreen(
                     repository = workOrdersRepository,
+                    equipmentRepository = equipmentRepository,
                     currentUserId = session.user?.id,
                 )
             } else {

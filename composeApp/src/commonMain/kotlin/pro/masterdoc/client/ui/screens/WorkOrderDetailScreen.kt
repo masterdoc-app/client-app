@@ -58,6 +58,7 @@ fun WorkOrderDetailScreen(
     adminUsersRepository: AdminUsersRepository? = null,
     equipmentRepository: EquipmentRepository? = null,
     currentUserId: String? = null,
+    onOpenMentor: () -> Unit = {},
     hasAdminUsers: Boolean = false,
     editableAssignee: Boolean = false,
     readOnly: Boolean = false,
@@ -67,8 +68,6 @@ fun WorkOrderDetailScreen(
     var loading by remember { mutableStateOf(true) }
     var acting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var assistantOpen by remember(orderId) { mutableStateOf(false) }
-    var assistantHidden by remember(orderId) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     fun reload() {
@@ -206,28 +205,15 @@ fun WorkOrderDetailScreen(
                     if (error != null) {
                         AppText(text = error!!)
                     }
-                    val showAssistant =
-                        !assistantHidden &&
-                            equipmentRepository != null &&
+                    val showMentor =
+                        equipmentRepository != null &&
                             shouldShowWoAssistant(wo.assigneeId, currentUserId)
-                    if (showAssistant) {
+                    if (showMentor) {
                         AppButton(
-                            text = "Ассистент",
-                            onClick = { assistantOpen = true },
+                            text = "Наставник",
+                            onClick = onOpenMentor,
                             variant = AppButtonVariant.Secondary,
                             modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    if (assistantOpen && equipmentRepository != null) {
-                        WorkOrderAssistantDialog(
-                            workOrderId = wo.id,
-                            repository = equipmentRepository,
-                            onDismiss = { assistantOpen = false },
-                            onAssigneeForbidden = {
-                                assistantHidden = true
-                                assistantOpen = false
-                                reload()
-                            },
                         )
                     }
                     if (!readOnly) {
