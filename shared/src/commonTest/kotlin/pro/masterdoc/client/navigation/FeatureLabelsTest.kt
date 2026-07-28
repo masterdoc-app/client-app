@@ -9,6 +9,7 @@ class FeatureLabelsTest {
     fun titleRu_coversAllFeatures() {
         assertEquals("Заявки", FeatureId.Tickets.titleRu())
         assertEquals("Доска", FeatureId.Board.titleRu())
+        assertEquals("Инженер", FeatureId.Engineer.titleRu())
         assertEquals("Карта", FeatureId.Map.titleRu())
         assertEquals("ППР", FeatureId.Charts.titleRu())
         assertEquals("Оборудование", FeatureId.Equipment.titleRu())

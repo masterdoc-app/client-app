@@ -41,6 +41,8 @@ interface MainShellComponent {
     sealed interface PageChild {
         val destination: NavDestinationId
 
+        data class MyWorkOrders(override val destination: NavDestinationId) : PageChild
+
         data class Stub(override val destination: NavDestinationId) : PageChild
     }
 }
@@ -71,7 +73,11 @@ class DefaultMainShellComponent(
                 )
             },
             childFactory = { config, _ ->
-                MainShellComponent.PageChild.Stub(config.destination)
+                if (config.destination == NavDestinationId.MyWorkOrders) {
+                    MainShellComponent.PageChild.MyWorkOrders(config.destination)
+                } else {
+                    MainShellComponent.PageChild.Stub(config.destination)
+                }
             },
         )
 

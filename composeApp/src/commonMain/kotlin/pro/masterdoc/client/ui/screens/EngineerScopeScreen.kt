@@ -43,6 +43,9 @@ import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
+internal fun filterEngineersForScopeBinding(users: List<AdminUser>): List<AdminUser> =
+    users.filter { "engineer" in it.features }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EngineerScopeScreen(
@@ -65,6 +68,7 @@ fun EngineerScopeScreen(
 
     var engineerId by remember { mutableStateOf("") }
     var userMenuExpanded by remember { mutableStateOf(false) }
+    val engineers = remember(users) { filterEngineersForScopeBinding(users) }
     var selectedSiteIds by remember { mutableStateOf(setOf<String>()) }
     var selectedAssetIds by remember { mutableStateOf(setOf<String>()) }
     val scope = rememberCoroutineScope()
@@ -147,7 +151,7 @@ fun EngineerScopeScreen(
             )
 
             when {
-                hasAdminUsers && users.isNotEmpty() -> {
+                hasAdminUsers && !catalogLoading && engineers.isNotEmpty() -> {
                     ExposedDropdownMenuBox(
                         expanded = userMenuExpanded,
                         onExpandedChange = { userMenuExpanded = it },
@@ -168,7 +172,7 @@ fun EngineerScopeScreen(
                             expanded = userMenuExpanded,
                             onDismissRequest = { userMenuExpanded = false },
                         ) {
-                            users.forEach { user ->
+                            engineers.forEach { user ->
                                 DropdownMenuItem(
                                     text = { Text(userLabel(user.id)) },
                                     onClick = {
@@ -181,7 +185,13 @@ fun EngineerScopeScreen(
                         }
                     }
                 }
-                else -> {
+                hasAdminUsers && !catalogLoading && engineers.isEmpty() -> {
+                    AppText(
+                        text = "Нет пользователей с фичей Инженер",
+                        style = AppTextStyle.Label,
+                    )
+                }
+                !hasAdminUsers -> {
                     OutlinedTextField(
                         value = engineerId,
                         onValueChange = {

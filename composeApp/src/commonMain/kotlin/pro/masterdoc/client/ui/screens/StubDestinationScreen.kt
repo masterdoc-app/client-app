@@ -34,6 +34,7 @@ fun destinationTitle(destination: NavDestinationId): String =
     when (destination) {
         NavDestinationId.Tickets -> "Заявки"
         NavDestinationId.Board -> "Доска"
+        NavDestinationId.MyWorkOrders -> "Мои заявки"
         NavDestinationId.Map -> "Карта"
         NavDestinationId.Charts -> "ППР"
         NavDestinationId.Equipment -> "Оборудование"

@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 enum class FeatureId(val wireValue: String) {
     Tickets("tickets"),
     Board("board"),
+    Engineer("engineer"),
     Map("map"),
     Charts("charts"),
     Equipment("equipment"),
@@ -33,6 +34,7 @@ enum class FeatureId(val wireValue: String) {
 enum class NavDestinationId {
     Tickets,
     Board,
+    MyWorkOrders,
     Map,
     Charts,
     Equipment,
@@ -52,6 +54,6 @@ data class NavItemSpec(
     val order: Int,
 )
 
-/** Board nav for dispatchers (`board`) and scoped engineers (`equipment`). */
+/** Board nav is available only to dispatchers with the `board` feature. */
 fun Set<FeatureId>.canAccessWorkOrderBoard(): Boolean =
-    FeatureId.Board in this || FeatureId.Equipment in this
+    FeatureId.Board in this

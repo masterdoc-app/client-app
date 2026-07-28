@@ -58,6 +58,7 @@ fun WorkOrderDetailScreen(
     adminUsersRepository: AdminUsersRepository? = null,
     equipmentRepository: EquipmentRepository? = null,
     currentUserId: String? = null,
+    onOpenMentor: () -> Unit = {},
     hasAdminUsers: Boolean = false,
     editableAssignee: Boolean = false,
     readOnly: Boolean = false,
@@ -67,8 +68,6 @@ fun WorkOrderDetailScreen(
     var loading by remember { mutableStateOf(true) }
     var acting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var assistantOpen by remember(orderId) { mutableStateOf(false) }
-    var assistantHidden by remember(orderId) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     fun reload() {
@@ -206,28 +205,15 @@ fun WorkOrderDetailScreen(
                     if (error != null) {
                         AppText(text = error!!)
                     }
-                    val showAssistant =
-                        !assistantHidden &&
-                            equipmentRepository != null &&
+                    val showMentor =
+                        equipmentRepository != null &&
                             shouldShowWoAssistant(wo.assigneeId, currentUserId)
-                    if (showAssistant) {
+                    if (showMentor) {
                         AppButton(
-                            text = "Ассистент",
-                            onClick = { assistantOpen = true },
+                            text = "Наставник",
+                            onClick = onOpenMentor,
                             variant = AppButtonVariant.Secondary,
                             modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    if (assistantOpen && equipmentRepository != null) {
-                        WorkOrderAssistantDialog(
-                            workOrderId = wo.id,
-                            repository = equipmentRepository,
-                            onDismiss = { assistantOpen = false },
-                            onAssigneeForbidden = {
-                                assistantHidden = true
-                                assistantOpen = false
-                                reload()
-                            },
                         )
                     }
                     if (!readOnly) {
@@ -368,7 +354,7 @@ private fun AssigneePickerRow(
                         currentAssignee != null -> userLabel(currentAssignee)
                         else -> "не назначен"
                     }
-                val eligibleCandidates = filterEquipmentEligibleAssignees(candidates, users)
+                val eligibleCandidates = filterEngineerEligibleAssignees(candidates, users)
                 ExposedDropdownMenuBox(
                     expanded = menuExpanded,
                     onExpandedChange = { if (!acting) menuExpanded = it },
@@ -439,11 +425,11 @@ internal fun formatAssigneeLabel(
 }
 
 /**
- * When admin user directory is available, hide board-only candidates (no `equipment`).
+ * When admin user directory is available, hide board-only candidates (no `engineer`).
  * Unknown ids (not in [users]) are kept — server hard-enforces on PATCH.
  * If [users] is empty (no admin access), return candidates unchanged.
  */
-internal fun filterEquipmentEligibleAssignees(
+internal fun filterEngineerEligibleAssignees(
     candidates: List<String>,
     users: List<AdminUser>,
 ): List<String> {
@@ -451,7 +437,7 @@ internal fun filterEquipmentEligibleAssignees(
     val byId = users.associateBy { it.id }
     return candidates.filter { id ->
         val user = byId[id] ?: return@filter true
-        "equipment" in user.features
+        "engineer" in user.features
     }
 }
 

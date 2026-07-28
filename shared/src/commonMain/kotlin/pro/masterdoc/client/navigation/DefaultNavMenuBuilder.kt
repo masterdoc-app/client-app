@@ -13,6 +13,7 @@ class DefaultNavMenuBuilder(
                 .filter { spec ->
                     when (spec.destination) {
                         NavDestinationId.Board -> features.canAccessWorkOrderBoard()
+                        NavDestinationId.MyWorkOrders -> FeatureId.Engineer in features
                         else -> spec.featureId in features
                     }
                 }

@@ -36,6 +36,26 @@ class WorkOrdersRepositoryTest {
         }
 
     @Test
+    fun listFiltersByAssignee() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertEquals("https://api.test/work-orders?assigneeId=engineer-1", url)
+                    GatewayHttpResponse(
+                        200,
+                        """[{"id":"wo-1","orgId":"o","type":"emergency","status":"new","title":"T","assetId":"a","siteId":"s","dueAt":"2026-07-22","source":"api","createdAt":"t","updatedAt":"t","assigneeId":"engineer-1"}]""",
+                    )
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+            val items = repo.list(assigneeId = "engineer-1")
+            assertEquals(listOf("wo-1"), items.map { it.id })
+            assertEquals("engineer-1", items.single().assigneeId)
+        }
+
+    @Test
     fun getBoardDecodesDurationHours() =
         runBlocking {
             val tokens = InMemoryTokenStore()
