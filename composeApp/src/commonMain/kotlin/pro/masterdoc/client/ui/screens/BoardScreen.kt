@@ -39,7 +39,6 @@ import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.designsystem.components.AppButton
-import pro.masterdoc.client.designsystem.components.AppButtonVariant
 import pro.masterdoc.client.designsystem.components.AppIcon
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
@@ -96,7 +95,6 @@ fun BoardScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var mentorOpen by remember { mutableStateOf(false) }
-    var showScopeEditor by remember { mutableStateOf(false) }
     var weekMonday by remember { mutableStateOf(currentMondayIso()) }
     var reloadKey by remember { mutableStateOf(0) }
 
@@ -152,25 +150,6 @@ fun BoardScreen(
         return
     }
 
-    if (dispatcherMode && showScopeEditor && userScopesRepository != null && equipmentRepository != null) {
-        val recentAssignees =
-            weeks
-                .flatMap { it.items }
-                .mapNotNull { it.assigneeId?.takeIf { id -> id.isNotBlank() } }
-                .distinct()
-                .take(8)
-        EngineerScopeScreen(
-            userScopesRepository = userScopesRepository,
-            equipmentRepository = equipmentRepository,
-            adminUsersRepository = adminUsersRepository,
-            hasAdminUsers = hasAdminUsers,
-            recentAssigneeIds = recentAssignees,
-            onBack = { showScopeEditor = false },
-            modifier = modifier,
-        )
-        return
-    }
-
     AppScaffold(title = "Доска", modifier = modifier) { padding ->
         Column(
             modifier =
@@ -195,13 +174,6 @@ fun BoardScreen(
                 else -> {
                     if (error != null) {
                         AppText(text = error!!)
-                    }
-                    if (dispatcherMode && userScopesRepository != null && equipmentRepository != null) {
-                        AppButton(
-                            text = "Привязка инженеров",
-                            variant = AppButtonVariant.Secondary,
-                            onClick = { showScopeEditor = true },
-                        )
                     }
                     WeekNavigation(
                         weekMonday = weekMonday,
