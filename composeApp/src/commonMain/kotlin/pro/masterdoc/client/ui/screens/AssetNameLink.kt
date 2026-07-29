@@ -11,8 +11,9 @@ import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
 /**
- * Clickable equipment name. Inventory is shown as muted secondary text — Material3
- * [TooltipBox]/[PlainTooltip] on Compose Wasm paints an opaque black bar and steals clicks.
+ * Clickable equipment name + inventory. Both lines use link color and share one click
+ * target — Material3 [TooltipBox]/[PlainTooltip] on Compose Wasm paints an opaque
+ * black bar and steals clicks, so inventory is inline text instead of a tooltip.
  */
 @Composable
 fun AssetNameLink(
@@ -22,19 +23,19 @@ fun AssetNameLink(
     onOpen: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val linkColor = MaterialTheme.colorScheme.primary
     Column(
-        modifier = modifier,
+        modifier = modifier.clickable { onOpen(assetId) },
         verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
     ) {
         AppText(
             text = assetDisplayName(name, assetId),
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.clickable { onOpen(assetId) },
+            color = linkColor,
         )
         AppText(
             text = assetInventoryTooltip(inventoryNo),
             style = AppTextStyle.Label,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = linkColor,
         )
     }
 }
