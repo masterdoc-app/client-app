@@ -23,6 +23,8 @@ fun equipmentShownDocuments(
     }
     val ordered = LinkedHashMap<String, DocumentMetaDto>()
     folder.forEach { ordered[it.id] = it }
-    linked.forEach { ordered.putIfAbsent(it.id, it) }
+    linked.forEach { doc ->
+        if (doc.id !in ordered) ordered[doc.id] = doc
+    }
     return ordered.values.toList()
 }
