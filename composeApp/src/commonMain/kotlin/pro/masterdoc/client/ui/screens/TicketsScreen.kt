@@ -22,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
@@ -98,7 +97,6 @@ fun TicketsScreen(
             orderId = orderId,
             onBack = { selectedOrderId = null },
             currentUserId = currentUserId,
-            equipmentRepository = equipmentRepository,
             readOnly = true,
             modifier = modifier,
         )
