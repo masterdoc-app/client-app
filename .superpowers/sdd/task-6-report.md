@@ -22,3 +22,11 @@ DONE_WITH_CONCERNS: customer emergency tickets are implemented and delivered.
 - Removed unused `dp` import.
 - Commit `6adccd7` on `feat/customer-tickets`.
 - Verification: `:composeApp:compileKotlinDesktop` — passed.
+
+## Empty states (Important gap)
+- `resolveTicketsEmptyState` + `TicketsEmptyState` enum; 4 unit tests in `TicketsPartitionTest`.
+- `TicketsScreen` loads `UserScopesRepository.get` when wired; `MainShellContent` passes `userScopesRepository`.
+- No scope → «Обратитесь к администратору…» + disabled create form.
+- Scoped but no assets → «Нет оборудования в вашем цехе» + disabled form.
+- Empty WO lists still show «Нет заявок».
+- `AppTextField` gained optional `enabled` param for disabled form state.

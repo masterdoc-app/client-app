@@ -186,6 +186,7 @@ private fun ActivePage(
                             repository = workOrdersRepository,
                             equipmentRepository = equipmentRepository,
                             currentUserId = session.user?.id,
+                            userScopesRepository = userScopesRepository,
                         )
                     } else {
                         StubDestinationScreen(active.destination)

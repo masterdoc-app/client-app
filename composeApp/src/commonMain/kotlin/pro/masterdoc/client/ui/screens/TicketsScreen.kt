@@ -25,12 +25,14 @@ import androidx.compose.ui.Modifier
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.CreateWorkOrderRequest
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.IsoDates
+import pro.masterdoc.client.auth.UserScopeDto
+import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
-import pro.masterdoc.client.auth.CreateWorkOrderRequest
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
 import pro.masterdoc.client.auth.workOrderTypeLabelRu
 import pro.masterdoc.client.designsystem.components.AppButton
@@ -49,15 +51,40 @@ fun partitionCustomerTickets(orders: List<WorkOrderDto>): Pair<List<WorkOrderDto
     return active to done
 }
 
+enum class TicketsEmptyState {
+    NoScope,
+    NoEquipment,
+}
+
+fun hasAssignedScope(scope: UserScopeDto?): Boolean =
+    scope != null && (scope.siteIds.isNotEmpty() || scope.assetIds.isNotEmpty())
+
+fun resolveTicketsEmptyState(
+    scope: UserScopeDto?,
+    assets: List<AssetDto>,
+    scopesLoaded: Boolean,
+): TicketsEmptyState? {
+    if (scopesLoaded) {
+        if (!hasAssignedScope(scope)) return TicketsEmptyState.NoScope
+        if (assets.isEmpty()) return TicketsEmptyState.NoEquipment
+    } else if (assets.isEmpty()) {
+        return TicketsEmptyState.NoEquipment
+    }
+    return null
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TicketsScreen(
     repository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository,
     currentUserId: String?,
+    userScopesRepository: UserScopesRepository? = null,
     modifier: Modifier = Modifier,
 ) {
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
+    var userScope by remember { mutableStateOf<UserScopeDto?>(null) }
+    var scopesLoaded by remember { mutableStateOf(userScopesRepository == null) }
     var orders by remember { mutableStateOf<List<WorkOrderDto>>(emptyList()) }
     var selectedAsset by remember { mutableStateOf<AssetDto?>(null) }
     var description by remember { mutableStateOf("") }
@@ -69,15 +96,21 @@ fun TicketsScreen(
     var reloadKey by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(repository, equipmentRepository, currentUserId, reloadKey) {
+    LaunchedEffect(repository, equipmentRepository, userScopesRepository, currentUserId, reloadKey) {
         loading = true
         error = null
+        scopesLoaded = userScopesRepository == null
+        userScope = null
         if (currentUserId.isNullOrBlank()) {
             error = "Не удалось определить пользователя"
             loading = false
             return@LaunchedEffect
         }
         try {
+            if (userScopesRepository != null) {
+                userScope = userScopesRepository.get(currentUserId)
+                scopesLoaded = true
+            }
             assets = equipmentRepository.listAssets().items
             orders = repository.list(createdBy = currentUserId)
         } catch (e: CancellationException) {
@@ -104,6 +137,8 @@ fun TicketsScreen(
     }
 
     val (active, done) = partitionCustomerTickets(orders)
+    val emptyState = resolveTicketsEmptyState(userScope, assets, scopesLoaded)
+    val createFormEnabled = emptyState == null
     AppScaffold(title = "Заявки", modifier = modifier) { padding ->
         if (loading) {
             CircularProgressIndicator(modifier = Modifier.padding(padding).padding(ClientSpacing.md))
@@ -117,14 +152,24 @@ fun TicketsScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
                     AppText(text = "Новая аварийная заявка", style = AppTextStyle.Title)
+                    when (emptyState) {
+                        TicketsEmptyState.NoScope ->
+                            AppText(text = "Обратитесь к администратору для привязки к цеху")
+                        TicketsEmptyState.NoEquipment ->
+                            AppText(text = "Нет оборудования в вашем цехе")
+                        null -> Unit
+                    }
                     ExposedDropdownMenuBox(
-                        expanded = assetMenuExpanded,
-                        onExpandedChange = { assetMenuExpanded = !assetMenuExpanded },
+                        expanded = assetMenuExpanded && createFormEnabled,
+                        onExpandedChange = {
+                            if (createFormEnabled) assetMenuExpanded = !assetMenuExpanded
+                        },
                     ) {
                         OutlinedTextField(
                             value = selectedAsset?.name ?: "",
                             onValueChange = {},
                             readOnly = true,
+                            enabled = createFormEnabled,
                             label = { androidx.compose.material3.Text("Оборудование") },
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = assetMenuExpanded)
@@ -151,11 +196,12 @@ fun TicketsScreen(
                         onValueChange = { description = it },
                         label = "Описание проблемы",
                         singleLine = false,
+                        enabled = createFormEnabled,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     AppButton(
                         text = if (acting) "Создание…" else "Создать",
-                        enabled = !acting && selectedAsset != null && description.isNotBlank(),
+                        enabled = createFormEnabled && !acting && selectedAsset != null && description.isNotBlank(),
                         onClick = {
                             val asset = selectedAsset ?: return@AppButton
                             scope.launch {

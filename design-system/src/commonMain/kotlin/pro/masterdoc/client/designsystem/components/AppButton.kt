@@ -76,6 +76,7 @@ fun AppTextField(
     label: String,
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
+    enabled: Boolean = true,
 ) {
     OutlinedTextField(
         value = value,
@@ -83,6 +84,7 @@ fun AppTextField(
         label = { Text(label) },
         modifier = modifier.fillMaxWidth(),
         singleLine = singleLine,
+        enabled = enabled,
         shape = MaterialTheme.shapes.small,
     )
 }
