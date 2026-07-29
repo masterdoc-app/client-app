@@ -201,6 +201,7 @@ private fun ActivePage(
                         UsersScreen(
                             repository = adminUsersRepository,
                             equipmentRepository = equipmentRepository,
+                            userScopesRepository = userScopesRepository,
                             currentUserId = session.user?.id,
                         )
                     } else {

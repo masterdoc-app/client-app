@@ -6,6 +6,34 @@ import pro.masterdoc.client.auth.AdminUser
 
 class EngineerScopeFilterTest {
     @Test
+    fun filterTicketsUsers() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "customer",
+                    email = "c@x.com",
+                    givenName = "C",
+                    familyName = "U",
+                    features = listOf("tickets"),
+                    state = "active",
+                ),
+                AdminUser(
+                    id = "engineer",
+                    email = "e@x.com",
+                    givenName = "E",
+                    familyName = "N",
+                    features = listOf("engineer"),
+                    state = "active",
+                ),
+            )
+
+        assertEquals(
+            listOf("customer"),
+            filterUsersForScopeBinding(users, "tickets").map { it.id },
+        )
+    }
+
+    @Test
     fun filterEngineersForScopeBindingKeepsOnlyEngineerFeature() {
         val users =
             listOf(
