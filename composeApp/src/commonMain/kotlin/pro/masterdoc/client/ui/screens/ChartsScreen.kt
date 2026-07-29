@@ -342,12 +342,21 @@ internal fun ruStatus(status: String): String =
         else -> status
     }
 
+internal fun pprStatusChipLabel(status: String): String =
+    when (status.lowercase()) {
+        "draft" -> "Черновик"
+        "active" -> "В базе"
+        else -> ruStatus(status).ifBlank { status }
+    }
+
 internal fun ruSource(source: String): String =
     when (source.lowercase()) {
         "ai_generated" -> "ИИ"
         "manual" -> "вручную"
         else -> source
     }
+
+internal fun pprSourceChipLabel(source: String): String = ruSource(source)
 
 internal fun ruKind(kind: String): String =
     when (kind.lowercase()) {
