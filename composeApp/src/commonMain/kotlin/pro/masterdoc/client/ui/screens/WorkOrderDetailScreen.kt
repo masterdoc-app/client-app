@@ -59,7 +59,7 @@ fun WorkOrderDetailScreen(
     adminUsersRepository: AdminUsersRepository? = null,
     equipmentRepository: EquipmentRepository? = null,
     currentUserId: String? = null,
-    onOpenMentor: () -> Unit = {},
+    onOpenMentor: (() -> Unit)? = null,
     onOpenEquipment: (String) -> Unit = {},
     hasAdminUsers: Boolean = false,
     editableAssignee: Boolean = false,
@@ -234,13 +234,15 @@ fun WorkOrderDetailScreen(
                     if (error != null) {
                         AppText(text = error!!)
                     }
+                    val openMentor = onOpenMentor
                     val showMentor =
-                        equipmentRepository != null &&
+                        openMentor != null &&
+                            equipmentRepository != null &&
                             shouldShowWoAssistant(wo.assigneeId, currentUserId)
                     if (showMentor) {
                         AppButton(
                             text = "Наставник",
-                            onClick = onOpenMentor,
+                            onClick = openMentor,
                             variant = AppButtonVariant.Secondary,
                             modifier = Modifier.fillMaxWidth(),
                         )
