@@ -186,7 +186,7 @@ fun BlackBoxScreen(
                                 AppText(text = actorLabel(e.userId), style = AppTextStyle.Label)
                             }
                             AppText(
-                                text = "${formatAuditAt(e.at)} · ${e.status}",
+                                text = formatAuditAt(e.at),
                                 style = AppTextStyle.Label,
                             )
                         }
