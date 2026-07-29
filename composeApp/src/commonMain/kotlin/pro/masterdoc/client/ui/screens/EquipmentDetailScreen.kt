@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.DocumentMetaDto
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.TechnologistJobDto
@@ -54,7 +55,15 @@ fun EquipmentDetailScreen(
         loading = true
         try {
             val loadedSites = runCatching { repository.listSites().items }.getOrDefault(emptyList())
-            val loadedAsset = repository.listAssets().items.firstOrNull { it.id == assetId }
+            val loadedAsset =
+                runCatching { repository.getAsset(assetId) }
+                    .getOrElse { e ->
+                        if (e is GatewayHttpException && e.status == 404) {
+                            null
+                        } else {
+                            throw e
+                        }
+                    }
             val loadedMaps =
                 if (loadedAsset == null) {
                     emptyList()

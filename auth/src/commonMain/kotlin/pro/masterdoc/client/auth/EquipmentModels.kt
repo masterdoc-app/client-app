@@ -261,6 +261,17 @@ class EquipmentRepository(
         return json.decodeFromString(AssetListDto.serializer(), response.body)
     }
 
+    /** Direct fetch — not scoped like [listAssets]; use for detail deep links from ППР/заявки. */
+    suspend fun getAsset(id: String): AssetDto {
+        val response =
+            http.get(
+                url = "${base()}/assets/$id",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(AssetDto.serializer(), response.body)
+    }
+
     suspend fun moveAsset(id: String, siteId: String): AssetDto {
         val response =
             http.postForm(

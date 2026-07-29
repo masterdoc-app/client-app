@@ -17,6 +17,29 @@ class EquipmentRepositoryTest {
         )
 
     @Test
+    fun getAssetFetchesById() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            var capturedUrl = ""
+            val http =
+                RecordingGatewayHttpClient { _, url, _, _ ->
+                    capturedUrl = url
+                    GatewayHttpResponse(
+                        200,
+                        """{"id":"5318aaa1-3001-48cf-9642-f26c6bccd5e1","orgId":"o","siteId":"s","name":"Насос","status":"active","source":"ai_generated","documentIds":["d1"]}""",
+                    )
+                }
+            val repo = EquipmentRepository(config = config, http = http, tokenStore = tokens)
+
+            val asset = repo.getAsset("5318aaa1-3001-48cf-9642-f26c6bccd5e1")
+
+            assertTrue(capturedUrl.endsWith("/assets/5318aaa1-3001-48cf-9642-f26c6bccd5e1"))
+            assertEquals("Насос", asset.name)
+            assertEquals("5318aaa1-3001-48cf-9642-f26c6bccd5e1", asset.id)
+        }
+
+    @Test
     fun updateAssetPatchesNameAndInventoryNo() =
         runBlocking {
             val tokens = InMemoryTokenStore()
