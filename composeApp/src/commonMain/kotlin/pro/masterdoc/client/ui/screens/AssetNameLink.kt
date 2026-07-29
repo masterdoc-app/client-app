@@ -1,17 +1,19 @@
 package pro.masterdoc.client.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltip
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import pro.masterdoc.client.designsystem.components.AppText
+import pro.masterdoc.client.designsystem.components.AppTextStyle
+import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Clickable equipment name. Inventory is shown as muted secondary text — Material3
+ * [TooltipBox]/[PlainTooltip] on Compose Wasm paints an opaque black bar and steals clicks.
+ */
 @Composable
 fun AssetNameLink(
     name: String?,
@@ -20,19 +22,19 @@ fun AssetNameLink(
     onOpen: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    TooltipBox(
-        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
-        tooltip = {
-            PlainTooltip {
-                AppText(text = assetInventoryTooltip(inventoryNo))
-            }
-        },
-        state = rememberTooltipState(),
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
     ) {
         AppText(
             text = assetDisplayName(name, assetId),
             color = MaterialTheme.colorScheme.primary,
-            modifier = modifier.clickable { onOpen(assetId) },
+            modifier = Modifier.clickable { onOpen(assetId) },
+        )
+        AppText(
+            text = assetInventoryTooltip(inventoryNo),
+            style = AppTextStyle.Label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
