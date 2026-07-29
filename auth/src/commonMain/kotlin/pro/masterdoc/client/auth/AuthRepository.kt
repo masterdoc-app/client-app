@@ -34,13 +34,12 @@ class AuthRepository(
         code: String,
         returnedState: String?,
     ): AuthTokens {
-        val expectedState = pkceStore.readState()
-        if (expectedState != null && returnedState != null && expectedState != returnedState) {
-            throw GatewayHttpException(400, "OIDC state mismatch")
-        }
+        val state =
+            returnedState?.takeIf { it.isNotBlank() }
+                ?: throw GatewayHttpException(400, "Missing OIDC state")
         val verifier =
-            pkceStore.readVerifier()
-                ?: throw GatewayHttpException(400, "Missing PKCE verifier")
+            pkceStore.consume(state)
+                ?: throw GatewayHttpException(400, "OIDC state mismatch")
         val form =
             buildString {
                 append("grant_type=authorization_code")

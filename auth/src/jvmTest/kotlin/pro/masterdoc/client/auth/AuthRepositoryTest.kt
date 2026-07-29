@@ -39,8 +39,13 @@ class AuthRepositoryTest {
             assertTrue(url.contains("client_id=web-client"))
             assertTrue(url.contains("code_challenge_method=S256"))
             assertTrue(url.contains("code_challenge="))
-            assertTrue(pkce.readVerifier() != null)
-            assertTrue(pkce.readState() != null)
+            val state =
+                Regex("state=([^&]+)")
+                    .find(url)
+                    ?.groupValues
+                    ?.get(1)
+                    ?: error("state missing in authorize URL")
+            assertTrue(pkce.consume(state) != null)
         }
 
     @Test
@@ -72,7 +77,7 @@ class AuthRepositoryTest {
             assertEquals("at", result.accessToken)
             assertEquals("rt", result.refreshToken)
             assertEquals("at", tokens.read()?.accessToken)
-            assertEquals(null, pkce.readVerifier())
+            assertEquals(null, pkce.consume("state-1"))
         }
 
     @Test
@@ -100,10 +105,37 @@ class AuthRepositoryTest {
         }
 
     @Test
-    fun exchangeCode_missingVerifier_throws400() =
+    fun exchangeCode_afterSecondLogin_stillAcceptsFirstState() =
+        runBlocking {
+            val http =
+                FakeGatewayHttpClient { method, _, _, body ->
+                    assertEquals("POST", method)
+                    assertTrue(body!!.contains("code_verifier=verifier-first"))
+                    GatewayHttpResponse(
+                        200,
+                        """{"access_token":"at","refresh_token":"rt","token_type":"Bearer"}""",
+                    )
+                }
+            val pkce = InMemoryPkceSessionStore()
+            pkce.save(verifier = "verifier-first", state = "state-first")
+            pkce.save(verifier = "verifier-second", state = "state-second")
+            val repo =
+                AuthRepository(
+                    config = AuthConfig(clientId = "web-client"),
+                    http = http,
+                    tokenStore = InMemoryTokenStore(),
+                    pkceStore = pkce,
+                )
+
+            val result = repo.exchangeCode(code = "abc", returnedState = "state-first")
+            assertEquals("at", result.accessToken)
+        }
+
+    @Test
+    fun exchangeCode_unknownState_throws400() =
         runBlocking {
             val http = FakeGatewayHttpClient { _, _, _, _ ->
-                error("HTTP must not be called when PKCE verifier is missing")
+                error("HTTP must not be called when PKCE session is unknown")
             }
             val repo =
                 AuthRepository(
@@ -118,7 +150,31 @@ class AuthRepositoryTest {
                     repo.exchangeCode(code = "abc", returnedState = "state-1")
                 }
             assertEquals(400, ex.status)
-            assertTrue(ex.message.contains("Missing PKCE verifier"))
+            assertTrue(ex.message.contains("OIDC state mismatch"))
+        }
+
+    @Test
+    fun exchangeCode_missingState_throws400() =
+        runBlocking {
+            val http = FakeGatewayHttpClient { _, _, _, _ ->
+                error("HTTP must not be called when OIDC state is missing")
+            }
+            val pkce = InMemoryPkceSessionStore()
+            pkce.save(verifier = "verifier-value", state = "state-1")
+            val repo =
+                AuthRepository(
+                    config = AuthConfig(clientId = "web-client"),
+                    http = http,
+                    tokenStore = InMemoryTokenStore(),
+                    pkceStore = pkce,
+                )
+
+            val ex =
+                assertFailsWith<GatewayHttpException> {
+                    repo.exchangeCode(code = "abc", returnedState = null)
+                }
+            assertEquals(400, ex.status)
+            assertTrue(ex.message.contains("Missing OIDC state"))
         }
 
     @Test
@@ -161,7 +217,13 @@ class AuthRepositoryTest {
             assertTrue(url.contains("prompt=login"))
             assertTrue(url.contains("client_id=web-client"))
             assertEquals(null, tokens.read())
-            assertTrue(pkce.readVerifier() != null)
+            val state =
+                Regex("state=([^&]+)")
+                    .find(url)
+                    ?.groupValues
+                    ?.get(1)
+                    ?: error("state missing in authorize URL")
+            assertTrue(pkce.consume(state) != null)
         }
 }
 

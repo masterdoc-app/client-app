@@ -123,9 +123,14 @@ fun AuthenticatedApp(
                         AppButton(
                             text = "Повторить",
                             onClick = {
-                                scope.launch {
-                                    state = ShellUiState.Loading
-                                    state = bootstrap(coordinator, analyticsSink)
+                                when (authErrorRetryMode(BrowserNav.currentPath())) {
+                                    AuthErrorRetryMode.NavigateHome ->
+                                        BrowserNav.replaceTo("/")
+                                    AuthErrorRetryMode.RetryBootstrap ->
+                                        scope.launch {
+                                            state = ShellUiState.Loading
+                                            state = bootstrap(coordinator, analyticsSink)
+                                        }
                                 }
                             },
                         )

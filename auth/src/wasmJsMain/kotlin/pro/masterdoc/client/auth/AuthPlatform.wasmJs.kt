@@ -38,8 +38,10 @@ actual fun createDefaultGatewayHttpClient(): GatewayHttpClient = WasmGatewayHttp
 private const val KEY_ACCESS = "fixaverse.auth.access_token"
 private const val KEY_REFRESH = "fixaverse.auth.refresh_token"
 private const val KEY_ID = "fixaverse.auth.id_token"
-private const val KEY_VERIFIER = "fixaverse.auth.pkce_verifier"
-private const val KEY_STATE = "fixaverse.auth.pkce_state"
+private const val KEY_SESSIONS = "fixaverse.auth.pkce_sessions"
+/** Legacy single-slot keys — migrated on first read. */
+private const val KEY_VERIFIER_LEGACY = "fixaverse.auth.pkce_verifier"
+private const val KEY_STATE_LEGACY = "fixaverse.auth.pkce_state"
 
 class BrowserTokenStore : TokenStore {
     override fun read(): AuthTokens? {
@@ -79,19 +81,135 @@ class BrowserPkceSessionStore : PkceSessionStore {
         verifier: String,
         state: String,
     ) {
-        localStorage.setItem(KEY_VERIFIER, verifier)
-        localStorage.setItem(KEY_STATE, state)
+        val sessions = readSessions().toMutableMap()
+        sessions[state] = verifier
+        while (sessions.size > InMemoryPkceSessionStore.MAX_SESSIONS) {
+            val oldest = sessions.keys.first()
+            sessions.remove(oldest)
+        }
+        writeSessions(sessions)
     }
 
-    override fun readVerifier(): String? = localStorage.getItem(KEY_VERIFIER)
-
-    override fun readState(): String? = localStorage.getItem(KEY_STATE)
+    override fun consume(state: String): String? {
+        val sessions = readSessions().toMutableMap()
+        val verifier = sessions.remove(state) ?: return null
+        writeSessions(sessions)
+        return verifier
+    }
 
     override fun clear() {
-        localStorage.removeItem(KEY_VERIFIER)
-        localStorage.removeItem(KEY_STATE)
+        localStorage.removeItem(KEY_SESSIONS)
+        localStorage.removeItem(KEY_VERIFIER_LEGACY)
+        localStorage.removeItem(KEY_STATE_LEGACY)
+    }
+
+    private fun readSessions(): Map<String, String> {
+        val raw = localStorage.getItem(KEY_SESSIONS)
+        if (raw != null) {
+            return parseSessionsJson(raw)
+        }
+        val legacyVerifier = localStorage.getItem(KEY_VERIFIER_LEGACY)
+        val legacyState = localStorage.getItem(KEY_STATE_LEGACY)
+        if (legacyVerifier != null && legacyState != null) {
+            val migrated = mapOf(legacyState to legacyVerifier)
+            writeSessions(migrated)
+            localStorage.removeItem(KEY_VERIFIER_LEGACY)
+            localStorage.removeItem(KEY_STATE_LEGACY)
+            return migrated
+        }
+        return emptyMap()
+    }
+
+    private fun writeSessions(sessions: Map<String, String>) {
+        if (sessions.isEmpty()) {
+            localStorage.removeItem(KEY_SESSIONS)
+            return
+        }
+        localStorage.setItem(KEY_SESSIONS, sessionsToJson(sessions))
     }
 }
+
+/** Minimal JSON object `{"state":"verifier",...}` — values are URL-safe PKCE strings. */
+internal fun sessionsToJson(sessions: Map<String, String>): String =
+    sessions.entries.joinToString(prefix = "{", postfix = "}") { (k, v) ->
+        "\"${escapeJsonString(k)}\":\"${escapeJsonString(v)}\""
+    }
+
+internal fun parseSessionsJson(raw: String): Map<String, String> {
+    val trimmed = raw.trim()
+    if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return emptyMap()
+    val body = trimmed.substring(1, trimmed.lastIndex).trim()
+    if (body.isEmpty()) return emptyMap()
+    val out = linkedMapOf<String, String>()
+    var i = 0
+    while (i < body.length) {
+        while (i < body.length && (body[i] == ',' || body[i].isWhitespace())) i++
+        if (i >= body.length) break
+        if (body[i] != '"') break
+        val keyEnd = findClosingQuote(body, i + 1) ?: break
+        val key = unescapeJsonString(body.substring(i + 1, keyEnd))
+        i = keyEnd + 1
+        while (i < body.length && body[i].isWhitespace()) i++
+        if (i >= body.length || body[i] != ':') break
+        i++
+        while (i < body.length && body[i].isWhitespace()) i++
+        if (i >= body.length || body[i] != '"') break
+        val valEnd = findClosingQuote(body, i + 1) ?: break
+        val value = unescapeJsonString(body.substring(i + 1, valEnd))
+        out[key] = value
+        i = valEnd + 1
+    }
+    return out
+}
+
+private fun findClosingQuote(
+    s: String,
+    from: Int,
+): Int? {
+    var i = from
+    while (i < s.length) {
+        when (s[i]) {
+            '\\' -> i += 2
+            '"' -> return i
+            else -> i++
+        }
+    }
+    return null
+}
+
+private fun escapeJsonString(value: String): String =
+    buildString(value.length) {
+        for (ch in value) {
+            when (ch) {
+                '\\' -> append("\\\\")
+                '"' -> append("\\\"")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                else -> append(ch)
+            }
+        }
+    }
+
+private fun unescapeJsonString(value: String): String =
+    buildString(value.length) {
+        var i = 0
+        while (i < value.length) {
+            val ch = value[i]
+            if (ch == '\\' && i + 1 < value.length) {
+                when (value[i + 1]) {
+                    '\\' -> append('\\')
+                    '"' -> append('"')
+                    'n' -> append('\n')
+                    'r' -> append('\r')
+                    else -> append(value[i + 1])
+                }
+                i += 2
+            } else {
+                append(ch)
+                i++
+            }
+        }
+    }
 
 class WasmGatewayHttpClient : GatewayHttpClient {
     override suspend fun get(

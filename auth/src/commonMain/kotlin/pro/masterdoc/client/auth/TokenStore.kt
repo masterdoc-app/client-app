@@ -13,13 +13,18 @@ interface TokenStore {
 
 /**
  * Survives the OIDC round-trip (code_verifier + state).
+ *
+ * Multiple in-flight logins are kept so a second [save] does not invalidate
+ * an earlier authorize → callback pair.
  */
 interface PkceSessionStore {
-    fun save(verifier: String, state: String)
+    fun save(
+        verifier: String,
+        state: String,
+    )
 
-    fun readVerifier(): String?
-
-    fun readState(): String?
+    /** Remove and return the verifier for [state], or null if unknown. */
+    fun consume(state: String): String?
 
     fun clear()
 }
@@ -39,20 +44,25 @@ class InMemoryTokenStore : TokenStore {
 }
 
 class InMemoryPkceSessionStore : PkceSessionStore {
-    private var verifier: String? = null
-    private var state: String? = null
+    private val sessions = linkedMapOf<String, String>()
 
-    override fun save(verifier: String, state: String) {
-        this.verifier = verifier
-        this.state = state
+    override fun save(
+        verifier: String,
+        state: String,
+    ) {
+        sessions[state] = verifier
+        while (sessions.size > MAX_SESSIONS) {
+            sessions.remove(sessions.keys.first())
+        }
     }
 
-    override fun readVerifier(): String? = verifier
-
-    override fun readState(): String? = state
+    override fun consume(state: String): String? = sessions.remove(state)
 
     override fun clear() {
-        verifier = null
-        state = null
+        sessions.clear()
+    }
+
+    companion object {
+        const val MAX_SESSIONS = 8
     }
 }
