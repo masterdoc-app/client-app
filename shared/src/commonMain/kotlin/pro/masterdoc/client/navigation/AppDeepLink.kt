@@ -4,11 +4,14 @@ package pro.masterdoc.client.navigation
  * In-app deep links (URL hash). Examples:
  * - `#/ppr/{mapId}` → ППР screen focused on map
  * - `#/equipment` → Оборудование
+ * - `#/equipment/{assetId}` → Оборудование focused on asset
  */
 sealed class AppDeepLink {
     data class Ppr(val mapId: String) : AppDeepLink()
 
     data object Equipment : AppDeepLink()
+
+    data class EquipmentDetail(val assetId: String) : AppDeepLink()
 
     data object Charts : AppDeepLink()
 }
@@ -23,7 +26,10 @@ fun parseAppDeepLink(hash: String): AppDeepLink? {
             val mapId = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
             if (mapId != null) AppDeepLink.Ppr(mapId) else AppDeepLink.Charts
         }
-        "equipment" -> AppDeepLink.Equipment
+        "equipment" -> {
+            val assetId = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
+            if (assetId != null) AppDeepLink.EquipmentDetail(assetId) else AppDeepLink.Equipment
+        }
         else -> null
     }
 }
@@ -32,11 +38,12 @@ fun AppDeepLink.toHash(): String =
     when (this) {
         is AppDeepLink.Ppr -> "#/ppr/${mapId}"
         AppDeepLink.Equipment -> "#/equipment"
+        is AppDeepLink.EquipmentDetail -> "#/equipment/${assetId}"
         AppDeepLink.Charts -> "#/ppr"
     }
 
 fun AppDeepLink.toDestination(): NavDestinationId =
     when (this) {
         is AppDeepLink.Ppr, AppDeepLink.Charts -> NavDestinationId.Charts
-        AppDeepLink.Equipment -> NavDestinationId.Equipment
+        AppDeepLink.Equipment, is AppDeepLink.EquipmentDetail -> NavDestinationId.Equipment
     }

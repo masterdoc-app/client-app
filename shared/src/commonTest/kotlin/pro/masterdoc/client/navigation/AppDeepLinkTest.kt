@@ -22,4 +22,18 @@ class AppDeepLinkTest {
         assertNull(parseAppDeepLink(""))
         assertNull(parseAppDeepLink("#/unknown"))
     }
+
+    @Test
+    fun parsesEquipmentDetailDeepLink() {
+        val link = parseAppDeepLink("#/equipment/asset-42")
+        assertIs<AppDeepLink.EquipmentDetail>(link)
+        assertEquals("asset-42", link.assetId)
+        assertEquals(NavDestinationId.Equipment, link.toDestination())
+        assertEquals("#/equipment/asset-42", link.toHash())
+    }
+
+    @Test
+    fun equipmentListStillParsesWithoutId() {
+        assertEquals(AppDeepLink.Equipment, parseAppDeepLink("#/equipment"))
+    }
 }
