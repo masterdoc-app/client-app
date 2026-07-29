@@ -91,7 +91,8 @@ class WorkOrdersRepositoryTest {
                     GatewayHttpResponse(200, "[]")
                 }
             val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
-            repo.list(assigneeId = "engineer-1", createdBy = "customer-1")
+            val items = repo.list(assigneeId = "engineer-1", createdBy = "customer-1")
+            assertEquals(emptyList(), items)
         }
 
     @Test
