@@ -21,31 +21,15 @@ class EquipmentDocumentsTest {
     )
 
     @Test
-    fun collapsedShowsOnlyLinkedDocument() {
-        val linked = listOf(doc("linked"))
+    fun alwaysShowsOnlyLinkedDocumentEvenWhenFolderExpanded() {
+        val linked = listOf(doc("linked"), doc("extra-linked"))
         val folder = listOf(doc("a"), doc("b"), doc("linked"))
         assertEquals(
             listOf("linked"),
             equipmentShownDocuments(linked, folder, folderExpanded = false).map { it.id },
         )
-    }
-
-    @Test
-    fun expandedListsFolderContentsWithoutDroppingLinked() {
-        val linked = listOf(doc("linked"))
-        val folder = listOf(doc("a"), doc("b"))
         assertEquals(
-            listOf("a", "b", "linked"),
-            equipmentShownDocuments(linked, folder, folderExpanded = true).map { it.id },
-        )
-    }
-
-    @Test
-    fun expandedDedupesLinkedAlreadyInFolder() {
-        val linked = listOf(doc("a"))
-        val folder = listOf(doc("a"), doc("b"))
-        assertEquals(
-            listOf("a", "b"),
+            listOf("linked"),
             equipmentShownDocuments(linked, folder, folderExpanded = true).map { it.id },
         )
     }

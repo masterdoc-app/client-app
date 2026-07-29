@@ -10,21 +10,15 @@ fun folderEmptyMessage(
 ): String = "В папке нет документов"
 
 /**
- * Linked document alone when collapsed; full folder listing (plus any linked
- * siblings) when the user opens «Папка в хранилище».
+ * One equipment → one document (linked only).
+ *
+ * TODO(multi-doc): restore folder listing when expanded — full storage-folder
+ * contents plus linked siblings (see git history of this function). Until then
+ * ignore [folder] / [folderExpanded] so «Папка в хранилище» never dumps every
+ * PDF in the org folder onto the card.
  */
 fun equipmentShownDocuments(
     linked: List<DocumentMetaDto>,
-    folder: List<DocumentMetaDto>,
-    folderExpanded: Boolean,
-): List<DocumentMetaDto> {
-    if (!folderExpanded) {
-        return linked.distinctBy { it.id }.take(1)
-    }
-    val ordered = LinkedHashMap<String, DocumentMetaDto>()
-    folder.forEach { ordered[it.id] = it }
-    linked.forEach { doc ->
-        if (doc.id !in ordered) ordered[doc.id] = doc
-    }
-    return ordered.values.toList()
-}
+    @Suppress("UNUSED_PARAMETER") folder: List<DocumentMetaDto>,
+    @Suppress("UNUSED_PARAMETER") folderExpanded: Boolean,
+): List<DocumentMetaDto> = linked.distinctBy { it.id }.take(1)
