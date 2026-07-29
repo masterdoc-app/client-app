@@ -56,6 +56,45 @@ class WorkOrdersRepositoryTest {
         }
 
     @Test
+    fun listFiltersByCreatedBy() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertEquals("https://api.test/work-orders?createdBy=customer-1", url)
+                    GatewayHttpResponse(
+                        200,
+                        """[{"id":"wo-1","orgId":"o","type":"emergency","status":"new","title":"T","assetId":"a","siteId":"s","dueAt":"2026-07-22","source":"api","createdAt":"t","updatedAt":"t","createdBy":"customer-1","description":"Leak"}]""",
+                    )
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+            val items = repo.list(createdBy = "customer-1")
+            assertEquals(listOf("wo-1"), items.map { it.id })
+            assertEquals("customer-1", items.single().createdBy)
+            assertEquals("Leak", items.single().description)
+        }
+
+    @Test
+    fun listFiltersByAssigneeAndCreatedBy() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertEquals(
+                        "https://api.test/work-orders?assigneeId=engineer-1&createdBy=customer-1",
+                        url,
+                    )
+                    GatewayHttpResponse(200, "[]")
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+            repo.list(assigneeId = "engineer-1", createdBy = "customer-1")
+        }
+
+    @Test
     fun getBoardDecodesDurationHours() =
         runBlocking {
             val tokens = InMemoryTokenStore()
