@@ -16,3 +16,9 @@ DONE_WITH_CONCERNS: customer emergency tickets are implemented and delivered.
 ## Delivery
 - Commit `16ab155` pushed to `feat/customer-tickets`.
 - CI run `30426617959` failed with empty Test job steps; Build/Deploy skipped (infra failure matching brief).
+
+## Review fix (mentor UI)
+- Removed `equipmentRepository` from `WorkOrderDetailScreen` in `TicketsScreen`; asset picker still uses it for create form.
+- Removed unused `dp` import.
+- Commit `6adccd7` on `feat/customer-tickets`.
+- Verification: `:composeApp:compileKotlinDesktop` — passed.
