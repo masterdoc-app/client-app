@@ -46,7 +46,6 @@ fun EquipmentScreen(
 ) {
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
     var sites by remember { mutableStateOf<List<SiteDto>>(emptyList()) }
-    var selectedSiteId by remember { mutableStateOf<String?>(null) }
     var mapsByAsset by remember { mutableStateOf<Map<String, MaintenanceMapDto>>(emptyMap()) }
     var documentsById by remember { mutableStateOf<Map<String, DocumentMetaDto>>(emptyMap()) }
     var documentsByFolder by remember { mutableStateOf<Map<String, List<DocumentMetaDto>>>(emptyMap()) }
@@ -70,9 +69,6 @@ fun EquipmentScreen(
             loading = true
             try {
                 sites = runCatching { repository.listSites().items }.getOrDefault(emptyList())
-                if (selectedSiteId == null || sites.none { it.id == selectedSiteId }) {
-                    selectedSiteId = sites.firstOrNull()?.id
-                }
                 assets = repository.listAssets().items
                 val maps = repository.listMaps().items
                 mapsByAsset =
@@ -223,33 +219,17 @@ fun EquipmentScreen(
             AppText(text = "Загрузка руководства", style = AppTextStyle.Title)
             AppText(
                 text =
-                    "PDF руководства -> Технолог собирает карточку оборудования. " +
+                    "PDF прикрепляется к карточке оборудования (не к площадке). " +
+                        "Площадка — только контейнер: размещение меняется на карточке. " +
                         "У оборудования один документ; чтобы загрузить PDF заново — удалите оборудование. " +
                         "После «В базу» формируется черновик ППР.",
                 style = AppTextStyle.Label,
             )
             if (sites.isEmpty()) {
                 AppText(
-                    text = "Нет площадок — создайте в Админ > Площадки, иначе Технолог не привяжет объект.",
+                    text = "Нет площадок — создайте контейнер в Админ > Площадки, иначе карточку некуда разместить.",
                     style = AppTextStyle.Label,
                 )
-            } else {
-                AppText(text = "Площадка для новой карточки", style = AppTextStyle.Label)
-                Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
-                    sites.forEach { site ->
-                        AppButton(
-                            text = site.name,
-                            fillMaxWidth = false,
-                            variant =
-                                if (site.id == selectedSiteId) {
-                                    AppButtonVariant.Primary
-                                } else {
-                                    AppButtonVariant.Secondary
-                                },
-                            onClick = { selectedSiteId = site.id },
-                        )
-                    }
-                }
             }
             AppButton(
                 text = "Выбрать PDF",
@@ -275,10 +255,10 @@ fun EquipmentScreen(
             }
             AppButton(
                 text = if (busy) "Загрузка…" else "Загрузить PDF и создать черновик",
-                enabled = !busy && picked != null && selectedSiteId != null,
+                enabled = !busy && picked != null && defaultEquipmentPlacementSiteId(sites) != null,
                 onClick = {
                     val file = picked ?: return@AppButton
-                    val siteId = selectedSiteId ?: return@AppButton
+                    val siteId = defaultEquipmentPlacementSiteId(sites) ?: return@AppButton
                     scope.launch {
                         busy = true
                         error = null
@@ -309,7 +289,7 @@ fun EquipmentScreen(
                         enabled = !busy,
                         onClick = {
                             val docId = pendingDocumentId ?: return@AppButton
-                            val siteId = selectedSiteId ?: return@AppButton
+                            val siteId = defaultEquipmentPlacementSiteId(sites) ?: return@AppButton
                             scope.launch {
                                 busy = true
                                 error = null
