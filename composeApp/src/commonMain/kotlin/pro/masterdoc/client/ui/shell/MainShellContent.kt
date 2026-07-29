@@ -43,6 +43,7 @@ import pro.masterdoc.client.session.ClientSession
 import pro.masterdoc.client.ui.screens.BlackBoxScreen
 import pro.masterdoc.client.ui.screens.BoardScreen
 import pro.masterdoc.client.ui.screens.ChartsScreen
+import pro.masterdoc.client.ui.screens.EquipmentDetailScreen
 import pro.masterdoc.client.ui.screens.EquipmentScreen
 import pro.masterdoc.client.ui.screens.ProfileScreen
 import pro.masterdoc.client.ui.screens.MyWorkOrdersScreen
@@ -64,6 +65,7 @@ fun MainShellContent(
 ) {
     val pages by component.pages.subscribeAsState()
     val focusedMapId by component.focusedMapId.subscribeAsState()
+    val focusedAssetId by component.focusedAssetId.subscribeAsState()
     val navUiItems = component.navItems.toAppNavItems(pages) { index ->
         component.onNavItemSelected(index)
     }
@@ -87,6 +89,11 @@ fun MainShellContent(
                         workOrdersRepository = workOrdersRepository,
                         userScopesRepository = userScopesRepository,
                         focusedMapId = focusedMapId,
+                        focusedAssetId = focusedAssetId,
+                        onEquipmentBack = {
+                            BrowserNav.setHash(AppDeepLink.Equipment.toHash())
+                            component.navigateTo(NavDestinationId.Equipment, assetId = null)
+                        },
                         onOpenLinkedPpr = { map ->
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
                             component.navigateTo(NavDestinationId.Charts, mapId = map.id)
@@ -115,6 +122,11 @@ fun MainShellContent(
                         workOrdersRepository = workOrdersRepository,
                         userScopesRepository = userScopesRepository,
                         focusedMapId = focusedMapId,
+                        focusedAssetId = focusedAssetId,
+                        onEquipmentBack = {
+                            BrowserNav.setHash(AppDeepLink.Equipment.toHash())
+                            component.navigateTo(NavDestinationId.Equipment, assetId = null)
+                        },
                         onOpenLinkedPpr = { map ->
                             BrowserNav.setHash(AppDeepLink.Ppr(map.id).toHash())
                             component.navigateTo(NavDestinationId.Charts, mapId = map.id)
@@ -140,6 +152,8 @@ private fun ActivePage(
     workOrdersRepository: WorkOrdersRepository?,
     userScopesRepository: UserScopesRepository?,
     focusedMapId: String?,
+    focusedAssetId: String?,
+    onEquipmentBack: () -> Unit,
     onOpenLinkedPpr: (pro.masterdoc.client.auth.MaintenanceMapDto) -> Unit,
     onPprDraftReady: (mapId: String) -> Unit,
 ) {
@@ -181,11 +195,21 @@ private fun ActivePage(
                     }
                 NavDestinationId.Equipment ->
                     if (equipmentRepository != null) {
-                        EquipmentScreen(
-                            repository = equipmentRepository,
-                            onOpenLinkedPpr = onOpenLinkedPpr,
-                            onPprDraftReady = onPprDraftReady,
-                        )
+                        val focus = focusedAssetId?.takeIf { it.isNotBlank() }
+                        if (focus != null) {
+                            EquipmentDetailScreen(
+                                assetId = focus,
+                                repository = equipmentRepository,
+                                onBack = onEquipmentBack,
+                                onOpenLinkedPpr = onOpenLinkedPpr,
+                            )
+                        } else {
+                            EquipmentScreen(
+                                repository = equipmentRepository,
+                                onOpenLinkedPpr = onOpenLinkedPpr,
+                                onPprDraftReady = onPprDraftReady,
+                            )
+                        }
                     } else {
                         StubDestinationScreen(active.destination)
                     }
