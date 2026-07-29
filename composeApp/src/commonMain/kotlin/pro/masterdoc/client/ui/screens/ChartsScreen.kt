@@ -244,7 +244,7 @@ private fun MapSummary(
             text =
                 buildString {
                     if (highlighted) append("> ")
-                    append("${map.title} · ${ruStatus(map.status)} · ${ruSource(map.source)}")
+                    append(mapHeadline(map.title, map.status, map.source))
                 },
             style = AppTextStyle.Body,
             color =
@@ -267,27 +267,19 @@ private fun MapSummary(
             )
             AppText(text = "· пунктов: ${map.items.size}", style = AppTextStyle.Label)
         }
-        when {
-            sourceDocs.isNotEmpty() ->
-                sourceDocs.forEach { doc ->
-                    val open = onOpenDocument
-                    AppText(
-                        text = "Документ: ${doc.filename}",
-                        style = AppTextStyle.Label,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier =
-                            if (open != null) {
-                                Modifier.clickable { open(doc) }
-                            } else {
-                                Modifier
-                            },
-                    )
-                }
-            map.source.equals("ai_generated", ignoreCase = true) ->
-                AppText(
-                    text = "Документ: не привязан к оборудованию",
-                    style = AppTextStyle.Label,
-                )
+        sourceDocs.forEach { doc ->
+            val open = onOpenDocument
+            AppText(
+                text = "Документ: ${doc.filename}",
+                style = AppTextStyle.Label,
+                color = MaterialTheme.colorScheme.primary,
+                modifier =
+                    if (open != null) {
+                        Modifier.clickable { open(doc) }
+                    } else {
+                        Modifier
+                    },
+            )
         }
         visibleItems.forEach { item ->
             AppText(
@@ -326,10 +318,26 @@ internal fun mapItemsOverflowLabel(
         else -> "… ещё ${total - previewLimit}"
     }
 
+internal fun mapHeadline(
+    title: String,
+    status: String,
+    source: String,
+): String =
+    listOfNotNull(
+        title.takeIf { it.isNotBlank() },
+        ruStatus(status).takeIf { it.isNotBlank() },
+        ruSource(source).takeIf { it.isNotBlank() },
+    ).joinToString(" · ")
+
+/** Equipment is created from its document — never show an «unbound» state. */
+internal fun pprDocumentLines(filenames: List<String>): List<String> =
+    filenames.map { "Документ: $it" }
+
 internal fun ruStatus(status: String): String =
     when (status.lowercase()) {
         "draft" -> "черновик"
-        "active" -> "активна"
+        // «активна» omitted — section «ППР в базе» already conveys status
+        "active" -> ""
         "rejected" -> "отклонена"
         else -> status
     }
