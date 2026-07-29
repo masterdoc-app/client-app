@@ -1,16 +1,12 @@
 package pro.masterdoc.client.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,15 +14,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.DocumentMetaDto
-import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
@@ -84,7 +77,7 @@ fun ChartsScreen(
         }
     }
 
-    fun openDocument(doc: SourceDocRef) {
+    fun openDocument(doc: MaintenanceMapSourceDoc) {
         scope.launch {
             try {
                 openAuthenticatedDocument(
@@ -111,9 +104,9 @@ fun ChartsScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = ClientSpacing.md, vertical = 16.dp)
+                    .padding(horizontal = ClientSpacing.md, vertical = ClientSpacing.md)
                     .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(ClientSpacing.md),
         ) {
             AppText(
                 text = "Черновики карт обслуживания появляются после работы Технолога. После подтверждения ППР попадает в базу.",
@@ -127,12 +120,12 @@ fun ChartsScreen(
                 drafts.isEmpty() -> AppText(text = "Нет черновиков", style = AppTextStyle.Label)
                 else ->
                     drafts.forEach { map ->
-                        MapDraftRow(
+                        MaintenanceMapCard(
                             map = map,
                             asset = assetsById[map.assetId],
-                            sourceDocs = sourceDocsByAssetId[map.assetId].orEmpty(),
-                            acting = actingId == map.id,
+                            sourceDocs = sourceDocsByAssetId[map.assetId].orEmpty().toMaintenanceMapSourceDocs(),
                             highlighted = map.id == focusedMapId,
+                            acting = actingId == map.id,
                             onOpenDocument = ::openDocument,
                             onOpenEquipment = onOpenEquipment,
                             onConfirm = {
@@ -171,10 +164,10 @@ fun ChartsScreen(
                 active.isEmpty() -> AppText(text = "Пока пусто", style = AppTextStyle.Label)
                 else ->
                     active.forEach { map ->
-                        MapSummary(
+                        MaintenanceMapCard(
                             map = map,
                             asset = assetsById[map.assetId],
-                            sourceDocs = sourceDocsByAssetId[map.assetId].orEmpty(),
+                            sourceDocs = sourceDocsByAssetId[map.assetId].orEmpty().toMaintenanceMapSourceDocs(),
                             highlighted = map.id == focusedMapId,
                             onOpenDocument = ::openDocument,
                             onOpenEquipment = onOpenEquipment,
@@ -191,113 +184,11 @@ private data class SourceDocRef(
     val contentType: String,
 )
 
-@Composable
-private fun MapDraftRow(
-    map: MaintenanceMapDto,
-    asset: AssetDto?,
-    sourceDocs: List<SourceDocRef>,
-    acting: Boolean,
-    highlighted: Boolean = false,
-    onOpenDocument: (SourceDocRef) -> Unit,
-    onOpenEquipment: (String) -> Unit,
-    onConfirm: () -> Unit,
-    onReject: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        MapSummary(
-            map = map,
-            asset = asset,
-            sourceDocs = sourceDocs,
-            highlighted = highlighted,
-            onOpenDocument = onOpenDocument,
-            onOpenEquipment = onOpenEquipment,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AppButton(text = if (acting) "…" else "Подтвердить", enabled = !acting, onClick = onConfirm)
-            AppButton(text = "Отклонить", enabled = !acting, onClick = onReject)
-        }
-    }
-}
+private fun SourceDocRef.toMaintenanceMapSourceDoc(): MaintenanceMapSourceDoc =
+    MaintenanceMapSourceDoc(id = id, filename = filename, contentType = contentType)
 
-@Composable
-private fun MapSummary(
-    map: MaintenanceMapDto,
-    asset: AssetDto? = null,
-    sourceDocs: List<SourceDocRef> = emptyList(),
-    highlighted: Boolean = false,
-    onOpenDocument: ((SourceDocRef) -> Unit)? = null,
-    onOpenEquipment: (String) -> Unit = {},
-) {
-    var itemsExpanded by remember(map.id) { mutableStateOf(false) }
-    val visibleItems = visibleMapItems(map.items, expanded = itemsExpanded, previewLimit = MAP_ITEMS_PREVIEW_LIMIT)
-    val overflowLabel =
-        mapItemsOverflowLabel(
-            total = map.items.size,
-            previewLimit = MAP_ITEMS_PREVIEW_LIMIT,
-            expanded = itemsExpanded,
-        )
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        AppText(
-            text =
-                buildString {
-                    if (highlighted) append("> ")
-                    append(mapHeadline(map.title, map.status, map.source))
-                },
-            style = AppTextStyle.Body,
-            color =
-                if (highlighted) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    androidx.compose.ui.graphics.Color.Unspecified
-                },
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AppText(text = "Оборудование:", style = AppTextStyle.Label)
-            AssetNameLink(
-                name = asset?.name,
-                inventoryNo = asset?.inventoryNo,
-                assetId = map.assetId,
-                onOpen = onOpenEquipment,
-            )
-            AppText(text = "· пунктов: ${map.items.size}", style = AppTextStyle.Label)
-        }
-        sourceDocs.forEach { doc ->
-            val open = onOpenDocument
-            AppText(
-                text = "Документ: ${doc.filename}",
-                style = AppTextStyle.Label,
-                color = MaterialTheme.colorScheme.primary,
-                modifier =
-                    if (open != null) {
-                        Modifier.clickable { open(doc) }
-                    } else {
-                        Modifier
-                    },
-            )
-        }
-        visibleItems.forEach { item ->
-            AppText(
-                text =
-                    "- ${item.title} (${ruKind(item.kind)}, каждые ${item.interval.every} ${ruIntervalUnit(item.interval.every, item.interval.unit)})",
-                style = AppTextStyle.Label,
-            )
-        }
-        if (overflowLabel != null) {
-            AppText(
-                text = overflowLabel,
-                style = AppTextStyle.Label,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { itemsExpanded = !itemsExpanded },
-            )
-        }
-    }
-}
+private fun List<SourceDocRef>.toMaintenanceMapSourceDocs(): List<MaintenanceMapSourceDoc> =
+    map { it.toMaintenanceMapSourceDoc() }
 
 internal const val MAP_ITEMS_PREVIEW_LIMIT = 5
 
