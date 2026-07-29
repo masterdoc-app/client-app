@@ -1,10 +1,10 @@
 # Task 6 Report — TicketsScreen
 
 ## Status
-Implemented customer emergency ticket creation, active/closed lists, and read-only details.
+DONE_WITH_CONCERNS: customer emergency tickets are implemented and delivered.
 
 ## Changes
-- Added `TicketsScreen` with asset selection, multiline description, creation, and reload.
+- Added `TicketsScreen`: asset selection, description form, creation, active/closed lists, read-only details.
 - Added pure `partitionCustomerTickets` helper and mixed-status test.
 - Wired `NavDestinationId.Tickets` in `MainShellContent`.
 
@@ -14,4 +14,5 @@ Implemented customer emergency ticket creation, active/closed lists, and read-on
 - `git diff --check` — passed.
 
 ## Delivery
-- Commit/push and GitHub Actions status will be recorded here after delivery.
+- Commit `16ab155` pushed to `feat/customer-tickets`.
+- CI run `30426617959` failed with empty Test job steps; Build/Deploy skipped (infra failure matching brief).
