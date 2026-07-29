@@ -18,9 +18,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.DocumentMetaDto
@@ -35,9 +37,11 @@ import pro.masterdoc.client.platform.openAuthenticatedDocument
 fun ChartsScreen(
     repository: EquipmentRepository,
     focusedMapId: String? = null,
+    onOpenEquipment: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var maps by remember { mutableStateOf<List<MaintenanceMapDto>>(emptyList()) }
+    var assetsById by remember { mutableStateOf<Map<String, AssetDto>>(emptyMap()) }
     var sourceDocsByAssetId by remember { mutableStateOf<Map<String, List<SourceDocRef>>>(emptyMap()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -50,6 +54,7 @@ fun ChartsScreen(
             try {
                 maps = repository.listMaps().items
                 val assets = repository.listAssets().items.associateBy { it.id }
+                assetsById = assets
                 val metaById = linkedMapOf<String, DocumentMetaDto>()
                 val byAsset = linkedMapOf<String, List<SourceDocRef>>()
                 maps.map { it.assetId }.distinct().forEach { assetId ->
@@ -124,10 +129,12 @@ fun ChartsScreen(
                     drafts.forEach { map ->
                         MapDraftRow(
                             map = map,
+                            asset = assetsById[map.assetId],
                             sourceDocs = sourceDocsByAssetId[map.assetId].orEmpty(),
                             acting = actingId == map.id,
                             highlighted = map.id == focusedMapId,
                             onOpenDocument = ::openDocument,
+                            onOpenEquipment = onOpenEquipment,
                             onConfirm = {
                                 scope.launch {
                                     actingId = map.id
@@ -166,9 +173,11 @@ fun ChartsScreen(
                     active.forEach { map ->
                         MapSummary(
                             map = map,
+                            asset = assetsById[map.assetId],
                             sourceDocs = sourceDocsByAssetId[map.assetId].orEmpty(),
                             highlighted = map.id == focusedMapId,
                             onOpenDocument = ::openDocument,
+                            onOpenEquipment = onOpenEquipment,
                         )
                     }
             }
@@ -185,10 +194,12 @@ private data class SourceDocRef(
 @Composable
 private fun MapDraftRow(
     map: MaintenanceMapDto,
+    asset: AssetDto?,
     sourceDocs: List<SourceDocRef>,
     acting: Boolean,
     highlighted: Boolean = false,
     onOpenDocument: (SourceDocRef) -> Unit,
+    onOpenEquipment: (String) -> Unit,
     onConfirm: () -> Unit,
     onReject: () -> Unit,
 ) {
@@ -198,9 +209,11 @@ private fun MapDraftRow(
     ) {
         MapSummary(
             map = map,
+            asset = asset,
             sourceDocs = sourceDocs,
             highlighted = highlighted,
             onOpenDocument = onOpenDocument,
+            onOpenEquipment = onOpenEquipment,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AppButton(text = if (acting) "…" else "Подтвердить", enabled = !acting, onClick = onConfirm)
@@ -212,9 +225,11 @@ private fun MapDraftRow(
 @Composable
 private fun MapSummary(
     map: MaintenanceMapDto,
+    asset: AssetDto? = null,
     sourceDocs: List<SourceDocRef> = emptyList(),
     highlighted: Boolean = false,
     onOpenDocument: ((SourceDocRef) -> Unit)? = null,
+    onOpenEquipment: (String) -> Unit = {},
 ) {
     var itemsExpanded by remember(map.id) { mutableStateOf(false) }
     val visibleItems = visibleMapItems(map.items, expanded = itemsExpanded, previewLimit = MAP_ITEMS_PREVIEW_LIMIT)
@@ -239,10 +254,19 @@ private fun MapSummary(
                     androidx.compose.ui.graphics.Color.Unspecified
                 },
         )
-        AppText(
-            text = "Оборудование: ${map.assetId} · пунктов: ${map.items.size}",
-            style = AppTextStyle.Label,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppText(text = "Оборудование:", style = AppTextStyle.Label)
+            AssetNameLink(
+                name = asset?.name,
+                inventoryNo = asset?.inventoryNo,
+                assetId = map.assetId,
+                onOpen = onOpenEquipment,
+            )
+            AppText(text = "· пунктов: ${map.items.size}", style = AppTextStyle.Label)
+        }
         when {
             sourceDocs.isNotEmpty() ->
                 sourceDocs.forEach { doc ->

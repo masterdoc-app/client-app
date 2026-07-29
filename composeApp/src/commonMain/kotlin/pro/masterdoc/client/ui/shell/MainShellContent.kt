@@ -73,6 +73,10 @@ fun MainShellContent(
     LaunchedEffect(Unit) {
         component.applyDeepLinkHash(BrowserNav.currentHash())
     }
+    val onOpenEquipment: (String) -> Unit = { id ->
+        BrowserNav.setHash(AppDeepLink.EquipmentDetail(id).toHash())
+        component.navigateTo(NavDestinationId.Equipment, assetId = id)
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val useRail = maxWidth >= CompactWidthBreakpoint
@@ -90,6 +94,7 @@ fun MainShellContent(
                         userScopesRepository = userScopesRepository,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
+                        onOpenEquipment = onOpenEquipment,
                         onEquipmentBack = {
                             BrowserNav.setHash(AppDeepLink.Equipment.toHash())
                             component.navigateTo(NavDestinationId.Equipment, assetId = null)
@@ -123,6 +128,7 @@ fun MainShellContent(
                         userScopesRepository = userScopesRepository,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
+                        onOpenEquipment = onOpenEquipment,
                         onEquipmentBack = {
                             BrowserNav.setHash(AppDeepLink.Equipment.toHash())
                             component.navigateTo(NavDestinationId.Equipment, assetId = null)
@@ -153,6 +159,7 @@ private fun ActivePage(
     userScopesRepository: UserScopesRepository?,
     focusedMapId: String?,
     focusedAssetId: String?,
+    onOpenEquipment: (String) -> Unit,
     onEquipmentBack: () -> Unit,
     onOpenLinkedPpr: (pro.masterdoc.client.auth.MaintenanceMapDto) -> Unit,
     onPprDraftReady: (mapId: String) -> Unit,
@@ -165,6 +172,7 @@ private fun ActivePage(
                     repository = workOrdersRepository,
                     equipmentRepository = equipmentRepository,
                     currentUserId = session.user?.id,
+                    onOpenEquipment = onOpenEquipment,
                 )
             } else {
                 StubDestinationScreen(active.destination)
@@ -218,6 +226,7 @@ private fun ActivePage(
                         ChartsScreen(
                             repository = equipmentRepository,
                             focusedMapId = focusedMapId?.takeIf { it.isNotBlank() },
+                            onOpenEquipment = onOpenEquipment,
                         )
                     } else {
                         StubDestinationScreen(active.destination)
@@ -232,6 +241,7 @@ private fun ActivePage(
                             hasAdminUsers = FeatureId.Users in session.features,
                             currentUserId = session.user?.id,
                             dispatcherMode = FeatureId.Board in session.features,
+                            onOpenEquipment = onOpenEquipment,
                         )
                     } else {
                         StubDestinationScreen(active.destination)

@@ -88,6 +88,7 @@ fun BoardScreen(
     currentUserId: String? = null,
     /** Full dispatcher board (`board` feature); otherwise read-only scoped engineer view. */
     dispatcherMode: Boolean = true,
+    onOpenEquipment: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var weeks by remember { mutableStateOf<List<BoardWeekDto>>(emptyList()) }
@@ -127,6 +128,7 @@ fun BoardScreen(
             adminUsersRepository = adminUsersRepository,
             equipmentRepository = equipmentRepository,
             currentUserId = currentUserId,
+            onOpenEquipment = onOpenEquipment,
             hasAdminUsers = hasAdminUsers,
             editableAssignee = dispatcherMode && userScopesRepository != null,
             readOnly = !dispatcherMode,
