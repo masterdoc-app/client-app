@@ -361,7 +361,7 @@ private fun DocumentsSection(
         DocRow(
             icon = Icons.Filled.FolderOpen,
             title = "Папка в хранилище",
-            subtitle = "$storageFolder/",
+            subtitle = null,
             onClick = onOpenStorageFolder?.let { { it(storageFolder) } },
         )
         when {
@@ -393,7 +393,7 @@ private fun DocumentsSection(
 private fun DocRow(
     icon: ImageVector,
     title: String,
-    subtitle: String,
+    subtitle: String?,
     onClick: (() -> Unit)?,
 ) {
     Row(
@@ -430,7 +430,9 @@ private fun DocRow(
                     },
                 maxLines = 1,
             )
-            AppText(text = subtitle, style = AppTextStyle.Label, maxLines = 1)
+            if (!subtitle.isNullOrBlank()) {
+                AppText(text = subtitle, style = AppTextStyle.Label, maxLines = 1)
+            }
         }
         if (onClick != null) {
             AppIcon(
