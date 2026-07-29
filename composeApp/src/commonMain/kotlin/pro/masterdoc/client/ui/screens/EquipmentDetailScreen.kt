@@ -124,12 +124,12 @@ fun EquipmentDetailScreen(
                     } else {
                         repository.listDocuments(folder).items.also { folderDocuments = it }
                     }
-                val first = items.firstOrNull()
-                if (first == null) {
-                    error = "В папке $folder/ нет документов"
-                } else {
-                    openDocument(first)
-                }
+                error =
+                    if (items.isEmpty()) {
+                        folderEmptyMessage(folder)
+                    } else {
+                        null
+                    }
             } catch (e: Exception) {
                 error = e.message ?: "Не удалось открыть папку"
             }

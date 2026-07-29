@@ -177,12 +177,12 @@ fun EquipmentScreen(
                         ?: repository.listDocuments(folder).items.also {
                             documentsByFolder = documentsByFolder + (folder to it)
                         }
-                if (items.isEmpty()) {
-                    error = "В папке $folder/ нет документов"
-                    return@launch
-                }
-                error = null
-                openDocument(items.first())
+                error =
+                    if (items.isEmpty()) {
+                        folderEmptyMessage(folder)
+                    } else {
+                        null
+                    }
             } catch (e: Exception) {
                 error = e.message ?: "Не удалось открыть папку"
             }
@@ -359,7 +359,12 @@ fun EquipmentScreen(
                                     .map { it.id to it.name },
                             linkedMap = mapsByAsset[asset.id],
                             documents = asset.documentIds.mapNotNull { documentsById[it] },
-                            folderDocuments = documentsByFolder[asset.orgId].orEmpty(),
+                            folderDocuments =
+                                documentsByFolder[
+                                    asset.documentIds.firstOrNull()
+                                        ?.let { documentsById[it]?.storageFolder() }
+                                        ?: asset.orgId,
+                                ].orEmpty(),
                             acting = actingId == asset.id,
                             onOpenLinkedPpr = onOpenLinkedPpr,
                             onOpenStorageFolder = ::openFolder,
@@ -476,7 +481,12 @@ fun EquipmentScreen(
                                     .map { it.id to it.name },
                             linkedMap = mapsByAsset[asset.id],
                             documents = asset.documentIds.mapNotNull { documentsById[it] },
-                            folderDocuments = documentsByFolder[asset.orgId].orEmpty(),
+                            folderDocuments =
+                                documentsByFolder[
+                                    asset.documentIds.firstOrNull()
+                                        ?.let { documentsById[it]?.storageFolder() }
+                                        ?: asset.orgId,
+                                ].orEmpty(),
                             acting = actingId == asset.id,
                             onOpenLinkedPpr = onOpenLinkedPpr,
                             onOpenStorageFolder = ::openFolder,

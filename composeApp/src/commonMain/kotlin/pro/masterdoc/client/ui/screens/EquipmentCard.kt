@@ -86,8 +86,13 @@ fun EquipmentCard(
         documents.firstOrNull()?.storageFolder()
             ?: folderDocuments.firstOrNull()?.storageFolder()
             ?: asset.orgId
-    // Equipment keeps a single document; ignore folder siblings on the card.
-    val shownDocs = documents.distinctBy { it.id }.take(1)
+    var folderExpanded by remember(asset.id) { mutableStateOf(false) }
+    val shownDocs =
+        equipmentShownDocuments(
+            linked = documents,
+            folder = folderDocuments,
+            folderExpanded = folderExpanded,
+        )
     val accent =
         if (isDraft) {
             MaterialTheme.colorScheme.primary
@@ -203,7 +208,14 @@ fun EquipmentCard(
                     storageFolder = storageFolder,
                     shownDocs = shownDocs,
                     fallbackIds = asset.documentIds.take(1),
-                    onOpenStorageFolder = onOpenStorageFolder,
+                    folderExpanded = folderExpanded,
+                    onOpenStorageFolder =
+                        onOpenStorageFolder?.let { open ->
+                            {
+                                folderExpanded = !folderExpanded
+                                if (folderExpanded) open(storageFolder)
+                            }
+                        },
                     onOpenDocument = onOpenDocument,
                 )
 
@@ -353,16 +365,17 @@ private fun DocumentsSection(
     storageFolder: String,
     shownDocs: List<DocumentMetaDto>,
     fallbackIds: List<String>,
-    onOpenStorageFolder: ((String) -> Unit)?,
+    folderExpanded: Boolean,
+    onOpenStorageFolder: (() -> Unit)?,
     onOpenDocument: ((DocumentMetaDto) -> Unit)?,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
         SectionLabel("Документы")
         DocRow(
             icon = Icons.Filled.FolderOpen,
-            title = "Папка в хранилище",
+            title = if (folderExpanded) "Свернуть папку" else "Папка в хранилище",
             subtitle = null,
-            onClick = onOpenStorageFolder?.let { { it(storageFolder) } },
+            onClick = onOpenStorageFolder,
         )
         when {
             shownDocs.isNotEmpty() ->
@@ -374,6 +387,8 @@ private fun DocumentsSection(
                         onClick = onOpenDocument?.let { { it(doc) } },
                     )
                 }
+            folderExpanded ->
+                AppText(text = folderEmptyMessage(storageFolder), style = AppTextStyle.Label)
             fallbackIds.isNotEmpty() ->
                 fallbackIds.forEach { id ->
                     DocRow(
