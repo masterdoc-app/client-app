@@ -95,6 +95,7 @@ fun BoardScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedId by remember { mutableStateOf<String?>(null) }
+    var mentorOpen by remember { mutableStateOf(false) }
     var showScopeEditor by remember { mutableStateOf(false) }
     var weekMonday by remember { mutableStateOf(currentMondayIso()) }
     var reloadKey by remember { mutableStateOf(0) }
@@ -117,17 +118,31 @@ fun BoardScreen(
         }
     }
 
+    if (mentorOpen && selectedId != null && equipmentRepository != null) {
+        WorkOrderMentorScreen(
+            workOrderId = selectedId!!,
+            repository = equipmentRepository,
+            onBack = { mentorOpen = false },
+            modifier = modifier,
+        )
+        return
+    }
+
     val detailId = selectedId
     if (detailId != null) {
         WorkOrderDetailScreen(
             repository = repository,
             orderId = detailId,
-            onBack = { selectedId = null },
+            onBack = {
+                mentorOpen = false
+                selectedId = null
+            },
             onChanged = { reloadKey++ },
             userScopesRepository = userScopesRepository,
             adminUsersRepository = adminUsersRepository,
             equipmentRepository = equipmentRepository,
             currentUserId = currentUserId,
+            onOpenMentor = { mentorOpen = true },
             onOpenEquipment = onOpenEquipment,
             hasAdminUsers = hasAdminUsers,
             editableAssignee = dispatcherMode && userScopesRepository != null,
