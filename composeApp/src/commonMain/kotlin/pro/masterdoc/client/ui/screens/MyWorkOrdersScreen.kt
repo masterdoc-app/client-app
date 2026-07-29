@@ -36,6 +36,7 @@ fun MyWorkOrdersScreen(
     repository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository?,
     currentUserId: String?,
+    onOpenEquipment: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var items by remember { mutableStateOf<List<WorkOrderDto>>(emptyList()) }
@@ -89,6 +90,7 @@ fun MyWorkOrdersScreen(
             currentUserId = currentUserId,
             equipmentRepository = equipmentRepository,
             onOpenMentor = { mentorOpen = true },
+            onOpenEquipment = onOpenEquipment,
             readOnly = false,
             modifier = modifier,
         )

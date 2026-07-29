@@ -29,6 +29,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.UserScopesRepository
@@ -59,6 +60,7 @@ fun WorkOrderDetailScreen(
     equipmentRepository: EquipmentRepository? = null,
     currentUserId: String? = null,
     onOpenMentor: () -> Unit = {},
+    onOpenEquipment: (String) -> Unit = {},
     hasAdminUsers: Boolean = false,
     editableAssignee: Boolean = false,
     readOnly: Boolean = false,
@@ -68,6 +70,7 @@ fun WorkOrderDetailScreen(
     var loading by remember { mutableStateOf(true) }
     var acting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var asset by remember { mutableStateOf<AssetDto?>(null) }
     val scope = rememberCoroutineScope()
 
     fun reload() {
@@ -88,6 +91,20 @@ fun WorkOrderDetailScreen(
 
     LaunchedEffect(repository, orderId) {
         reload()
+    }
+
+    LaunchedEffect(equipmentRepository, order?.assetId) {
+        asset = null
+        val assetId = order?.assetId ?: return@LaunchedEffect
+        val assets = equipmentRepository ?: return@LaunchedEffect
+        asset =
+            try {
+                findAssetById(assets.listAssets().items, assetId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
     }
 
     AppScaffold(
@@ -178,7 +195,15 @@ fun WorkOrderDetailScreen(
                     }
                     DetailRow("Начало", wo.dueAt)
                     DetailRow("Площадка", wo.siteId)
-                    DetailRow("Оборудование", wo.assetId)
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        AppText(text = "Оборудование", style = AppTextStyle.Label)
+                        AssetNameLink(
+                            name = asset?.name,
+                            inventoryNo = asset?.inventoryNo,
+                            assetId = wo.assetId,
+                            onOpen = onOpenEquipment,
+                        )
+                    }
                     if (editableAssignee && userScopesRepository != null) {
                         AssigneePickerRow(
                             workOrder = wo,
@@ -266,6 +291,11 @@ fun WorkOrderDetailScreen(
         }
     }
 }
+
+internal fun findAssetById(
+    assets: List<AssetDto>,
+    assetId: String,
+): AssetDto? = assets.find { it.id == assetId }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

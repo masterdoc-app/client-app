@@ -29,9 +29,12 @@ interface MainShellComponent {
     /** Focused maintenance map id from deep link `#/ppr/{id}` (empty when unset). */
     val focusedMapId: Value<String>
 
+    /** Focused equipment asset id from deep link `#/equipment/{id}` (empty when unset). */
+    val focusedAssetId: Value<String>
+
     fun onNavItemSelected(index: Int)
 
-    fun navigateTo(destination: NavDestinationId, mapId: String? = null)
+    fun navigateTo(destination: NavDestinationId, mapId: String? = null, assetId: String? = null)
 
     fun applyDeepLinkHash(hash: String)
 
@@ -61,6 +64,8 @@ class DefaultMainShellComponent(
     private val navigation = PagesNavigation<MainShellComponent.PageConfig>()
     private val _focusedMapId = MutableValue("")
     override val focusedMapId: Value<String> = _focusedMapId
+    private val _focusedAssetId = MutableValue("")
+    override val focusedAssetId: Value<String> = _focusedAssetId
 
     override val pages: Value<ChildPages<MainShellComponent.PageConfig, MainShellComponent.PageChild>> =
         childPages(
@@ -91,9 +96,12 @@ class DefaultMainShellComponent(
             ),
         )
         navigation.select(index = index)
+        if (navItems.getOrNull(index)?.destination == NavDestinationId.Equipment) {
+            _focusedAssetId.value = ""
+        }
     }
 
-    override fun navigateTo(destination: NavDestinationId, mapId: String?) {
+    override fun navigateTo(destination: NavDestinationId, mapId: String?, assetId: String?) {
         val index = navItems.indexOfFirst { it.destination == destination }
         if (index < 0) return
         track(
@@ -101,9 +109,23 @@ class DefaultMainShellComponent(
             mapOf(
                 "destination" to destination.name,
                 "mapId" to mapId.orEmpty(),
+                "assetId" to assetId.orEmpty(),
             ),
         )
-        _focusedMapId.value = mapId.orEmpty()
+        when {
+            assetId != null -> {
+                _focusedAssetId.value = assetId
+                _focusedMapId.value = ""
+            }
+            mapId != null -> {
+                _focusedMapId.value = mapId
+                _focusedAssetId.value = ""
+            }
+            else -> {
+                _focusedMapId.value = ""
+                _focusedAssetId.value = ""
+            }
+        }
         navigation.select(index = index)
     }
 
@@ -114,6 +136,8 @@ class DefaultMainShellComponent(
             is AppDeepLink.Ppr -> navigateTo(NavDestinationId.Charts, mapId = link.mapId)
             AppDeepLink.Charts -> navigateTo(NavDestinationId.Charts, mapId = null)
             AppDeepLink.Equipment -> navigateTo(NavDestinationId.Equipment, mapId = null)
+            is AppDeepLink.EquipmentDetail ->
+                navigateTo(NavDestinationId.Equipment, assetId = link.assetId)
         }
     }
 }

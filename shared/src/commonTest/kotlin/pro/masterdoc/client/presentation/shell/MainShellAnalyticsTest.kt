@@ -3,6 +3,7 @@ package pro.masterdoc.client.presentation.shell
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import pro.masterdoc.client.analytics.AnalyticsSink
 import pro.masterdoc.client.navigation.FeatureId
@@ -50,5 +51,26 @@ class MainShellAnalyticsTest {
             )
         shell.navigateTo(NavDestinationId.Equipment)
         assertTrue(sink.actions.contains("ui.shell.nav.navigate"))
+    }
+
+    @Test
+    fun navigateTo_updatesFocusedAssetAndMapExclusively() {
+        val shell =
+            DefaultMainShellComponent(
+                componentContext = DefaultComponentContext(LifecycleRegistry()),
+                session = ClientSession.stub(features = setOf(FeatureId.Board, FeatureId.Charts, FeatureId.Equipment)),
+            )
+
+        shell.navigateTo(NavDestinationId.Equipment, assetId = "asset-42")
+        assertEquals("asset-42", shell.focusedAssetId.value)
+        assertEquals("", shell.focusedMapId.value)
+
+        shell.navigateTo(NavDestinationId.Charts, mapId = "map-7")
+        assertEquals("", shell.focusedAssetId.value)
+        assertEquals("map-7", shell.focusedMapId.value)
+
+        shell.navigateTo(NavDestinationId.Equipment)
+        assertEquals("", shell.focusedAssetId.value)
+        assertEquals("", shell.focusedMapId.value)
     }
 }
