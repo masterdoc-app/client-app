@@ -4,11 +4,37 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.SiteDto
 
 class AssetDisplayTest {
     @Test
     fun prefersNonBlankName() {
         assertEquals("Насос", assetDisplayName("Насос", "uuid-long"))
+    }
+
+    @Test
+    fun siteDisplayNamePrefersTrimmedName() {
+        assertEquals("Цех 1", siteDisplayName("  Цех 1  "))
+    }
+
+    @Test
+    fun siteDisplayNameNeverShowsRawId() {
+        assertEquals("—", siteDisplayName(null))
+        assertEquals("—", siteDisplayName("  "))
+        assertEquals(
+            "Цех smoke",
+            resolveSiteName(
+                listOf(SiteDto(id = "29eb1297-8603-4976-8b6e-d0520f05589c", orgId = "o", name = "Цех smoke")),
+                "29eb1297-8603-4976-8b6e-d0520f05589c",
+            ),
+        )
+        assertEquals(
+            "—",
+            resolveSiteName(
+                listOf(SiteDto(id = "other", orgId = "o", name = "Other")),
+                "29eb1297-8603-4976-8b6e-d0520f05589c",
+            ),
+        )
     }
 
     @Test

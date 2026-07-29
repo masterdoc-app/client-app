@@ -76,7 +76,7 @@ fun EquipmentCard(
     onOpenDocument: ((DocumentMetaDto) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val siteLabel = siteName?.takeIf { it.isNotBlank() } ?: asset.siteId
+    val siteLabel = siteDisplayName(siteName)
     val isDraft = asset.status == "draft"
     var draftName by remember(asset.id, asset.name) { mutableStateOf(asset.name) }
     var draftInventoryNo by remember(asset.id, asset.inventoryNo) {
@@ -173,7 +173,7 @@ fun EquipmentCard(
                     IdentityHeader(asset = asset, siteLabel = siteLabel)
                 }
 
-                DescriptionBlock(asset = asset)
+                DescriptionBlock(asset = asset, siteName = siteName)
 
                 Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
                     SectionLabel("Паспорт")
@@ -307,7 +307,10 @@ private fun IdentityHeader(asset: AssetDto, siteLabel: String) {
 }
 
 @Composable
-private fun DescriptionBlock(asset: AssetDto) {
+private fun DescriptionBlock(
+    asset: AssetDto,
+    siteName: String?,
+) {
     Column(
         modifier =
             Modifier
@@ -319,7 +322,7 @@ private fun DescriptionBlock(asset: AssetDto) {
     ) {
         AppText(text = "Что это", style = AppTextStyle.Label)
         AppText(
-            text = asset.description?.takeIf { it.isNotBlank() } ?: fallbackDescription(asset),
+            text = asset.description?.takeIf { it.isNotBlank() } ?: fallbackDescription(asset, siteName),
             style = AppTextStyle.Body,
         )
     }
@@ -554,13 +557,16 @@ internal fun mapStatusLabel(status: String): String =
         else -> status
     }
 
-internal fun fallbackDescription(asset: AssetDto): String {
+internal fun fallbackDescription(
+    asset: AssetDto,
+    siteName: String? = null,
+): String {
     val kind = categoryLabel(asset.category).lowercase()
     return when (asset.status) {
         "draft" ->
             "Черновик единицы оборудования ($kind). Описание будет уточнено из руководства; " +
                 "после подтверждения карточка попадёт в рабочую базу."
         else ->
-            "Единица оборудования ($kind) на площадке ${asset.siteId}."
+            "Единица оборудования ($kind) на площадке ${siteDisplayName(siteName)}."
     }
 }

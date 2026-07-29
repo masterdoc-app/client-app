@@ -32,6 +32,7 @@ import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
+import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrderDuration
 import pro.masterdoc.client.auth.WorkOrderDto
@@ -71,6 +72,7 @@ fun WorkOrderDetailScreen(
     var acting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var asset by remember { mutableStateOf<AssetDto?>(null) }
+    var sites by remember { mutableStateOf<List<SiteDto>>(emptyList()) }
     val scope = rememberCoroutineScope()
 
     fun reload() {
@@ -104,6 +106,17 @@ fun WorkOrderDetailScreen(
                 throw e
             } catch (_: Exception) {
                 null
+            }
+    }
+
+    LaunchedEffect(equipmentRepository) {
+        sites =
+            try {
+                equipmentRepository?.listSites()?.items.orEmpty()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                emptyList()
             }
     }
 
@@ -194,7 +207,7 @@ fun WorkOrderDetailScreen(
                         }
                     }
                     DetailRow("Начало", wo.dueAt)
-                    DetailRow("Площадка", wo.siteId)
+                    DetailRow("Площадка", resolveSiteName(sites, wo.siteId))
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         AppText(text = "Оборудование", style = AppTextStyle.Label)
                         AssetNameLink(
