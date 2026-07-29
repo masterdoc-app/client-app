@@ -210,6 +210,7 @@ private fun ActivePage(
                                 repository = equipmentRepository,
                                 onBack = onEquipmentBack,
                                 onOpenLinkedPpr = onOpenLinkedPpr,
+                                onPprDraftReady = onPprDraftReady,
                             )
                         } else {
                             EquipmentScreen(

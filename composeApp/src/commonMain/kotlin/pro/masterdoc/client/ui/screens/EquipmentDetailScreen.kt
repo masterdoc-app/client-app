@@ -16,12 +16,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.DocumentMetaDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.SiteDto
+import pro.masterdoc.client.auth.TechnologistJobDto
 import pro.masterdoc.client.auth.UpdateAssetRequest
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
@@ -35,6 +37,7 @@ fun EquipmentDetailScreen(
     repository: EquipmentRepository,
     onBack: () -> Unit,
     onOpenLinkedPpr: (MaintenanceMapDto) -> Unit = {},
+    onPprDraftReady: (mapId: String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var asset by remember(assetId) { mutableStateOf<AssetDto?>(null) }
@@ -84,6 +87,16 @@ fun EquipmentDetailScreen(
         } finally {
             loading = false
         }
+    }
+
+    suspend fun pollJob(id: String): TechnologistJobDto {
+        var current = repository.getJob(id)
+        repeat(60) {
+            if (current.status == "succeeded" || current.status == "failed") return current
+            delay(1_000)
+            current = repository.getJob(id)
+        }
+        return current
     }
 
     fun openDocument(document: DocumentMetaDto) {
@@ -189,6 +202,45 @@ fun EquipmentDetailScreen(
                                                 ),
                                             )
                                             repository.confirmAsset(current.id)
+
+                                            val existingDraftId =
+                                                runCatching { repository.listMaps(current.id).items }
+                                                    .getOrDefault(emptyList())
+                                                    .firstOrNull { it.status == "draft" }
+                                                    ?.id
+                                                    ?: linkedMap?.takeIf { it.status == "draft" }?.id
+
+                                            var technologistMapId: String? = null
+                                            if (needsTechnologistForPprDraft(existingDraftId)) {
+                                                val documentId =
+                                                    current.documentIds.firstOrNull()
+                                                        ?: throw IllegalStateException(
+                                                            "Нет documentId для технолога",
+                                                        )
+                                                val started =
+                                                    repository.startTechnologist(
+                                                        documentId = documentId,
+                                                        siteId = current.siteId,
+                                                        assetId = current.id,
+                                                    )
+                                                val done = pollJob(started.id)
+                                                if (done.status == "failed") {
+                                                    throw IllegalStateException(
+                                                        done.error ?: "Технолог завершился с ошибкой",
+                                                    )
+                                                }
+                                                technologistMapId = done.draftMapId
+                                            }
+
+                                            val draftMapId =
+                                                resolvePprDraftMapId(
+                                                    existingDraftMapId = existingDraftId,
+                                                    technologistDraftMapId = technologistMapId,
+                                                )
+                                                    ?: throw IllegalStateException(
+                                                        "Технолог не вернул draftMapId — черновик ППР не создан",
+                                                    )
+                                            onPprDraftReady(draftMapId)
                                             reload()
                                         } catch (e: Exception) {
                                             error = e.message
