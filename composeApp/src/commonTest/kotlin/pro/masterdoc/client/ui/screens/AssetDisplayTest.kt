@@ -2,6 +2,7 @@ package pro.masterdoc.client.ui.screens
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import pro.masterdoc.client.auth.AssetDto
 
 class AssetDisplayTest {
@@ -20,6 +21,26 @@ class AssetDisplayTest {
         assertEquals("Инв. № INV-1", assetInventoryTooltip("INV-1"))
         assertEquals("Инв. № не указан", assetInventoryTooltip(null))
         assertEquals("Инв. № не указан", assetInventoryTooltip("  "))
+    }
+
+    @Test
+    fun inventoryLineIsLinkColoredAndSharesClickTarget() {
+        val lines = assetNameLinkLines(name = "Насос", inventoryNo = "INV-1", assetId = "asset-1")
+        val inventory = lines.single { it.role == AssetLinkLineRole.Inventory }
+
+        assertEquals("Инв. № INV-1", inventory.text)
+        assertTrue(inventory.isLinkColored, "inventory must look like a link, not muted body text")
+        assertTrue(inventory.sharesClickTarget, "click on inventory must open the same asset as the name")
+    }
+
+    @Test
+    fun titleLineIsAlsoLinkColoredAndClickable() {
+        val lines = assetNameLinkLines(name = "Насос", inventoryNo = "INV-1", assetId = "asset-1")
+        val title = lines.single { it.role == AssetLinkLineRole.Title }
+
+        assertEquals("Насос", title.text)
+        assertTrue(title.isLinkColored)
+        assertTrue(title.sharesClickTarget)
     }
 
     @Test
