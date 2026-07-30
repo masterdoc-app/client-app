@@ -112,26 +112,40 @@ private fun String.toJsonString(): String =
       host.style.top = top + 'px';
       host.style.width = width + 'px';
       host.style.height = height + 'px';
+      host.__markersJson = markersJson;
+      host.__leafletDisposed = false;
 
-      const update = () => {
-        if (!window.L) {
-          if (!document.getElementById('leaflet-css')) {
-            const link = document.createElement('link');
-            link.id = 'leaflet-css';
-            link.rel = 'stylesheet';
-            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-            document.head.appendChild(link);
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-            document.head.appendChild(script);
-          }
-          setTimeout(update, 50);
-          return;
+      const showLoadFailure = () => {
+        if (!host.isConnected || host.__leafletDisposed) return;
+        host.textContent = 'Не удалось загрузить карту OpenStreetMap. Проверьте подключение к интернету.';
+        host.style.display = 'flex';
+        host.style.alignItems = 'center';
+        host.style.justifyContent = 'center';
+        host.style.padding = '16px';
+        host.style.boxSizing = 'border-box';
+      };
+
+      const renderMap = () => {
+        if (!host.isConnected || host.__leafletDisposed || !window.L) return;
+        host.style.display = '';
+        host.style.padding = '';
+        if (!host.__leafletMap) {
+          host.textContent = '';
+          host.__leafletMap = L.map(host).setView([55.751244, 37.618423], 5);
         }
-        const map = host.__leafletMap || (host.__leafletMap = L.map(host).setView([55.751244, 37.618423], 5));
+        const map = host.__leafletMap;
+        if (!host.__tileLayer) {
+          host.__tileLayer = L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+              maxZoom: 19,
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            },
+          ).addTo(map);
+        }
         if (!host.__markerLayer) host.__markerLayer = L.layerGroup().addTo(map);
         host.__markerLayer.clearLayers();
-        const markers = JSON.parse(markersJson);
+        const markers = JSON.parse(host.__markersJson);
         const points = markers.map(marker => {
           const point = [marker.lat, marker.lon];
           const popup = document.createElement('span');
@@ -146,7 +160,51 @@ private fun String.toJsonString(): String =
         }
         map.invalidateSize();
       };
-      update();
+
+      if (window.L) {
+        renderMap();
+        return;
+      }
+
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+      if (host.__leafletLoading) return;
+      host.__leafletLoading = true;
+
+      let script = document.getElementById('leaflet-script');
+      const onLoad = () => {
+        host.__leafletLoading = false;
+        renderMap();
+      };
+      const onError = () => {
+        host.__leafletLoading = false;
+        showLoadFailure();
+      };
+      if (script && script.dataset.leafletStatus === 'failed') {
+        onError();
+      } else if (script) {
+        script.addEventListener('load', onLoad, { once: true });
+        script.addEventListener('error', onError, { once: true });
+      } else {
+        script = document.createElement('script');
+        script.id = 'leaflet-script';
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.dataset.leafletStatus = 'loading';
+        script.onload = () => {
+          script.dataset.leafletStatus = 'loaded';
+          onLoad();
+        };
+        script.onerror = () => {
+          script.dataset.leafletStatus = 'failed';
+          onError();
+        };
+        document.head.appendChild(script);
+      }
     }
     """,
 )
@@ -164,6 +222,7 @@ private external fun showLeafletMap(
     id => {
       const host = document.getElementById(id);
       if (!host) return;
+      host.__leafletDisposed = true;
       if (host.__leafletMap) host.__leafletMap.remove();
       host.remove();
     }

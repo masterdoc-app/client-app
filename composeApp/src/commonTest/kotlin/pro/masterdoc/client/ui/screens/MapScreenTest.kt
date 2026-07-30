@@ -7,6 +7,14 @@ import pro.masterdoc.client.auth.EngineerLocationDto
 
 class MapScreenTest {
     @Test
+    fun markerUrl_opensItsOpenStreetMapCoordinates() {
+        assertEquals(
+            "https://www.openstreetmap.org/?mlat=55.751244&mlon=37.618423",
+            engineerMapUrl(EngineerMapMarker("Инженер", 55.751244, 37.618423)),
+        )
+    }
+
+    @Test
     fun retry_isDeferredToTheScheduledPoll() {
         assertFalse(isMapRetryEnabled())
     }
