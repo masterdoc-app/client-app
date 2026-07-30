@@ -18,8 +18,10 @@ import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -28,6 +30,7 @@ import com.arkivanov.decompose.router.pages.ChildPages
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.EngineerLocationsGateway
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.navigation.FeatureId
@@ -40,6 +43,7 @@ import pro.masterdoc.client.navigation.NavItemSpec
 import pro.masterdoc.client.navigation.toHash
 import pro.masterdoc.client.presentation.shell.MainShellComponent
 import pro.masterdoc.client.session.ClientSession
+import pro.masterdoc.client.session.SessionUser
 import pro.masterdoc.client.ui.screens.BlackBoxScreen
 import pro.masterdoc.client.ui.screens.BoardScreen
 import pro.masterdoc.client.ui.screens.ChartsScreen
@@ -51,6 +55,8 @@ import pro.masterdoc.client.ui.screens.TicketsScreen
 import pro.masterdoc.client.ui.screens.StubDestinationScreen
 import pro.masterdoc.client.ui.screens.UsersScreen
 import pro.masterdoc.client.ui.screens.destinationTitle
+import pro.masterdoc.client.tracking.LocationTrackingController
+import pro.masterdoc.client.tracking.createEngineerLocationPingSource
 
 private val CompactWidthBreakpoint = 600.dp
 
@@ -63,12 +69,26 @@ fun MainShellContent(
     equipmentRepository: EquipmentRepository? = null,
     workOrdersRepository: WorkOrdersRepository? = null,
     userScopesRepository: UserScopesRepository? = null,
+    engineerLocationsGateway: EngineerLocationsGateway? = null,
 ) {
     val pages by component.pages.subscribeAsState()
     val focusedMapId by component.focusedMapId.subscribeAsState()
     val focusedAssetId by component.focusedAssetId.subscribeAsState()
     val navUiItems = component.navItems.toAppNavItems(pages) { index ->
         component.onNavItemSelected(index)
+    }
+    val locationTrackingController =
+        remember(engineerLocationsGateway, component.session.user) {
+            engineerLocationsGateway?.let { repository ->
+                LocationTrackingController(
+                    repository = repository,
+                    locationSource = createEngineerLocationPingSource(),
+                    displayName = { component.session.user?.displayName() },
+                )
+            }
+        }
+    DisposableEffect(locationTrackingController) {
+        onDispose { locationTrackingController?.close() }
     }
 
     LaunchedEffect(Unit) {
@@ -93,6 +113,7 @@ fun MainShellContent(
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
                         userScopesRepository = userScopesRepository,
+                        locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
                         onOpenEquipment = onOpenEquipment,
@@ -127,6 +148,7 @@ fun MainShellContent(
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
                         userScopesRepository = userScopesRepository,
+                        locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
                         onOpenEquipment = onOpenEquipment,
@@ -158,6 +180,7 @@ private fun ActivePage(
     equipmentRepository: EquipmentRepository?,
     workOrdersRepository: WorkOrdersRepository?,
     userScopesRepository: UserScopesRepository?,
+    locationTrackingController: LocationTrackingController?,
     focusedMapId: String?,
     focusedAssetId: String?,
     onOpenEquipment: (String) -> Unit,
@@ -174,6 +197,7 @@ private fun ActivePage(
                     equipmentRepository = equipmentRepository,
                     currentUserId = session.user?.id,
                     onOpenEquipment = onOpenEquipment,
+                    locationTrackingController = locationTrackingController,
                 )
             } else {
                 StubDestinationScreen(active.destination)
@@ -264,6 +288,9 @@ private fun ActivePage(
             }
     }
 }
+
+private fun SessionUser.displayName(): String? =
+    listOfNotNull(givenName, familyName).joinToString(" ").trim().takeIf { it.isNotEmpty() } ?: email
 
 private fun List<NavItemSpec>.toAppNavItems(
     pages: ChildPages<MainShellComponent.PageConfig, MainShellComponent.PageChild>,

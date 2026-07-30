@@ -30,6 +30,7 @@ import pro.masterdoc.client.designsystem.components.AppStatusChipTone
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
+import pro.masterdoc.client.tracking.LocationTrackingController
 
 @Composable
 fun MyWorkOrdersScreen(
@@ -37,6 +38,7 @@ fun MyWorkOrdersScreen(
     equipmentRepository: EquipmentRepository?,
     currentUserId: String?,
     onOpenEquipment: (String) -> Unit = {},
+    locationTrackingController: LocationTrackingController? = null,
     modifier: Modifier = Modifier,
 ) {
     var items by remember { mutableStateOf<List<WorkOrderDto>>(emptyList()) }
@@ -57,6 +59,7 @@ fun MyWorkOrdersScreen(
         }
         try {
             items = repository.list(assigneeId = currentUserId)
+            locationTrackingController?.onWorkOrdersChanged(items)
         } catch (e: CancellationException) {
             throw e
         } catch (e: GatewayHttpException) {
@@ -87,6 +90,7 @@ fun MyWorkOrdersScreen(
                 selectedId = null
             },
             onChanged = { reloadKey++ },
+            locationTrackingController = locationTrackingController,
             currentUserId = currentUserId,
             equipmentRepository = equipmentRepository,
             onOpenMentor = { mentorOpen = true },

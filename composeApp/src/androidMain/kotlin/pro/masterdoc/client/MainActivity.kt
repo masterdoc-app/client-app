@@ -14,10 +14,12 @@ import pro.masterdoc.client.di.initClientKoin
 import pro.masterdoc.client.presentation.shell.DefaultRootComponent
 import pro.masterdoc.client.presentation.shell.RootComponent
 import pro.masterdoc.client.session.ClientSession
+import pro.masterdoc.client.tracking.configureEngineerLocationTracking
 
 class MainActivity : ComponentActivity(), KoinComponent {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        configureEngineerLocationTracking(this)
         initClientKoin()
         val session = get<ClientSession>()
         val root =

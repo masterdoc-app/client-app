@@ -49,6 +49,7 @@ import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextField
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
+import pro.masterdoc.client.tracking.LocationTrackingController
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -65,6 +66,7 @@ fun WorkOrderDetailScreen(
     onOpenEquipment: (String) -> Unit = {},
     hasAdminUsers: Boolean = false,
     editableAssignee: Boolean = false,
+    locationTrackingController: LocationTrackingController? = null,
     readOnly: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
@@ -319,6 +321,7 @@ fun WorkOrderDetailScreen(
                                             error = null
                                             try {
                                                 order = repository.patch(wo.id, status = "in_progress")
+                                                locationTrackingController?.onStartedInProgress()
                                                 onChanged()
                                             } catch (e: Exception) {
                                                 error = e.message

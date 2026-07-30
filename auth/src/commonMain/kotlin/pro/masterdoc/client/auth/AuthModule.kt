@@ -51,6 +51,13 @@ fun authModule(
             )
         }
         single {
+            EngineerLocationsRepository(
+                config = get(),
+                http = get(),
+                tokenStore = get(),
+            )
+        }
+        single {
             UserScopesRepository(
                 config = get(),
                 http = get(),
