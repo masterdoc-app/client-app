@@ -179,7 +179,7 @@ private class AndroidGatewayHttpClient(
             client.newCall(request).execute().use { response ->
                 GatewayHttpResponse(
                     status = response.code,
-                    body = response.body.string(),
+                    body = response.body?.string().orEmpty(),
                 )
             }
         }
