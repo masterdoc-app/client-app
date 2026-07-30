@@ -32,6 +32,8 @@ import pro.masterdoc.client.designsystem.theme.ClientSpacing
 private const val MAP_POLL_INTERVAL_MS = 20_000L
 private const val ENGINEER_LOCATION_FRESHNESS_MS = 7 * 60 * 1_000L
 
+internal fun mapPollingDelayMillis(): Long = MAP_POLL_INTERVAL_MS
+
 @Serializable
 internal data class EngineerMapMarker(
     val label: String,
@@ -56,7 +58,7 @@ internal fun engineerMapMarkers(
 private fun EngineerLocationDto.recordedAtMillis(): Long? =
     runCatching { Instant.parse(recordedAt).toEpochMilliseconds() }.getOrNull()
 
-private fun nextMapRefreshDelayMillis(
+private fun nextMarkerRefreshDelayMillis(
     locations: List<EngineerLocationDto>,
     nowEpochMillis: Long,
 ): Long =
@@ -91,9 +93,15 @@ fun MapScreen(
             } finally {
                 loading = false
             }
+            delay(mapPollingDelayMillis())
+        }
+    }
+
+    LaunchedEffect(latestLocations) {
+        while (true) {
             val nowEpochMillis = Clock.System.now().toEpochMilliseconds()
             markers = engineerMapMarkers(latestLocations, nowEpochMillis)
-            delay(nextMapRefreshDelayMillis(latestLocations, nowEpochMillis))
+            delay(nextMarkerRefreshDelayMillis(latestLocations, nowEpochMillis))
         }
     }
 

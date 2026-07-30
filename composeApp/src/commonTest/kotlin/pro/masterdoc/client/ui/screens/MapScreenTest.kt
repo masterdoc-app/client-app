@@ -6,6 +6,11 @@ import pro.masterdoc.client.auth.EngineerLocationDto
 
 class MapScreenTest {
     @Test
+    fun pollingDelay_staysAtTwentySeconds_whenMarkersExpireSoon() {
+        assertEquals(20_000L, mapPollingDelayMillis())
+    }
+
+    @Test
     fun markers_hideLocationsOlderThanFreshnessWindow() {
         val nowEpochMillis = 1_753_906_200_000L
 
