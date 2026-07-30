@@ -138,7 +138,7 @@ fun MapScreen(
                 else -> {
                     EngineerLocationsMap(markers = markers, modifier = Modifier.fillMaxSize())
                     if (error != null) {
-                        AppText(text = error)
+                        AppText(text = error!!)
                     }
                 }
             }

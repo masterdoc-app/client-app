@@ -15,8 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 private data class MapBounds(
     val left: Float,
@@ -32,7 +30,7 @@ internal actual fun EngineerLocationsMap(
 ) {
     val id = remember { "engineer-locations-map-${nextMapId++}" }
     var bounds by remember { mutableStateOf<MapBounds?>(null) }
-    val markersJson = remember(markers) { Json.encodeToString(markers) }
+    val markersJson = remember(markers) { markers.toLeafletJson() }
 
     DisposableEffect(id) {
         onDispose { destroyLeafletMap(id) }
@@ -54,7 +52,7 @@ internal actual fun EngineerLocationsMap(
             modifier
                 .background(Color.Transparent)
                 .onGloballyPositioned { coordinates ->
-                    val position: Offset = coordinates.positionInWindow()
+                    val position: Offset = coordinates.localToRoot(Offset.Zero)
                     bounds =
                         MapBounds(
                             left = position.x,
@@ -67,6 +65,35 @@ internal actual fun EngineerLocationsMap(
 }
 
 private var nextMapId = 0
+
+private fun List<EngineerMapMarker>.toLeafletJson(): String =
+    joinToString(prefix = "[", postfix = "]") { marker ->
+        """{"label":${marker.label.toJsonString()},"lat":${marker.lat},"lon":${marker.lon}}"""
+    }
+
+private fun String.toJsonString(): String =
+    buildString {
+        append('"')
+        this@toJsonString.forEach { char ->
+            when (char) {
+                '"' -> append("\\\"")
+                '\\' -> append("\\\\")
+                '\b' -> append("\\b")
+                '\u000C' -> append("\\f")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else ->
+                    if (char < ' ') {
+                        append("\\u")
+                        append(char.code.toString(16).padStart(4, '0'))
+                    } else {
+                        append(char)
+                    }
+            }
+        }
+        append('"')
+    }
 
 @JsFun(
     """
