@@ -49,6 +49,7 @@ import pro.masterdoc.client.ui.screens.BoardScreen
 import pro.masterdoc.client.ui.screens.ChartsScreen
 import pro.masterdoc.client.ui.screens.EquipmentDetailScreen
 import pro.masterdoc.client.ui.screens.EquipmentScreen
+import pro.masterdoc.client.ui.screens.MapScreen
 import pro.masterdoc.client.ui.screens.ProfileScreen
 import pro.masterdoc.client.ui.screens.MyWorkOrdersScreen
 import pro.masterdoc.client.ui.screens.TicketsScreen
@@ -113,6 +114,7 @@ fun MainShellContent(
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
                         userScopesRepository = userScopesRepository,
+                        engineerLocationsGateway = engineerLocationsGateway,
                         locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
@@ -148,6 +150,7 @@ fun MainShellContent(
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
                         userScopesRepository = userScopesRepository,
+                        engineerLocationsGateway = engineerLocationsGateway,
                         locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
@@ -180,6 +183,7 @@ private fun ActivePage(
     equipmentRepository: EquipmentRepository?,
     workOrdersRepository: WorkOrdersRepository?,
     userScopesRepository: UserScopesRepository?,
+    engineerLocationsGateway: EngineerLocationsGateway?,
     locationTrackingController: LocationTrackingController?,
     focusedMapId: String?,
     focusedAssetId: String?,
@@ -281,6 +285,12 @@ private fun ActivePage(
                             dispatcherMode = FeatureId.Board in session.features,
                             onOpenEquipment = onOpenEquipment,
                         )
+                    } else {
+                        StubDestinationScreen(active.destination)
+                    }
+                NavDestinationId.Map ->
+                    if (engineerLocationsGateway != null) {
+                        MapScreen(repository = engineerLocationsGateway)
                     } else {
                         StubDestinationScreen(active.destination)
                     }
