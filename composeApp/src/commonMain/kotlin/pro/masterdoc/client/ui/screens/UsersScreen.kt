@@ -28,6 +28,7 @@ import pro.masterdoc.client.auth.FeatureDefinitionDto
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.UpdateSiteRequest
+import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppButtonVariant
 import pro.masterdoc.client.designsystem.components.AppScaffold
@@ -42,17 +43,34 @@ private enum class AdminTab { Users, Sites }
 fun UsersScreen(
     repository: AdminUsersRepository,
     equipmentRepository: EquipmentRepository? = null,
+    userScopesRepository: UserScopesRepository? = null,
     currentUserId: String? = null,
     modifier: Modifier = Modifier,
 ) {
     var tab by remember { mutableStateOf(AdminTab.Users) }
     var showInvite by remember { mutableStateOf(false) }
+    var showCustomerScopeBinding by remember { mutableStateOf(false) }
 
     if (showInvite) {
         InviteUserScreen(
             repository = repository,
             onBack = { showInvite = false },
             onInvited = { showInvite = false },
+            modifier = modifier,
+        )
+        return
+    }
+
+    if (showCustomerScopeBinding && equipmentRepository != null && userScopesRepository != null) {
+        EngineerScopeScreen(
+            userScopesRepository = userScopesRepository,
+            equipmentRepository = equipmentRepository,
+            adminUsersRepository = repository,
+            hasAdminUsers = true,
+            recentAssigneeIds = emptyList(),
+            onBack = { showCustomerScopeBinding = false },
+            requiredFeature = "tickets",
+            title = "Привязка заказчиков",
             modifier = modifier,
         )
         return
@@ -87,6 +105,10 @@ fun UsersScreen(
                         repository = repository,
                         currentUserId = currentUserId,
                         onInvite = { showInvite = true },
+                        onOpenCustomerScopeBinding = {
+                            showCustomerScopeBinding = true
+                        },
+                        canBindCustomers = equipmentRepository != null && userScopesRepository != null,
                     )
                 AdminTab.Sites ->
                     if (equipmentRepository != null) {
@@ -104,6 +126,8 @@ private fun UsersTab(
     repository: AdminUsersRepository,
     currentUserId: String?,
     onInvite: () -> Unit,
+    onOpenCustomerScopeBinding: () -> Unit,
+    canBindCustomers: Boolean,
 ) {
     var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     var featureCatalog by remember { mutableStateOf<List<FeatureDefinitionDto>>(emptyList()) }
@@ -137,6 +161,12 @@ private fun UsersTab(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AppButton(text = "Пригласить", onClick = onInvite)
+        if (canBindCustomers) {
+            AppButton(
+                text = "Привязка заказчиков",
+                onClick = onOpenCustomerScopeBinding,
+            )
+        }
         error?.let { AppText(text = it) }
         AppText(text = "Список")
         when {

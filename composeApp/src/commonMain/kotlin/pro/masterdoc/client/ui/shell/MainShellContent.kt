@@ -47,6 +47,7 @@ import pro.masterdoc.client.ui.screens.EquipmentDetailScreen
 import pro.masterdoc.client.ui.screens.EquipmentScreen
 import pro.masterdoc.client.ui.screens.ProfileScreen
 import pro.masterdoc.client.ui.screens.MyWorkOrdersScreen
+import pro.masterdoc.client.ui.screens.TicketsScreen
 import pro.masterdoc.client.ui.screens.StubDestinationScreen
 import pro.masterdoc.client.ui.screens.UsersScreen
 import pro.masterdoc.client.ui.screens.destinationTitle
@@ -179,6 +180,17 @@ private fun ActivePage(
             }
         is MainShellComponent.PageChild.Stub ->
             when (active.destination) {
+                NavDestinationId.Tickets ->
+                    if (workOrdersRepository != null && equipmentRepository != null) {
+                        TicketsScreen(
+                            repository = workOrdersRepository,
+                            equipmentRepository = equipmentRepository,
+                            currentUserId = session.user?.id,
+                            userScopesRepository = userScopesRepository,
+                        )
+                    } else {
+                        StubDestinationScreen(active.destination)
+                    }
                 NavDestinationId.Profile ->
                     ProfileScreen(
                         onLogout = onLogout,
@@ -190,6 +202,7 @@ private fun ActivePage(
                         UsersScreen(
                             repository = adminUsersRepository,
                             equipmentRepository = equipmentRepository,
+                            userScopesRepository = userScopesRepository,
                             currentUserId = session.user?.id,
                         )
                     } else {

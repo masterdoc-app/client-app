@@ -19,6 +19,8 @@ data class WorkOrderDto(
     val dueAt: String,
     val durationHours: Int = 8,
     val assigneeId: String? = null,
+    val createdBy: String? = null,
+    val description: String? = null,
     val maintenanceMapId: String? = null,
     val maintenanceMapItemId: String? = null,
     val source: String,
@@ -43,6 +45,7 @@ data class CreateWorkOrderRequest(
     val siteId: String,
     val dueAt: String,
     val durationHours: Int? = null,
+    val description: String? = null,
     val maintenanceMapId: String? = null,
     val maintenanceMapItemId: String? = null,
     val source: String = "manual",
@@ -82,8 +85,11 @@ class WorkOrdersRepository(
         return json.decodeFromString(BoardResponseDto.serializer(), response.body)
     }
 
-    suspend fun list(assigneeId: String? = null): List<WorkOrderDto> {
-        val query = assigneeId?.takeIf { it.isNotBlank() }?.let { "?assigneeId=$it" }.orEmpty()
+    suspend fun list(
+        assigneeId: String? = null,
+        createdBy: String? = null,
+    ): List<WorkOrderDto> {
+        val query = workOrdersListQuery(assigneeId, createdBy)
         val response =
             http.get(
                 url = "${base()}/work-orders$query",
@@ -154,6 +160,18 @@ class WorkOrdersRepository(
         }
         return json.decodeFromString(WorkOrderDto.serializer(), response.body)
     }
+}
+
+fun workOrdersListQuery(
+    assigneeId: String?,
+    createdBy: String?,
+): String {
+    val params =
+        buildList {
+            assigneeId?.takeIf { it.isNotBlank() }?.let { add("assigneeId=$it") }
+            createdBy?.takeIf { it.isNotBlank() }?.let { add("createdBy=$it") }
+        }
+    return if (params.isEmpty()) "" else params.joinToString("&", prefix = "?")
 }
 
 fun workOrderTypeLabelRu(type: String): String =

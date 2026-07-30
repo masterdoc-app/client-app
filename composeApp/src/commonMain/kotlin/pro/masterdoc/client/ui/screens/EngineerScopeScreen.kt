@@ -43,8 +43,13 @@ import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
+internal fun filterUsersForScopeBinding(
+    users: List<AdminUser>,
+    requiredFeature: String,
+): List<AdminUser> = users.filter { requiredFeature in it.features }
+
 internal fun filterEngineersForScopeBinding(users: List<AdminUser>): List<AdminUser> =
-    users.filter { "engineer" in it.features }
+    filterUsersForScopeBinding(users, "engineer")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +61,8 @@ fun EngineerScopeScreen(
     recentAssigneeIds: List<String>,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    requiredFeature: String = "engineer",
+    title: String = "Привязка инженеров",
 ) {
     var sites by remember { mutableStateOf<List<SiteDto>>(emptyList()) }
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
@@ -68,7 +75,7 @@ fun EngineerScopeScreen(
 
     var engineerId by remember { mutableStateOf("") }
     var userMenuExpanded by remember { mutableStateOf(false) }
-    val engineers = remember(users) { filterEngineersForScopeBinding(users) }
+    val engineers = remember(users, requiredFeature) { filterUsersForScopeBinding(users, requiredFeature) }
     var selectedSiteIds by remember { mutableStateOf(setOf<String>()) }
     var selectedAssetIds by remember { mutableStateOf(setOf<String>()) }
     val scope = rememberCoroutineScope()
@@ -132,7 +139,7 @@ fun EngineerScopeScreen(
     }
 
     AppScaffold(
-        title = "Привязка инженеров",
+        title = title,
         modifier = modifier,
         onNavigateBack = onBack,
     ) { padding ->
@@ -145,8 +152,13 @@ fun EngineerScopeScreen(
                     .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            AppText(
-                text = "Выберите инженера и укажите цеха и/или оборудование в его зоне ответственности.",
+                AppText(
+                    text =
+                        if (requiredFeature == "engineer") {
+                            "Выберите инженера и укажите цеха и/или оборудование в его зоне ответственности."
+                        } else {
+                            "Выберите заказчика и укажите цеха и/или оборудование в его зоне ответственности."
+                        },
                 style = AppTextStyle.Label,
             )
 
@@ -161,7 +173,7 @@ fun EngineerScopeScreen(
                             value = engineerId.takeIf { it.isNotBlank() }?.let(::userLabel) ?: "",
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Инженер") },
+                            label = { Text(if (requiredFeature == "engineer") "Инженер" else "Заказчик") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = userMenuExpanded) },
                             modifier =
                                 Modifier
@@ -187,7 +199,12 @@ fun EngineerScopeScreen(
                 }
                 hasAdminUsers && !catalogLoading && engineers.isEmpty() -> {
                     AppText(
-                        text = "Нет пользователей с фичей Инженер",
+                        text =
+                            if (requiredFeature == "engineer") {
+                                "Нет пользователей с фичей Инженер"
+                            } else {
+                                "Нет пользователей с фичей Заказчик"
+                            },
                         style = AppTextStyle.Label,
                     )
                 }
@@ -198,7 +215,7 @@ fun EngineerScopeScreen(
                             engineerId = it
                             savedMessage = null
                         },
-                        label = { Text("ID инженера") },
+                        label = { Text(if (requiredFeature == "engineer") "ID инженера" else "ID заказчика") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
