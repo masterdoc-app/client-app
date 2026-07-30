@@ -50,6 +50,8 @@ fun UsersScreen(
     var tab by remember { mutableStateOf(AdminTab.Users) }
     var showInvite by remember { mutableStateOf(false) }
     var showCustomerScopeBinding by remember { mutableStateOf(false) }
+    var showEngineerScopeBinding by remember { mutableStateOf(false) }
+    val canBindScopes = equipmentRepository != null && userScopesRepository != null
 
     if (showInvite) {
         InviteUserScreen(
@@ -61,16 +63,31 @@ fun UsersScreen(
         return
     }
 
-    if (showCustomerScopeBinding && equipmentRepository != null && userScopesRepository != null) {
+    if (showCustomerScopeBinding && canBindScopes) {
         EngineerScopeScreen(
-            userScopesRepository = userScopesRepository,
-            equipmentRepository = equipmentRepository,
+            userScopesRepository = userScopesRepository!!,
+            equipmentRepository = equipmentRepository!!,
             adminUsersRepository = repository,
             hasAdminUsers = true,
             recentAssigneeIds = emptyList(),
             onBack = { showCustomerScopeBinding = false },
             requiredFeature = "tickets",
             title = "Привязка заказчиков",
+            modifier = modifier,
+        )
+        return
+    }
+
+    if (showEngineerScopeBinding && canBindScopes) {
+        EngineerScopeScreen(
+            userScopesRepository = userScopesRepository!!,
+            equipmentRepository = equipmentRepository!!,
+            adminUsersRepository = repository,
+            hasAdminUsers = true,
+            recentAssigneeIds = emptyList(),
+            onBack = { showEngineerScopeBinding = false },
+            requiredFeature = "engineer",
+            title = "Привязка инженеров",
             modifier = modifier,
         )
         return
@@ -105,10 +122,9 @@ fun UsersScreen(
                         repository = repository,
                         currentUserId = currentUserId,
                         onInvite = { showInvite = true },
-                        onOpenCustomerScopeBinding = {
-                            showCustomerScopeBinding = true
-                        },
-                        canBindCustomers = equipmentRepository != null && userScopesRepository != null,
+                        onOpenCustomerScopeBinding = { showCustomerScopeBinding = true },
+                        onOpenEngineerScopeBinding = { showEngineerScopeBinding = true },
+                        canBindScopes = canBindScopes,
                     )
                 AdminTab.Sites ->
                     if (equipmentRepository != null) {
@@ -127,7 +143,8 @@ private fun UsersTab(
     currentUserId: String?,
     onInvite: () -> Unit,
     onOpenCustomerScopeBinding: () -> Unit,
-    canBindCustomers: Boolean,
+    onOpenEngineerScopeBinding: () -> Unit,
+    canBindScopes: Boolean,
 ) {
     var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     var featureCatalog by remember { mutableStateOf<List<FeatureDefinitionDto>>(emptyList()) }
@@ -160,12 +177,20 @@ private fun UsersTab(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        AppButton(text = "Пригласить", onClick = onInvite)
-        if (canBindCustomers) {
-            AppButton(
-                text = "Привязка заказчиков",
-                onClick = onOpenCustomerScopeBinding,
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+            AppButton(text = "Пригласить", onClick = onInvite)
+            if (canBindScopes) {
+                AppButton(
+                    text = "Привязка инженеров",
+                    onClick = onOpenEngineerScopeBinding,
+                    variant = AppButtonVariant.Secondary,
+                )
+                AppButton(
+                    text = "Привязка заказчиков",
+                    onClick = onOpenCustomerScopeBinding,
+                    variant = AppButtonVariant.Secondary,
+                )
+            }
         }
         error?.let { AppText(text = it) }
         AppText(text = "Список")
