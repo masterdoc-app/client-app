@@ -40,12 +40,13 @@ jobs:
 
       - run: chmod +x gradlew
 
-      - name: JVM / Desktop tests
+      - name: JVM / Desktop tests and Android compile
         run: |
           ./gradlew \
             :auth:jvmTest \
             :shared:jvmTest \
             :composeApp:desktopTest \
+            :composeApp:assembleDebug \
             --stacktrace
 
   build:

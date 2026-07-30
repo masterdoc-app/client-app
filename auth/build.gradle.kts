@@ -38,6 +38,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
         }
 
+        androidMain.dependencies {
+            implementation(libs.okhttp)
+        }
+
         val wasmJsMain by getting
         wasmJsMain.dependencies {
             implementation(libs.kotlinx.browser)

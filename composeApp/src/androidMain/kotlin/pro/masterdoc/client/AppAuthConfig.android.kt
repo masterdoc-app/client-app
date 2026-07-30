@@ -1,3 +1,5 @@
 package pro.masterdoc.client
 
-actual fun currentHostname(): String = "localhost"
+import pro.masterdoc.client.auth.AuthConfig
+
+actual fun platformAuthRedirectUri(): String = AuthConfig.ANDROID_REDIRECT_URI
