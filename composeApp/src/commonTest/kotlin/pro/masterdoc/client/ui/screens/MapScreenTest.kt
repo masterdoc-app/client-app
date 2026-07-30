@@ -2,9 +2,15 @@ package pro.masterdoc.client.ui.screens
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import pro.masterdoc.client.auth.EngineerLocationDto
 
 class MapScreenTest {
+    @Test
+    fun retry_isDeferredToTheScheduledPoll() {
+        assertFalse(isMapRetryEnabled())
+    }
+
     @Test
     fun pollingDelay_staysAtTwentySeconds_whenMarkersExpireSoon() {
         assertEquals(20_000L, mapPollingDelayMillis())

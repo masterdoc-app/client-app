@@ -34,6 +34,8 @@ private const val ENGINEER_LOCATION_FRESHNESS_MS = 7 * 60 * 1_000L
 
 internal fun mapPollingDelayMillis(): Long = MAP_POLL_INTERVAL_MS
 
+internal fun isMapRetryEnabled(): Boolean = false
+
 @Serializable
 internal data class EngineerMapMarker(
     val label: String,
@@ -79,9 +81,8 @@ fun MapScreen(
     var latestLocations by remember { mutableStateOf<List<EngineerLocationDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
-    var reloadKey by remember { mutableStateOf(0) }
 
-    LaunchedEffect(repository, reloadKey) {
+    LaunchedEffect(repository) {
         while (true) {
             try {
                 latestLocations = repository.list()
@@ -126,7 +127,11 @@ fun MapScreen(
                         AppText(text = "Нет инженеров на линии")
                         if (error != null) {
                             AppText(text = error!!)
-                            AppButton(text = "Повторить", onClick = { reloadKey++ })
+                            AppButton(
+                                text = "Повторить",
+                                enabled = isMapRetryEnabled(),
+                                onClick = {},
+                            )
                         }
                     }
                 }
