@@ -32,6 +32,7 @@ import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
+import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrderDuration
@@ -73,6 +74,8 @@ fun WorkOrderDetailScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var asset by remember { mutableStateOf<AssetDto?>(null) }
     var sites by remember { mutableStateOf<List<SiteDto>>(emptyList()) }
+    var directoryUsers by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
+    var pprMap by remember { mutableStateOf<MaintenanceMapDto?>(null) }
     val scope = rememberCoroutineScope()
 
     fun reload() {
@@ -102,6 +105,35 @@ fun WorkOrderDetailScreen(
         asset =
             try {
                 findAssetById(assets.listAssets().items, assetId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
+    }
+
+    LaunchedEffect(adminUsersRepository, hasAdminUsers) {
+        directoryUsers =
+            if (hasAdminUsers && adminUsersRepository != null) {
+                try {
+                    adminUsersRepository.listUsers(limit = 200).items
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            } else {
+                emptyList()
+            }
+    }
+
+    LaunchedEffect(equipmentRepository, order?.maintenanceMapId) {
+        pprMap = null
+        val mapId = order?.maintenanceMapId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        val equipment = equipmentRepository ?: return@LaunchedEffect
+        pprMap =
+            try {
+                equipment.listMaps().items.find { it.id == mapId }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -228,6 +260,7 @@ fun WorkOrderDetailScreen(
                             userScopesRepository = userScopesRepository,
                             adminUsersRepository = adminUsersRepository,
                             hasAdminUsers = hasAdminUsers,
+                            currentUserId = currentUserId,
                             acting = acting,
                             onActingChange = { acting = it },
                             onError = { error = it },
@@ -237,12 +270,27 @@ fun WorkOrderDetailScreen(
                             },
                         )
                     } else {
-                        DetailRow("Исполнитель", wo.assigneeId ?: "не назначен")
+                        val assignee =
+                            wo.assigneeId?.takeIf { it.isNotBlank() }?.let { id ->
+                                formatAssigneeLabel(id, directoryUsers, currentUserId)
+                            } ?: "не назначен"
+                        DetailRow("Исполнитель", assignee)
                     }
                     DetailRow("Источник", wo.source)
                     if (wo.type == "ppr") {
-                        DetailRow("ППР", wo.maintenanceMapId.orEmpty())
-                        DetailRow("Пункт ППР", wo.maintenanceMapItemId.orEmpty())
+                        val itemTitle =
+                            wo.maintenanceMapItemId
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let { itemId -> pprMap?.items?.find { it.id == itemId }?.title }
+                        val (mapLabel, itemLabel) =
+                            resolvePprLabels(
+                                mapTitle = pprMap?.title,
+                                itemTitle = itemTitle,
+                                mapId = wo.maintenanceMapId,
+                                itemId = wo.maintenanceMapItemId,
+                            )
+                        DetailRow("ППР", mapLabel)
+                        DetailRow("Пункт ППР", itemLabel)
                     }
                     if (error != null) {
                         AppText(text = error!!)
@@ -324,6 +372,7 @@ private fun AssigneePickerRow(
     userScopesRepository: UserScopesRepository,
     adminUsersRepository: AdminUsersRepository?,
     hasAdminUsers: Boolean,
+    currentUserId: String?,
     acting: Boolean,
     onActingChange: (Boolean) -> Unit,
     onError: (String?) -> Unit,
@@ -366,7 +415,7 @@ private fun AssigneePickerRow(
         }
     }
 
-    fun userLabel(userId: String): String = formatAssigneeLabel(userId, users)
+    fun userLabel(userId: String): String = formatAssigneeLabel(userId, users, currentUserId)
 
     fun assignAssignee(userId: String?) {
         scope.launch {
@@ -462,15 +511,34 @@ private fun AssigneePickerRow(
 internal fun formatAssigneeLabel(
     userId: String,
     users: List<AdminUser>,
+    currentUserId: String? = null,
 ): String {
-    val user = users.find { it.id == userId } ?: return userId
+    if (currentUserId != null && userId == currentUserId) return "Вы"
+    val user = users.find { it.id == userId }
+    if (user == null) return "Пользователь"
     val name = listOf(user.givenName, user.familyName).filter { it.isNotBlank() }.joinToString(" ")
     return when {
         name.isNotBlank() && user.email.isNotBlank() -> "$name · ${user.email}"
         user.email.isNotBlank() -> user.email
         name.isNotBlank() -> name
-        else -> userId
+        else -> "Пользователь"
     }
+}
+
+/** Human-readable ППР labels — never raw map/item ids. */
+internal fun resolvePprLabels(
+    mapTitle: String?,
+    itemTitle: String?,
+    mapId: String?,
+    itemId: String?,
+): Pair<String, String> {
+    val mapLabel =
+        mapTitle?.trim()?.takeIf { it.isNotEmpty() }
+            ?: if (mapId.isNullOrBlank()) "—" else "ППР"
+    val itemLabel =
+        itemTitle?.trim()?.takeIf { it.isNotEmpty() }
+            ?: if (itemId.isNullOrBlank()) "—" else "Пункт ППР"
+    return mapLabel to itemLabel
 }
 
 /**

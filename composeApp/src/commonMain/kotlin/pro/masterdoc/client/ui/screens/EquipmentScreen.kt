@@ -118,7 +118,7 @@ fun EquipmentScreen(
         statusHint = "Уточняем черновик оборудования…"
         val card = repository.createEquipmentCard(docId, siteId, assetId)
         documentId = docId
-        statusHint = "Черновик оборудования готов (${card.draftAssetId.take(8)}…). Нажмите «В базу» — затем сформируем черновик ППР."
+        statusHint = "Черновик оборудования готов. Нажмите «В базу» — затем сформируем черновик ППР."
         reload()
     }
 
@@ -129,7 +129,7 @@ fun EquipmentScreen(
             "ok" -> {
                 val draftId = validation.draftAssetId
                 if (draftId.isNullOrBlank()) {
-                    error = "Валидатор не вернул draftAssetId"
+                    error = "Валидатор не вернул черновик оборудования"
                     statusHint = null
                 } else {
                     runEquipmentCard(docId, siteId, draftId)
@@ -301,7 +301,7 @@ fun EquipmentScreen(
                                     pendingDocumentId = null
                                     pendingDraftAssetId = null
                                     if (draftId.isNullOrBlank()) {
-                                        error = "Нет draftAssetId после валидации — загрузите документ снова"
+                                        error = "Нет черновика оборудования после валидации — загрузите документ снова"
                                     } else {
                                         runEquipmentCard(docId, siteId, draftId)
                                     }
@@ -328,7 +328,11 @@ fun EquipmentScreen(
                 }
             }
             if (documentId.isNotBlank()) {
-                AppText(text = "ID документа: $documentId", style = AppTextStyle.Label)
+                val docName = documentsById[documentId]?.filename
+                AppText(
+                    text = "Документ: ${documentDisplayName(docName, documentId)}",
+                    style = AppTextStyle.Label,
+                )
             }
             statusHint?.let { AppText(text = it, style = AppTextStyle.Label) }
             job?.let { j ->
@@ -409,7 +413,7 @@ fun EquipmentScreen(
                                             val docId =
                                                 asset.documentIds.firstOrNull()
                                                     ?: documentId.takeIf { it.isNotBlank() }
-                                                    ?: throw IllegalStateException("Нет documentId для технолога")
+                                                    ?: throw IllegalStateException("Нет документа для технолога")
                                             val started =
                                                 repository.startTechnologist(
                                                     documentId = docId,

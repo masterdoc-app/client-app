@@ -58,7 +58,6 @@ fun EngineerScopeScreen(
     equipmentRepository: EquipmentRepository,
     adminUsersRepository: AdminUsersRepository?,
     hasAdminUsers: Boolean,
-    recentAssigneeIds: List<String>,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     requiredFeature: String = "engineer",
@@ -126,17 +125,7 @@ fun EngineerScopeScreen(
         }
     }
 
-    fun userLabel(userId: String): String {
-        val user = users.find { it.id == userId }
-        if (user == null) return userId
-        val name = listOf(user.givenName, user.familyName).filter { it.isNotBlank() }.joinToString(" ")
-        return when {
-            name.isNotBlank() && user.email.isNotBlank() -> "$name · ${user.email}"
-            user.email.isNotBlank() -> user.email
-            name.isNotBlank() -> name
-            else -> userId
-        }
-    }
+    fun userLabel(userId: String): String = formatAssigneeLabel(userId, users)
 
     AppScaffold(
         title = title,
@@ -209,32 +198,14 @@ fun EngineerScopeScreen(
                     )
                 }
                 !hasAdminUsers -> {
-                    OutlinedTextField(
-                        value = engineerId,
-                        onValueChange = {
-                            engineerId = it
-                            savedMessage = null
-                        },
-                        label = { Text(if (requiredFeature == "engineer") "ID инженера" else "ID заказчика") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                    )
-                    if (recentAssigneeIds.isNotEmpty()) {
-                        AppText(text = "Недавние исполнители", style = AppTextStyle.Label)
-                        recentAssigneeIds.forEach { id ->
-                            AppButton(
-                                text = id,
-                                onClick = {
-                                    engineerId = id
-                                    loadScope(id)
-                                },
-                            )
-                        }
-                    }
-                    AppButton(
-                        text = "Загрузить привязку",
-                        enabled = engineerId.isNotBlank() && !scopeLoading,
-                        onClick = { loadScope(engineerId) },
+                    AppText(
+                        text =
+                            if (requiredFeature == "engineer") {
+                                "Справочник пользователей недоступен — выберите инженера через раздел Админ."
+                            } else {
+                                "Справочник пользователей недоступен — выберите заказчика через раздел Админ."
+                            },
+                        style = AppTextStyle.Label,
                     )
                 }
             }
@@ -269,9 +240,9 @@ fun EngineerScopeScreen(
                         val siteName = sites.find { it.id == asset.siteId }?.name
                         val label =
                             buildString {
-                                append(asset.name)
+                                append(assetDisplayName(asset.name, asset.id))
                                 if (!asset.inventoryNo.isNullOrBlank()) append(" · ${asset.inventoryNo}")
-                                if (siteName != null) append(" ($siteName)")
+                                if (!siteName.isNullOrBlank()) append(" ($siteName)")
                             }
                         ScopeCheckboxRow(
                             label = label,

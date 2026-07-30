@@ -393,7 +393,7 @@ private fun DocumentsSection(
                 fallbackIds.forEach { id ->
                     DocRow(
                         icon = Icons.Filled.Description,
-                        title = id,
+                        title = documentDisplayName(null, id),
                         subtitle = "метаданные недоступны",
                         onClick = null,
                     )

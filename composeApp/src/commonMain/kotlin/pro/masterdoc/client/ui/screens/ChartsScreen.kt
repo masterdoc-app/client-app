@@ -62,7 +62,7 @@ fun ChartsScreen(
                                         .getOrNull()
                             SourceDocRef(
                                 id = id,
-                                filename = meta?.filename ?: id,
+                                filename = documentDisplayName(meta?.filename, id),
                                 contentType = meta?.contentType.orEmpty(),
                             )
                         }

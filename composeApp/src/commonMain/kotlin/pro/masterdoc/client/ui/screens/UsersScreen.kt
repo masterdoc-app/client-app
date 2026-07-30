@@ -36,6 +36,8 @@ import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextField
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
+import pro.masterdoc.client.navigation.FeatureId
+import pro.masterdoc.client.navigation.titleRu
 
 private enum class AdminTab { Users, Sites }
 
@@ -69,7 +71,6 @@ fun UsersScreen(
             equipmentRepository = equipmentRepository!!,
             adminUsersRepository = repository,
             hasAdminUsers = true,
-            recentAssigneeIds = emptyList(),
             onBack = { showCustomerScopeBinding = false },
             requiredFeature = "tickets",
             title = "Привязка заказчиков",
@@ -84,7 +85,6 @@ fun UsersScreen(
             equipmentRepository = equipmentRepository!!,
             adminUsersRepository = repository,
             hasAdminUsers = true,
-            recentAssigneeIds = emptyList(),
             onBack = { showEngineerScopeBinding = false },
             requiredFeature = "engineer",
             title = "Привязка инженеров",
@@ -208,7 +208,9 @@ private fun UsersTab(
                             AppText(
                                 text =
                                     user.features
-                                        .map { id -> titleById[id] ?: id }
+                                        .map { id ->
+                                            titleById[id] ?: FeatureId.fromWire(id)?.titleRu() ?: "Фича"
+                                        }
                                         .joinToString(", ")
                                         .ifEmpty { "-" },
                             )
@@ -275,7 +277,12 @@ private fun SitesTab(equipmentRepository: EquipmentRepository) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AppText(
-            text = if (editingId == null) "Новая площадка" else "Редактирование: $editingId",
+            text =
+                if (editingId == null) {
+                    "Новая площадка"
+                } else {
+                    "Редактирование: ${sites.find { it.id == editingId }?.name?.takeIf { it.isNotBlank() } ?: name.ifBlank { "площадка" }}"
+                },
             style = AppTextStyle.Title,
         )
         AppTextField(
@@ -359,7 +366,7 @@ private fun SitesTab(equipmentRepository: EquipmentRepository) {
                         Column(modifier = Modifier.weight(1f)) {
                             AppText(text = site.name)
                             AppText(
-                                text = listOfNotNull(site.id, site.address).joinToString(" · "),
+                                text = siteSecondaryLine(site.address),
                                 style = AppTextStyle.Label,
                             )
                         }

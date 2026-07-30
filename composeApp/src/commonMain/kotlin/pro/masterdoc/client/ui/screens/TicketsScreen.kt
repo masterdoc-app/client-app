@@ -129,6 +129,7 @@ fun TicketsScreen(
             repository = repository,
             orderId = orderId,
             onBack = { selectedOrderId = null },
+            equipmentRepository = equipmentRepository,
             currentUserId = currentUserId,
             readOnly = true,
             modifier = modifier,

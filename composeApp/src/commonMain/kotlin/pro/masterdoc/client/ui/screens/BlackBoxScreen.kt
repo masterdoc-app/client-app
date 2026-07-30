@@ -53,17 +53,7 @@ fun BlackBoxScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    fun actorLabel(userId: String): String {
-        val u = users.find { it.id == userId }
-        if (u == null) return userId.take(8) + "…"
-        val name = listOf(u.givenName, u.familyName).filter { it.isNotBlank() }.joinToString(" ")
-        return when {
-            name.isNotBlank() && u.email.isNotBlank() -> "$name · ${u.email}"
-            u.email.isNotBlank() -> u.email
-            name.isNotBlank() -> name
-            else -> userId.take(8) + "…"
-        }
-    }
+    fun actorLabel(userId: String): String = formatAssigneeLabel(userId, users)
 
     fun filterLabel(): String =
         selectedUserId?.let { actorLabel(it) } ?: "Все"

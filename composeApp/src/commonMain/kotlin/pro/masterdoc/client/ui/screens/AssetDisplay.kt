@@ -14,12 +14,22 @@ data class AssetLinkLine(
     val sharesClickTarget: Boolean,
 )
 
-fun assetDisplayName(name: String?, assetId: String): String {
+fun assetDisplayName(
+    name: String?,
+    @Suppress("UNUSED_PARAMETER") assetId: String,
+): String {
     val trimmedName = name?.trim().orEmpty()
     if (trimmedName.isNotEmpty()) return trimmedName
+    return "Оборудование"
+}
 
-    val shortId = assetId.take(8)
-    return if (assetId.length > 8) "$shortId…" else shortId
+fun documentDisplayName(
+    filename: String?,
+    @Suppress("UNUSED_PARAMETER") documentId: String,
+): String {
+    val trimmed = filename?.trim().orEmpty()
+    if (trimmed.isNotEmpty()) return trimmed
+    return "Документ"
 }
 
 /** Human-readable site label — never a raw UUID. */
@@ -32,6 +42,12 @@ fun resolveSiteName(
     sites: List<SiteDto>,
     siteId: String,
 ): String = siteDisplayName(sites.find { it.id == siteId }?.name)
+
+/** Secondary line under site name — address only, never site id. */
+fun siteSecondaryLine(address: String?): String {
+    val trimmed = address?.trim().orEmpty()
+    return trimmed.ifEmpty { "—" }
+}
 
 fun assetInventoryTooltip(inventoryNo: String?): String {
     val trimmedInventoryNo = inventoryNo?.trim().orEmpty()

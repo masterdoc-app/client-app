@@ -22,8 +22,59 @@ class AssigneeLabelTest {
     }
 
     @Test
-    fun formatAssigneeLabelFallsBackToUserId() {
-        assertEquals("unknown-id", formatAssigneeLabel("unknown-id", emptyList()))
+    fun formatAssigneeLabelFallsBackToGenericLabelNeverUuid() {
+        assertEquals(
+            "Пользователь",
+            formatAssigneeLabel("29eb1297-8603-4976-8b6e-d0520f05589c", emptyList()),
+        )
+    }
+
+    @Test
+    fun formatAssigneeLabelUsesYouForCurrentUser() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "u1",
+                    email = "a@example.com",
+                    givenName = "Ivan",
+                    familyName = "Petrov",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        assertEquals("Вы", formatAssigneeLabel("u1", users, currentUserId = "u1"))
+        assertEquals("Ivan Petrov · a@example.com", formatAssigneeLabel("u1", users, currentUserId = "other"))
+    }
+
+    @Test
+    fun resolvePprLabelsPreferTitles() {
+        assertEquals(
+            "Карта ТО" to "Смазка",
+            resolvePprLabels(
+                mapTitle = "Карта ТО",
+                itemTitle = "Смазка",
+                mapId = "map-uuid",
+                itemId = "item-uuid",
+            ),
+        )
+        assertEquals(
+            "ППР" to "Пункт ППР",
+            resolvePprLabels(
+                mapTitle = null,
+                itemTitle = null,
+                mapId = "map-uuid",
+                itemId = "item-uuid",
+            ),
+        )
+        assertEquals(
+            "—" to "—",
+            resolvePprLabels(
+                mapTitle = null,
+                itemTitle = null,
+                mapId = null,
+                itemId = null,
+            ),
+        )
     }
 
     @Test

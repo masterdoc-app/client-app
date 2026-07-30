@@ -38,8 +38,23 @@ class AssetDisplayTest {
     }
 
     @Test
-    fun fallsBackToShortId() {
-        assertEquals("abcdef12…", assetDisplayName("  ", "abcdef12-3456-7890"))
+    fun fallsBackToGenericLabelNeverUuid() {
+        assertEquals("Оборудование", assetDisplayName("  ", "abcdef12-3456-7890"))
+        assertEquals("Оборудование", assetDisplayName(null, "29eb1297-8603-4976-8b6e-d0520f05589c"))
+    }
+
+    @Test
+    fun documentDisplayNameNeverShowsRawId() {
+        assertEquals("passport.pdf", documentDisplayName("passport.pdf", "doc-uuid"))
+        assertEquals("Документ", documentDisplayName(null, "doc-uuid"))
+        assertEquals("Документ", documentDisplayName("  ", "doc-uuid"))
+    }
+
+    @Test
+    fun siteSecondaryLineOmitsId() {
+        assertEquals("ул. Ленина, 1", siteSecondaryLine(address = "ул. Ленина, 1"))
+        assertEquals("—", siteSecondaryLine(address = null))
+        assertEquals("—", siteSecondaryLine(address = "  "))
     }
 
     @Test
