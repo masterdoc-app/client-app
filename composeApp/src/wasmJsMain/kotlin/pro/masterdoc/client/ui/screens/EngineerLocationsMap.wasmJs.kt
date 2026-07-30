@@ -107,7 +107,9 @@ private var nextMapId = 0
         const markers = JSON.parse(markersJson);
         const points = markers.map(marker => {
           const point = [marker.lat, marker.lon];
-          L.marker(point).bindPopup(marker.label).addTo(host.__markerLayer);
+          const popup = document.createElement('span');
+          popup.textContent = marker.label;
+          L.marker(point).bindPopup(popup).addTo(host.__markerLayer);
           return point;
         });
         if (points.length === 1) {

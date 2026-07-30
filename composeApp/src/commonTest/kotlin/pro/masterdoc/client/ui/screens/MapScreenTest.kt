@@ -6,6 +6,37 @@ import pro.masterdoc.client.auth.EngineerLocationDto
 
 class MapScreenTest {
     @Test
+    fun markers_hideLocationsOlderThanFreshnessWindow() {
+        val nowEpochMillis = 1_753_906_200_000L
+
+        assertEquals(
+            listOf(
+                EngineerMapMarker("На линии", 55.751244, 37.618423),
+            ),
+            engineerMapMarkers(
+                locations =
+                    listOf(
+                        EngineerLocationDto(
+                            userId = "active-engineer",
+                            lat = 55.751244,
+                            lon = 37.618423,
+                            recordedAt = "2025-07-30T20:09:00Z",
+                            displayName = "На линии",
+                        ),
+                        EngineerLocationDto(
+                            userId = "stale-engineer",
+                            lat = 59.93428,
+                            lon = 30.335099,
+                            recordedAt = "2025-07-30T20:02:59Z",
+                            displayName = "Устарел",
+                        ),
+                    ),
+                nowEpochMillis = nowEpochMillis,
+            ),
+        )
+    }
+
+    @Test
     fun markers_preferDisplayName_andFallBackToShortUserId() {
         val markers =
             engineerMapMarkers(
@@ -24,6 +55,7 @@ class MapScreenTest {
                         recordedAt = "2026-07-30T20:01:00Z",
                     ),
                 ),
+                nowEpochMillis = 1_753_906_200_000L,
             )
 
         assertEquals(

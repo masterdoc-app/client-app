@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.time.ExperimentalTime::class)
+
 package pro.masterdoc.client.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
@@ -14,9 +16,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
+import kotlin.time.Instant
 import pro.masterdoc.client.auth.EngineerLocationDto
 import pro.masterdoc.client.auth.EngineerLocationsGateway
 import pro.masterdoc.client.designsystem.components.AppButton
@@ -25,6 +30,7 @@ import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
 private const val MAP_POLL_INTERVAL_MS = 20_000L
+private const val ENGINEER_LOCATION_FRESHNESS_MS = 7 * 60 * 1_000L
 
 @Serializable
 internal data class EngineerMapMarker(
@@ -33,8 +39,13 @@ internal data class EngineerMapMarker(
     val lon: Double,
 )
 
-internal fun engineerMapMarkers(locations: List<EngineerLocationDto>): List<EngineerMapMarker> =
-    locations.map { location ->
+internal fun engineerMapMarkers(
+    locations: List<EngineerLocationDto>,
+    nowEpochMillis: Long,
+): List<EngineerMapMarker> =
+    locations.mapNotNull { location ->
+        val recordedAtMillis = location.recordedAtMillis() ?: return@mapNotNull null
+        if (recordedAtMillis < nowEpochMillis - ENGINEER_LOCATION_FRESHNESS_MS) return@mapNotNull null
         EngineerMapMarker(
             label = location.displayName?.takeIf { it.isNotBlank() } ?: location.userId.take(8),
             lat = location.lat,
@@ -42,12 +53,28 @@ internal fun engineerMapMarkers(locations: List<EngineerLocationDto>): List<Engi
         )
     }
 
+private fun EngineerLocationDto.recordedAtMillis(): Long? =
+    runCatching { Instant.parse(recordedAt).toEpochMilliseconds() }.getOrNull()
+
+private fun nextMapRefreshDelayMillis(
+    locations: List<EngineerLocationDto>,
+    nowEpochMillis: Long,
+): Long =
+    locations
+        .mapNotNull { location ->
+            location.recordedAtMillis()?.plus(ENGINEER_LOCATION_FRESHNESS_MS)?.minus(nowEpochMillis)
+        }.filter { it > 0L }
+        .minOrNull()
+        ?.coerceAtMost(MAP_POLL_INTERVAL_MS)
+        ?: MAP_POLL_INTERVAL_MS
+
 @Composable
 fun MapScreen(
     repository: EngineerLocationsGateway,
     modifier: Modifier = Modifier,
 ) {
     var markers by remember { mutableStateOf<List<EngineerMapMarker>>(emptyList()) }
+    var latestLocations by remember { mutableStateOf<List<EngineerLocationDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableStateOf(0) }
@@ -55,7 +82,7 @@ fun MapScreen(
     LaunchedEffect(repository, reloadKey) {
         while (true) {
             try {
-                markers = engineerMapMarkers(repository.list())
+                latestLocations = repository.list()
                 error = null
             } catch (e: CancellationException) {
                 throw e
@@ -64,7 +91,9 @@ fun MapScreen(
             } finally {
                 loading = false
             }
-            delay(MAP_POLL_INTERVAL_MS)
+            val nowEpochMillis = Clock.System.now().toEpochMilliseconds()
+            markers = engineerMapMarkers(latestLocations, nowEpochMillis)
+            delay(nextMapRefreshDelayMillis(latestLocations, nowEpochMillis))
         }
     }
 
@@ -86,8 +115,9 @@ fun MapScreen(
                         verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm, Alignment.CenterVertically),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        AppText(text = error ?: "Нет инженеров на линии")
+                        AppText(text = "Нет инженеров на линии")
                         if (error != null) {
+                            AppText(text = error!!)
                             AppButton(text = "Повторить", onClick = { reloadKey++ })
                         }
                     }
