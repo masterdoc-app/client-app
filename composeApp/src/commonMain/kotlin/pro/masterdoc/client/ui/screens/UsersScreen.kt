@@ -668,6 +668,7 @@ internal fun humanAdminError(
             when (action) {
                 AdminUserAction.Invite -> "Пользователь с таким email уже зарегистрирован"
                 AdminUserAction.Delete -> "Нельзя удалить себя"
+                AdminUserAction.Role -> "Роль не может быть сохранена"
             }
         502 -> "Сервис недоступен"
         else -> e.message.ifBlank { "Ошибка ${e.status}" }
