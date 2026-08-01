@@ -60,6 +60,7 @@ fun MaintenanceMapCard(
     onOpenEquipment: (String) -> Unit = {},
     onConfirm: (() -> Unit)? = null,
     onReject: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val isDraft = map.status == "draft"
@@ -180,24 +181,36 @@ fun MaintenanceMapCard(
                     }
                 }
 
-                if (onConfirm != null && onReject != null) {
+                if (onEdit != null || (onConfirm != null && onReject != null)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
-                        AppButton(
-                            text = if (acting) "…" else "Подтвердить",
-                            enabled = !acting,
-                            onClick = onConfirm,
-                            variant = AppButtonVariant.Primary,
-                            fillMaxWidth = false,
-                            modifier = Modifier.weight(1f),
-                        )
-                        AppButton(
-                            text = "Отклонить",
-                            enabled = !acting,
-                            onClick = onReject,
-                            variant = AppButtonVariant.Secondary,
-                            fillMaxWidth = false,
-                            modifier = Modifier.weight(1f),
-                        )
+                        onEdit?.let {
+                            AppButton(
+                                text = "Редактировать",
+                                enabled = !acting,
+                                onClick = it,
+                                variant = AppButtonVariant.Secondary,
+                                fillMaxWidth = false,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (onConfirm != null && onReject != null) {
+                            AppButton(
+                                text = if (acting) "…" else "Подтвердить",
+                                enabled = !acting,
+                                onClick = onConfirm,
+                                variant = AppButtonVariant.Primary,
+                                fillMaxWidth = false,
+                                modifier = Modifier.weight(1f),
+                            )
+                            AppButton(
+                                text = "Отклонить",
+                                enabled = !acting,
+                                onClick = onReject,
+                                variant = AppButtonVariant.Secondary,
+                                fillMaxWidth = false,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
             }

@@ -187,6 +187,21 @@ data class MaintenanceMapItemDto(
 )
 
 @Serializable
+data class MaintenanceMapItemInput(
+    val title: String,
+    val kind: String,
+    val interval: IntervalDto,
+    val criticality: String,
+    val sourceRef: String? = null,
+)
+
+@Serializable
+data class UpdateMaintenanceMapRequest(
+    val title: String? = null,
+    val items: List<MaintenanceMapItemInput>? = null,
+)
+
+@Serializable
 data class MaintenanceMapDto(
     val id: String,
     val assetId: String,
@@ -350,6 +365,21 @@ class EquipmentRepository(
             )
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
         return json.decodeFromString(MaintenanceMapListDto.serializer(), response.body)
+    }
+
+    suspend fun updateMap(id: String, request: UpdateMaintenanceMapRequest): MaintenanceMapDto {
+        val response =
+            http.patch(
+                url = "${base()}/maintenance-maps/$id",
+                body = json.encodeToString(UpdateMaintenanceMapRequest.serializer(), request),
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer ${bearer()}",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(MaintenanceMapDto.serializer(), response.body)
     }
 
     suspend fun confirmMap(id: String): MaintenanceMapDto {

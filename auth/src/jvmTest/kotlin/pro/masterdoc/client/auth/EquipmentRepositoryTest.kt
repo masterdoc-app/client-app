@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -68,5 +69,53 @@ class EquipmentRepositoryTest {
             assertEquals("ИНВ-9", jsonBody["inventoryNo"]!!.jsonPrimitive.content)
             assertEquals("Мост-1", updated.name)
             assertEquals("ИНВ-9", updated.inventoryNo)
+        }
+
+    @Test
+    fun updateMapPatchesTitleAndItems() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            var capturedMethod = ""
+            var capturedUrl = ""
+            var capturedBody = ""
+            val http =
+                RecordingGatewayHttpClient { method, url, _, body ->
+                    capturedMethod = method
+                    capturedUrl = url
+                    capturedBody = body.orEmpty()
+                    GatewayHttpResponse(
+                        200,
+                        """{"id":"m1","assetId":"a1","orgId":"o","title":"ППР насоса","status":"active","source":"manual","items":[{"id":"i1","title":"Осмотр","kind":"inspection","interval":{"every":7,"unit":"days"},"criticality":"high"}]}""",
+                    )
+                }
+            val repo = EquipmentRepository(config = config, http = http, tokenStore = tokens)
+
+            val updated =
+                repo.updateMap(
+                    "m1",
+                    UpdateMaintenanceMapRequest(
+                        title = "ППР насоса",
+                        items =
+                            listOf(
+                                MaintenanceMapItemInput(
+                                    title = "Осмотр",
+                                    kind = "inspection",
+                                    interval = IntervalDto(every = 7, unit = "days"),
+                                    criticality = "high",
+                                ),
+                            ),
+                    ),
+                )
+
+            assertEquals("PATCH", capturedMethod)
+            assertTrue(capturedUrl.endsWith("/maintenance-maps/m1"))
+            val jsonBody = Json.parseToJsonElement(capturedBody).jsonObject
+            assertEquals("ППР насоса", jsonBody["title"]!!.jsonPrimitive.content)
+            assertEquals(
+                7,
+                jsonBody["items"]!!.jsonArray[0].jsonObject["interval"]!!.jsonObject["every"]!!.jsonPrimitive.content.toInt(),
+            )
+            assertEquals("active", updated.status)
         }
 }
