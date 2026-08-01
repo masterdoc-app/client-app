@@ -25,9 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUsersRepository
-import pro.masterdoc.client.auth.FeatureDefinitionDto
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.InviteUserRequest
+import pro.masterdoc.client.auth.ProductRoleDto
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
@@ -42,7 +42,7 @@ fun InviteUserScreen(
     onInvited: () -> Unit = onBack,
     modifier: Modifier = Modifier,
 ) {
-    var featureCatalog by remember { mutableStateOf<List<FeatureDefinitionDto>>(emptyList()) }
+    var roleCatalog by remember { mutableStateOf<List<ProductRoleDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var email by remember { mutableStateOf("") }
@@ -56,7 +56,7 @@ fun InviteUserScreen(
         loading = true
         error = null
         try {
-            featureCatalog = repository.listFeatures().items
+            roleCatalog = repository.listRoles().items
         } catch (e: GatewayHttpException) {
             error = humanAdminError(e)
         } catch (e: Exception) {
@@ -101,12 +101,12 @@ fun InviteUserScreen(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
-            AppText(text = "Фичи")
+            AppText(text = "Роли")
             when {
-                loading && featureCatalog.isEmpty() -> CircularProgressIndicator()
-                featureCatalog.isEmpty() -> AppText(text = "Каталог фич недоступен")
+                loading && roleCatalog.isEmpty() -> CircularProgressIndicator()
+                roleCatalog.isEmpty() -> AppText(text = "Каталог ролей недоступен")
                 else ->
-                    featureCatalog.forEach { feature ->
+                    roleCatalog.forEach { role ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier =
@@ -114,27 +114,27 @@ fun InviteUserScreen(
                                     .fillMaxWidth()
                                     .clickable {
                                         selected =
-                                            if (feature.id in selected) {
-                                                selected - feature.id
+                                            if (role.id in selected) {
+                                                selected - role.id
                                             } else {
-                                                selected + feature.id
+                                                selected + role.id
                                             }
                                     },
                         ) {
                             Checkbox(
-                                checked = feature.id in selected,
+                                checked = role.id in selected,
                                 onCheckedChange = { checked ->
                                     selected =
-                                        if (checked) selected + feature.id else selected - feature.id
+                                        if (checked) selected + role.id else selected - role.id
                                 },
                             )
-                            AppText(text = feature.titleRu)
+                            AppText(text = role.titleRu)
                         }
                     }
             }
             AppButton(
                 text = if (inviting) "Отправка…" else "Пригласить",
-                enabled = !inviting && featureCatalog.isNotEmpty(),
+                enabled = !inviting && roleCatalog.isNotEmpty(),
                 onClick = {
                     val validation =
                         InviteFormValidator.validate(email, givenName, familyName, selected)
@@ -151,7 +151,7 @@ fun InviteUserScreen(
                                     email = email.trim(),
                                     givenName = givenName.trim(),
                                     familyName = familyName.trim(),
-                                    features = selected.sorted(),
+                                    roles = selected.sorted(),
                                 ),
                             )
                             onInvited()
@@ -175,5 +175,5 @@ internal fun InviteFormError.toMessage(): String =
         InviteFormError.EmailInvalid -> "Укажите корректный email"
         InviteFormError.GivenNameRequired -> "Укажите имя"
         InviteFormError.FamilyNameRequired -> "Укажите фамилию"
-        InviteFormError.FeaturesRequired -> "Выберите хотя бы одну фичу"
+        InviteFormError.RolesRequired -> "Выберите хотя бы одну роль"
     }

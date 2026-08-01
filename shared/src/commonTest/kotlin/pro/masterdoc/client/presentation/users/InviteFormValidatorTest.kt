@@ -6,14 +6,14 @@ import kotlin.test.assertNull
 
 class InviteFormValidatorTest {
     @Test
-    fun rejectsEmptyFeatures() {
+    fun rejectsEmptyRoles() {
         assertEquals(
-            InviteFormError.FeaturesRequired,
+            InviteFormError.RolesRequired,
             InviteFormValidator.validate(
                 email = "a@b.com",
                 givenName = "A",
                 familyName = "B",
-                features = emptySet(),
+                roles = emptySet(),
             ),
         )
     }
@@ -26,7 +26,7 @@ class InviteFormValidatorTest {
                 email = " ",
                 givenName = "A",
                 familyName = "B",
-                features = setOf("board"),
+                roles = setOf("board"),
             ),
         )
     }
@@ -38,7 +38,7 @@ class InviteFormValidatorTest {
                 email = "a@b.com",
                 givenName = "A",
                 familyName = "B",
-                features = setOf("board"),
+                roles = setOf("manager"),
             ),
         )
     }

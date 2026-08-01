@@ -9,7 +9,7 @@ data class InviteUserRequest(
     val email: String,
     val givenName: String,
     val familyName: String,
-    val features: List<String>,
+    val roles: List<String>,
 )
 
 @Serializable
@@ -40,6 +40,18 @@ data class FeaturesCatalog(
     val items: List<FeatureDefinitionDto>,
 )
 
+@Serializable
+data class ProductRoleDto(
+    val id: String,
+    val titleRu: String,
+    val features: List<String>,
+)
+
+@Serializable
+data class ProductRolesCatalog(
+    val items: List<ProductRoleDto>,
+)
+
 class AdminUsersRepository(
     private val config: AuthConfig,
     private val http: GatewayHttpClient,
@@ -59,6 +71,21 @@ class AdminUsersRepository(
             throw GatewayHttpException(response.status, "GET /features failed: ${response.body}")
         }
         return json.decodeFromString(FeaturesCatalog.serializer(), response.body)
+    }
+
+    suspend fun listRoles(): ProductRolesCatalog {
+        val access =
+            tokenStore.read()?.accessToken
+                ?: throw GatewayHttpException(401, "Not authenticated")
+        val response =
+            http.get(
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/admin/roles",
+                headers = mapOf("Authorization" to "Bearer $access"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "GET /admin/roles failed: ${response.body}")
+        }
+        return json.decodeFromString(ProductRolesCatalog.serializer(), response.body)
     }
 
     suspend fun listUsers(

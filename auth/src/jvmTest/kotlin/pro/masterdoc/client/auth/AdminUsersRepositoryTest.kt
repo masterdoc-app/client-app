@@ -22,7 +22,7 @@ class MeResponseDecodeTest {
 
 class AdminUsersRepositoryTest {
     @Test
-    fun inviteUser_postsFeaturesBody() =
+    fun inviteUser_postsRolesBody() =
         runBlocking {
             val tokens = InMemoryTokenStore()
             tokens.write(AuthTokens(accessToken = "at"))
@@ -31,8 +31,8 @@ class AdminUsersRepositoryTest {
                     assertEquals("POST", method)
                     assertTrue(url.endsWith("/admin/users/invites"))
                     assertEquals("Bearer at", headers["Authorization"])
-                    assertTrue(body!!.contains("\"features\""))
-                    assertTrue(body.contains("board"))
+                    assertTrue(body!!.contains("\"roles\""))
+                    assertTrue(body.contains("manager"))
                     assertTrue(body.contains("\"email\":\"a@b.com\""))
                     GatewayHttpResponse(
                         201,
@@ -51,7 +51,7 @@ class AdminUsersRepositoryTest {
                         email = "a@b.com",
                         givenName = "A",
                         familyName = "B",
-                        features = listOf("board"),
+                        roles = listOf("manager"),
                     ),
                 )
             assertEquals("1", user.id)
@@ -74,6 +74,7 @@ class AdminUsersRepositoryTest {
                         """{"items":[{"id":"board","titleRu":"Доска"},{"id":"admin","titleRu":"Админ"}]}""",
                     )
                 }
+
             val repo =
                 AdminUsersRepository(
                     config = AuthConfig(clientId = "web"),
@@ -84,6 +85,32 @@ class AdminUsersRepositoryTest {
             assertEquals(2, catalog.items.size)
             assertEquals("board", catalog.items[0].id)
             assertEquals("Доска", catalog.items[0].titleRu)
+        }
+
+    @Test
+    fun listRoles_getsRoleCatalog() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, headers, _ ->
+                    assertEquals("GET", method)
+                    assertTrue(url.endsWith("/admin/roles"))
+                    assertEquals("Bearer at", headers["Authorization"])
+                    GatewayHttpResponse(
+                        200,
+                        """{"items":[{"id":"manager","titleRu":"Менеджер","features":["board"]}]}""",
+                    )
+                }
+            val repo =
+                AdminUsersRepository(
+                    config = AuthConfig(clientId = "web"),
+                    http = http,
+                    tokenStore = tokens,
+                )
+            val catalog = repo.listRoles()
+            assertEquals("manager", catalog.items.single().id)
+            assertEquals("Менеджер", catalog.items.single().titleRu)
         }
 
     @Test
