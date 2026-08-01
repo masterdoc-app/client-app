@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Map
@@ -291,6 +292,8 @@ private fun ActivePage(
                     } else {
                         StubDestinationScreen(active.destination)
                     }
+                NavDestinationId.Reports ->
+                    StubDestinationScreen(active.destination)
                 NavDestinationId.Board ->
                     if (workOrdersRepository != null) {
                         BoardScreen(
@@ -341,6 +344,7 @@ private fun iconFor(destination: NavDestinationId): ImageVector =
         NavDestinationId.MyWorkOrders -> Icons.Filled.ListAlt
         NavDestinationId.Map -> Icons.Filled.Map
         NavDestinationId.Charts -> Icons.Filled.BarChart
+        NavDestinationId.Reports -> Icons.Filled.Assessment
         NavDestinationId.Equipment -> Icons.Filled.PrecisionManufacturing
         NavDestinationId.Profile -> Icons.Filled.Person
         NavDestinationId.BlackBox -> Icons.Filled.History

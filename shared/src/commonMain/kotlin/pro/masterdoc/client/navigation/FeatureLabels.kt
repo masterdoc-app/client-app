@@ -8,6 +8,7 @@ fun FeatureId.titleRu(): String =
         FeatureId.Engineer -> "Инженер"
         FeatureId.Map -> "Карта"
         FeatureId.Charts -> "ППР"
+        FeatureId.Reports -> "Отчёты"
         FeatureId.Equipment -> "Оборудование"
         FeatureId.Profile -> "Профиль"
         FeatureId.BlackBox -> "Чёрный ящик"

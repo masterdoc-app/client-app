@@ -11,6 +11,7 @@ enum class FeatureId(val wireValue: String) {
     Engineer("engineer"),
     Map("map"),
     Charts("charts"),
+    Reports("reports"),
     Equipment("equipment"),
     Profile("profile"),
 
@@ -40,6 +41,7 @@ enum class NavDestinationId {
     MyWorkOrders,
     Map,
     Charts,
+    Reports,
     Equipment,
     Profile,
     BlackBox,
