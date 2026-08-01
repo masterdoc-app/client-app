@@ -267,11 +267,18 @@ private fun SitesTab(
     var longitude by remember { mutableStateOf("") }
     var geofenceRadiusM by remember { mutableStateOf("") }
     var addressSuggestions by remember { mutableStateOf<List<GeocodeSuggestItem>>(emptyList()) }
+    /** Skip one suggest cycle after picking a Photon result (address+coords already filled). */
+    var skipNextAddressSuggest by remember { mutableStateOf(false) }
     var editingId by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(address, geocodeRepository) {
+        if (skipNextAddressSuggest) {
+            skipNextAddressSuggest = false
+            addressSuggestions = emptyList()
+            return@LaunchedEffect
+        }
         val query = address.trim()
         if (geocodeRepository == null || query.length < 3) {
             addressSuggestions = emptyList()
@@ -333,7 +340,14 @@ private fun SitesTab(
                         Modifier
                             .fillMaxWidth()
                             .clickable {
+                                // Address + coords belong to the site (цех), not equipment.
+                                skipNextAddressSuggest = true
                                 address = suggestion.label
+                                latitude = suggestion.lat.toString()
+                                longitude = suggestion.lon.toString()
+                                if (geofenceRadiusM.isBlank()) {
+                                    geofenceRadiusM = "200"
+                                }
                                 addressSuggestions = emptyList()
                             },
                 )
