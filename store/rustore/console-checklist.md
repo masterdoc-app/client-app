@@ -3,10 +3,19 @@
 Тексты: [`copy.md`](copy.md)  
 Ассеты: `icon-512.png`, `upload/screenshot-01.png`, `upload/screenshot-02.png`
 
+## Первый bind пакета (обязательно один раз)
+
+RuStore API **не создаёт** новое приложение. Package берётся из AAB при первой загрузке в Console:
+
+1. `gh workflow run rustore-release.yml -f skip_publish=true -f version_name=1.0.0 -f version_code=10000`
+2. Скачать artifact `client-app-release-aab`
+3. В [console.rustore.ru](https://console.rustore.ru) → создать приложение / «Загрузить» → выбрать этот AAB (`pro.masterdoc.client`)
+4. Заполнить карточку из `copy.md`, иконку и скриншоты
+5. Дальше публикации — через workflow **без** `skip_publish` или MCP `publish_aab`
+
 ## Перед загрузкой
 
-- [ ] Создать или выбрать приложение Fixaverse в RuStore Console
-- [ ] Проверить package: `pro.masterdoc.client`
+- [ ] Приложение с package `pro.masterdoc.client` видно в Console (после первого AAB)
 - [ ] Загрузить `icon-512.png`
 - [ ] Загрузить оба скриншота 1080×1920 и проверить crop в превью
 - [ ] Вставить название, краткое и полное описание из `copy.md`

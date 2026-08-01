@@ -19,6 +19,11 @@ on:
         description: "Android versionCode. Empty = gradle.properties VERSION_CODE or derived from name"
         required: false
         type: string
+      skip_publish:
+        description: "Build signed AAB/APK only (first Console bind / dry-run)"
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: rustore-release
@@ -152,6 +157,7 @@ jobs:
           ls -lh "$APK"
 
       - name: Publish to RuStore
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_publish != true }}
         env:
           RUSTORE_KEY_ID: ${{ secrets.RUSTORE_KEY_ID }}
           RUSTORE_PRIVATE_KEY: ${{ secrets.RUSTORE_PRIVATE_KEY }}

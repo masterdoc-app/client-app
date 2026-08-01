@@ -45,6 +45,24 @@ Production features come from `GET https://api.masterdoc.pro/me`.
 5. `masterdoc-zitadel` terraform apply (roles + redirect URI `https://app.fixaverse.ru/auth/callback`).
 6. Assign product roles to a test user; set GitHub secret `FIXAVERSE_OIDC_WEB_CLIENT_ID`.
 
+## Android / RuStore
+
+Package: `pro.masterdoc.client`. Versions in `gradle.properties` (`VERSION_NAME` / `VERSION_CODE`, scheme `X*10000+Y*100+Z`).
+
+- In-app updates: major bump → RuStore **IMMEDIATE**; minor/patch → **SILENT** (see `docs/superpowers/specs/2026-08-01-rustore-major-immediate-updates-design.md`).
+- Store copy/assets: `store/rustore/`.
+- Release workflow: **RuStore Release** (`.github/workflows/rustore-release.yml`).
+
+```bash
+# Signed AAB only (first Console bind — package is taken from the AAB):
+gh workflow run rustore-release.yml -f skip_publish=true -f version_name=1.0.0 -f version_code=10000
+
+# After the app exists in Console:
+gh workflow run rustore-release.yml -f version_name=1.0.0 -f whats_new='Первый релиз Fixaverse для инженеров.'
+```
+
+Major releases: bump `VERSION_NAME` to `N.0.0` (and matching `VERSION_CODE`) so clients get IMMEDIATE.
+
 ## Stack
 
 Kotlin Multiplatform, Compose Multiplatform, Decompose, Koin, Zitadel OIDC via api-gateway.
