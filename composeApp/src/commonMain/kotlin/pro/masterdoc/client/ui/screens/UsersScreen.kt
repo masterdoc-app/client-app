@@ -1,5 +1,6 @@
 package pro.masterdoc.client.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,12 +20,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.CreateSiteRequest
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.FeatureDefinitionDto
+import pro.masterdoc.client.auth.GeocodeRepository
+import pro.masterdoc.client.auth.GeocodeSuggestItem
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.UpdateSiteRequest
@@ -46,6 +50,7 @@ fun UsersScreen(
     repository: AdminUsersRepository,
     equipmentRepository: EquipmentRepository? = null,
     userScopesRepository: UserScopesRepository? = null,
+    geocodeRepository: GeocodeRepository? = null,
     currentUserId: String? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -128,7 +133,10 @@ fun UsersScreen(
                     )
                 AdminTab.Sites ->
                     if (equipmentRepository != null) {
-                        SitesTab(equipmentRepository = equipmentRepository)
+                        SitesTab(
+                            equipmentRepository = equipmentRepository,
+                            geocodeRepository = geocodeRepository,
+                        )
                     } else {
                         AppText(text = "Каталог площадок недоступен")
                     }
@@ -246,15 +254,29 @@ private fun UsersTab(
 }
 
 @Composable
-private fun SitesTab(equipmentRepository: EquipmentRepository) {
+private fun SitesTab(
+    equipmentRepository: EquipmentRepository,
+    geocodeRepository: GeocodeRepository?,
+) {
     var sites by remember { mutableStateOf<List<SiteDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var name by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
+    var addressSuggestions by remember { mutableStateOf<List<GeocodeSuggestItem>>(emptyList()) }
     var editingId by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(address, geocodeRepository) {
+        val query = address.trim()
+        if (geocodeRepository == null || query.length < 3) {
+            addressSuggestions = emptyList()
+            return@LaunchedEffect
+        }
+        delay(300)
+        addressSuggestions = runCatching { geocodeRepository.suggest(query) }.getOrDefault(emptyList())
+    }
 
     fun reload() {
         scope.launch {
@@ -291,12 +313,29 @@ private fun SitesTab(equipmentRepository: EquipmentRepository) {
             label = "Название",
             modifier = Modifier.fillMaxWidth(),
         )
-        AppTextField(
-            value = address,
-            onValueChange = { address = it },
-            label = "Адрес (опционально)",
-            modifier = Modifier.fillMaxWidth(),
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            AppTextField(
+                value = address,
+                onValueChange = {
+                    address = it
+                    addressSuggestions = emptyList()
+                },
+                label = "Адрес (опционально)",
+                modifier = Modifier.fillMaxWidth(),
+            )
+            addressSuggestions.forEach { suggestion ->
+                AppText(
+                    text = suggestion.label,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                address = suggestion.label
+                                addressSuggestions = emptyList()
+                            },
+                )
+            }
+        }
         AppButton(
             text = if (editingId == null) "Создать площадку" else "Сохранить",
             enabled = !busy && name.isNotBlank(),

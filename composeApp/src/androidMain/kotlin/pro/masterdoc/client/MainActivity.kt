@@ -13,6 +13,7 @@ import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.ClientEventsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.GeocodeRepository
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.authModule
@@ -47,6 +48,7 @@ class MainActivity : ComponentActivity() {
                 userScopesRepository = koin.get<UserScopesRepository>(),
                 clientEventsRepository = koin.get<ClientEventsRepository>(),
                 engineerLocationsRepository = koin.get<EngineerLocationsRepository>(),
+                geocodeRepository = koin.get<GeocodeRepository>(),
             )
         }
     }

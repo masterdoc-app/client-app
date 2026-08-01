@@ -9,6 +9,7 @@ import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.ClientEventsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.GeocodeRepository
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.authModule
@@ -32,6 +33,7 @@ fun main() {
     val userScopes = koinApp.koin.get<UserScopesRepository>()
     val clientEvents = koinApp.koin.get<ClientEventsRepository>()
     val engineerLocations = koinApp.koin.get<EngineerLocationsRepository>()
+    val geocode = koinApp.koin.get<GeocodeRepository>()
     ComposeViewport(document.body!!) {
         AuthenticatedApp(
             coordinator = coordinator,
@@ -41,6 +43,7 @@ fun main() {
             userScopesRepository = userScopes,
             clientEventsRepository = clientEvents,
             engineerLocationsRepository = engineerLocations,
+            geocodeRepository = geocode,
         )
     }
 }
