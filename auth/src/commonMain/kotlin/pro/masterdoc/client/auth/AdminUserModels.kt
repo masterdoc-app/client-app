@@ -52,6 +52,12 @@ data class ProductRolesCatalog(
     val items: List<ProductRoleDto>,
 )
 
+@Serializable
+data class UpdateRoleRequest(
+    val features: List<String>,
+    val titleRu: String? = null,
+)
+
 class AdminUsersRepository(
     private val config: AuthConfig,
     private val http: GatewayHttpClient,
@@ -86,6 +92,29 @@ class AdminUsersRepository(
             throw GatewayHttpException(response.status, "GET /admin/roles failed: ${response.body}")
         }
         return json.decodeFromString(ProductRolesCatalog.serializer(), response.body)
+    }
+
+    suspend fun updateRole(
+        roleId: String,
+        request: UpdateRoleRequest,
+    ): ProductRoleDto {
+        val access =
+            tokenStore.read()?.accessToken
+                ?: throw GatewayHttpException(401, "Not authenticated")
+        val response =
+            http.put(
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/admin/roles/$roleId",
+                body = json.encodeToString(UpdateRoleRequest.serializer(), request),
+                headers =
+                    mapOf(
+                        "Authorization" to "Bearer $access",
+                        "Content-Type" to "application/json",
+                    ),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "PUT /admin/roles/$roleId failed: ${response.body}")
+        }
+        return json.decodeFromString(ProductRoleDto.serializer(), response.body)
     }
 
     suspend fun listUsers(

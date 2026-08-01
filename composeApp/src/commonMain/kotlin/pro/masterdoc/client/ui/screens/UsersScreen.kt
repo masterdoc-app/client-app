@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,8 +31,10 @@ import pro.masterdoc.client.auth.FeatureDefinitionDto
 import pro.masterdoc.client.auth.GeocodeRepository
 import pro.masterdoc.client.auth.GeocodeSuggestItem
 import pro.masterdoc.client.auth.GatewayHttpException
+import pro.masterdoc.client.auth.ProductRoleDto
 import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.UpdateSiteRequest
+import pro.masterdoc.client.auth.UpdateRoleRequest
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppButtonVariant
@@ -43,7 +46,7 @@ import pro.masterdoc.client.designsystem.theme.ClientSpacing
 import pro.masterdoc.client.navigation.FeatureId
 import pro.masterdoc.client.navigation.titleRu
 
-private enum class AdminTab { Users, Sites }
+private enum class AdminTab { Users, Sites, Roles }
 
 @Composable
 fun UsersScreen(
@@ -114,6 +117,7 @@ fun UsersScreen(
                             when (t) {
                                 AdminTab.Users -> "Пользователи"
                                 AdminTab.Sites -> "Площадки"
+                                AdminTab.Roles -> "Роли"
                             },
                         onClick = { tab = t },
                         variant = if (tab == t) AppButtonVariant.Primary else AppButtonVariant.Secondary,
@@ -140,6 +144,7 @@ fun UsersScreen(
                     } else {
                         AppText(text = "Каталог площадок недоступен")
                     }
+                AdminTab.Roles -> RolesTab(repository = repository)
             }
         }
     }
@@ -522,9 +527,129 @@ private fun SitesTab(
     }
 }
 
+@Composable
+private fun RolesTab(repository: AdminUsersRepository) {
+    var roles by remember { mutableStateOf<List<ProductRoleDto>>(emptyList()) }
+    var featureCatalog by remember { mutableStateOf<List<FeatureDefinitionDto>>(emptyList()) }
+    var selectedByRole by remember { mutableStateOf<Map<String, Set<String>>>(emptyMap()) }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var success by remember { mutableStateOf<String?>(null) }
+    var savingId by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    fun reload() {
+        scope.launch {
+            loading = true
+            error = null
+            success = null
+            try {
+                val catalog = repository.listFeatures().items
+                val loadedRoles = repository.listRoles().items
+                featureCatalog = catalog
+                roles = loadedRoles
+                selectedByRole = loadedRoles.associate { it.id to it.features.toSet() }
+            } catch (e: GatewayHttpException) {
+                error = humanAdminError(e)
+            } catch (e: Exception) {
+                error = e.message ?: "Ошибка загрузки"
+            } finally {
+                loading = false
+            }
+        }
+    }
+
+    LaunchedEffect(repository) { reload() }
+
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        error?.let { AppText(text = it) }
+        success?.let { AppText(text = it) }
+        when {
+            loading -> CircularProgressIndicator()
+            roles.isEmpty() -> AppText(text = "Роли недоступны")
+            featureCatalog.isEmpty() -> AppText(text = "Каталог функций недоступен")
+            else ->
+                roles.forEach { role ->
+                    val selected = selectedByRole[role.id].orEmpty()
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        AppText(text = role.titleRu, style = AppTextStyle.Title)
+                        featureCatalog.forEach { feature ->
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedByRole =
+                                                selectedByRole + (
+                                                    role.id to
+                                                        if (feature.id in selected) {
+                                                            selected - feature.id
+                                                        } else {
+                                                            selected + feature.id
+                                                        }
+                                                )
+                                        },
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(
+                                    checked = feature.id in selected,
+                                    onCheckedChange = { checked ->
+                                        selectedByRole =
+                                            selectedByRole + (
+                                                role.id to
+                                                    if (checked) selected + feature.id else selected - feature.id
+                                            )
+                                    },
+                                )
+                                AppText(text = feature.titleRu)
+                            }
+                        }
+                        AppButton(
+                            text = if (savingId == role.id) "Сохранение…" else "Сохранить",
+                            enabled = savingId == null,
+                            onClick = {
+                                scope.launch {
+                                    savingId = role.id
+                                    error = null
+                                    success = null
+                                    try {
+                                        val updated =
+                                            repository.updateRole(
+                                                role.id,
+                                                UpdateRoleRequest(
+                                                    features = selected.sorted(),
+                                                    titleRu = role.titleRu,
+                                                ),
+                                            )
+                                        roles = roles.map { if (it.id == updated.id) updated else it }
+                                        selectedByRole = selectedByRole + (role.id to updated.features.toSet())
+                                        success = "Роль «${updated.titleRu}» сохранена"
+                                    } catch (e: GatewayHttpException) {
+                                        error = humanAdminError(e, AdminUserAction.Role)
+                                    } catch (e: Exception) {
+                                        error = e.message ?: "Ошибка сохранения роли"
+                                    } finally {
+                                        savingId = null
+                                    }
+                                }
+                            },
+                        )
+                    }
+                }
+        }
+    }
+}
+
 internal enum class AdminUserAction {
     Invite,
     Delete,
+    Role,
 }
 
 internal fun humanAdminError(
@@ -534,7 +659,11 @@ internal fun humanAdminError(
     when (e.status) {
         400 -> e.message.ifBlank { "Некорректный запрос" }
         403 -> "Нет доступа (нужна фича admin)"
-        404 -> "Пользователь не найден"
+        404 ->
+            when (action) {
+                AdminUserAction.Role -> "Роль не найдена"
+                else -> "Пользователь не найден"
+            }
         409 ->
             when (action) {
                 AdminUserAction.Invite -> "Пользователь с таким email уже зарегистрирован"

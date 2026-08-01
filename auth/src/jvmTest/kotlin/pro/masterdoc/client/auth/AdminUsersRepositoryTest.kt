@@ -114,6 +114,42 @@ class AdminUsersRepositoryTest {
         }
 
     @Test
+    fun updateRole_putsFeaturesAndTitle() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, headers, body ->
+                    assertEquals("PUT", method)
+                    assertTrue(url.endsWith("/admin/roles/manager"))
+                    assertEquals("Bearer at", headers["Authorization"])
+                    assertTrue(body!!.contains("\"features\":[\"board\",\"tickets\"]"))
+                    assertTrue(body.contains("\"titleRu\":\"Менеджер\""))
+                    GatewayHttpResponse(
+                        200,
+                        """{"id":"manager","titleRu":"Менеджер","features":["board","tickets"]}""",
+                    )
+                }
+            val repo =
+                AdminUsersRepository(
+                    config = AuthConfig(clientId = "web"),
+                    http = http,
+                    tokenStore = tokens,
+                )
+
+            val updated =
+                repo.updateRole(
+                    "manager",
+                    UpdateRoleRequest(
+                        features = listOf("board", "tickets"),
+                        titleRu = "Менеджер",
+                    ),
+                )
+
+            assertEquals(listOf("board", "tickets"), updated.features)
+        }
+
+    @Test
     fun listUsers_getsItems() =
         runBlocking {
             val tokens = InMemoryTokenStore()
