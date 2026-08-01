@@ -34,20 +34,20 @@ RuStore `AppUpdateInfo` даёт доступность обновления и 
 | Поле | Правило |
 |------|---------|
 | `versionName` | SemVer `MAJOR.MINOR.PATCH` (человекочитаемо, whatsNew) |
-| `versionCode` | `MAJOR * 1_000_000 + MINOR * 1_000 + PATCH` (монотонно, из него извлекаем major) |
+| `versionCode` | `MAJOR * 10_000 + MINOR * 100 + PATCH` (KkalScan scheme; монотонно, из него извлекаем major) |
 
-Пример: `1.2.3` → `1002003`; `2.0.0` → `2000000`.
+Пример: `1.0.0` → `10000`; `1.0.20` → `10020`; `2.1.3` → `20103`.
 
 ```text
-installedMajor = versionCode / 1_000_000
-availableMajor = availableVersionCode / 1_000_000
+installedMajor = versionCode / 10_000
+availableMajor = availableVersionCode / 10_000
 
 if update available:
   if availableMajor > installedMajor → IMMEDIATE
   else → SILENT
 ```
 
-Первый релиз в сторе: `versionName = 1.0.0`, `versionCode = 1000000` (сменить с текущего `0.1.0` / `1` при подготовке release).
+Первый релиз в сторе: `versionName = 1.0.0`, `versionCode = 10000` (сменить с текущего `0.1.0` / `1` при подготовке release).
 
 ## Architecture
 
