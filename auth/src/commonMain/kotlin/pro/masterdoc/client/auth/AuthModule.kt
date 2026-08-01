@@ -58,6 +58,13 @@ fun authModule(
             )
         }
         single {
+            GeocodeRepository(
+                config = get(),
+                http = get(),
+                tokenStore = get(),
+            )
+        }
+        single {
             UserScopesRepository(
                 config = get(),
                 http = get(),

@@ -158,7 +158,7 @@ internal fun encodeForm(value: String): String =
     buildString(value.length) {
         for (ch in value) {
             when {
-                ch.isLetterOrDigit() || ch in "-._~" -> append(ch)
+                ch.isAsciiLetterOrDigit() || ch in "-._~" -> append(ch)
                 ch == ' ' -> append('+')
                 else -> {
                     val bytes = ch.toString().encodeToByteArray()
@@ -171,5 +171,7 @@ internal fun encodeForm(value: String): String =
             }
         }
     }
+
+private fun Char.isAsciiLetterOrDigit(): Boolean = this in 'a'..'z' || this in 'A'..'Z' || this in '0'..'9'
 
 private val hex = "0123456789ABCDEF".toCharArray()

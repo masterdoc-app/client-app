@@ -31,6 +31,7 @@ import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.EngineerLocationsGateway
+import pro.masterdoc.client.auth.GeocodeRepository
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.navigation.FeatureId
@@ -71,6 +72,7 @@ fun MainShellContent(
     workOrdersRepository: WorkOrdersRepository? = null,
     userScopesRepository: UserScopesRepository? = null,
     engineerLocationsGateway: EngineerLocationsGateway? = null,
+    geocodeRepository: GeocodeRepository? = null,
 ) {
     val pages by component.pages.subscribeAsState()
     val focusedMapId by component.focusedMapId.subscribeAsState()
@@ -115,6 +117,7 @@ fun MainShellContent(
                         workOrdersRepository = workOrdersRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsGateway,
+                        geocodeRepository = geocodeRepository,
                         locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
@@ -151,6 +154,7 @@ fun MainShellContent(
                         workOrdersRepository = workOrdersRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsGateway,
+                        geocodeRepository = geocodeRepository,
                         locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
@@ -184,6 +188,7 @@ private fun ActivePage(
     workOrdersRepository: WorkOrdersRepository?,
     userScopesRepository: UserScopesRepository?,
     engineerLocationsGateway: EngineerLocationsGateway?,
+    geocodeRepository: GeocodeRepository?,
     locationTrackingController: LocationTrackingController?,
     focusedMapId: String?,
     focusedAssetId: String?,
@@ -231,6 +236,7 @@ private fun ActivePage(
                             repository = adminUsersRepository,
                             equipmentRepository = equipmentRepository,
                             userScopesRepository = userScopesRepository,
+                            geocodeRepository = geocodeRepository,
                             currentUserId = session.user?.id,
                         )
                     } else {

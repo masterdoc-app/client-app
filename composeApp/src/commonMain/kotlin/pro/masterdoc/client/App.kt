@@ -28,6 +28,7 @@ import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.ClientEventsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.GeocodeRepository
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.parseQueryParams
@@ -74,6 +75,7 @@ fun AuthenticatedApp(
     userScopesRepository: UserScopesRepository,
     clientEventsRepository: ClientEventsRepository? = null,
     engineerLocationsRepository: EngineerLocationsRepository? = null,
+    geocodeRepository: GeocodeRepository? = null,
 ) {
     AppTextSelection {
         ClientTheme {
@@ -115,6 +117,7 @@ fun AuthenticatedApp(
                         workOrdersRepository = workOrdersRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsRepository,
+                        geocodeRepository = geocodeRepository,
                     )
                 is ShellUiState.Error ->
                     Column(
