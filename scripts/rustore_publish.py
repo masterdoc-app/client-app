@@ -69,7 +69,7 @@ def api_json(method: str, path: str, token: str, body: dict | None = None) -> An
 
 
 def api_multipart(path: str, token: str, file_path: str) -> Any:
-    boundary = "----KkalScanRuStoreBoundary"
+    boundary = "----FixaverseRuStoreBoundary"
     filename = os.path.basename(file_path)
     with open(file_path, "rb") as f:
         file_bytes = f.read()
