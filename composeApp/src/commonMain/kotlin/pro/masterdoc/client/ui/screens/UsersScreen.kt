@@ -333,6 +333,8 @@ private fun SitesTab(
                 value = address,
                 onValueChange = {
                     address = it
+                    latitude = ""
+                    longitude = ""
                     addressSuggestions = emptyList()
                 },
                 label = "Адрес (опционально)",
@@ -346,6 +348,7 @@ private fun SitesTab(
                             .fillMaxWidth()
                             .clickable {
                                 // Address + coords belong to the site (цех), not equipment.
+                                // Lat/lon are derived from the selected address — not edited manually.
                                 skipNextAddressSuggest = true
                                 address = suggestion.label
                                 latitude = suggestion.lat.toString()
@@ -357,19 +360,13 @@ private fun SitesTab(
                             },
                 )
             }
+            if (latitude.isNotBlank() && longitude.isNotBlank()) {
+                AppText(
+                    text = "Координаты из адреса: $latitude, $longitude",
+                    style = AppTextStyle.Label,
+                )
+            }
         }
-        AppTextField(
-            value = latitude,
-            onValueChange = { latitude = it },
-            label = "Широта (опционально)",
-            modifier = Modifier.fillMaxWidth(),
-        )
-        AppTextField(
-            value = longitude,
-            onValueChange = { longitude = it },
-            label = "Долгота (опционально)",
-            modifier = Modifier.fillMaxWidth(),
-        )
         AppTextField(
             value = geofenceRadiusM,
             onValueChange = { geofenceRadiusM = it },
@@ -381,11 +378,6 @@ private fun SitesTab(
         val parsedRadius = geofenceRadiusM.trim().takeIf { it.isNotEmpty() }?.toIntOrNull()
         val geofenceError =
             when {
-                latitude.isBlank() != longitude.isBlank() -> "Укажите и широту, и долготу"
-                latitude.isNotBlank() && parsedLatitude == null -> "Некорректная широта"
-                longitude.isNotBlank() && parsedLongitude == null -> "Некорректная долгота"
-                parsedLatitude != null && parsedLatitude !in -90.0..90.0 -> "Широта должна быть от -90 до 90"
-                parsedLongitude != null && parsedLongitude !in -180.0..180.0 -> "Долгота должна быть от -180 до 180"
                 geofenceRadiusM.isNotBlank() && (parsedRadius == null || parsedRadius <= 0) ->
                     "Радиус должен быть положительным числом"
                 else -> null
