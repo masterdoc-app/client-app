@@ -24,12 +24,17 @@ import pro.masterdoc.client.presentation.shell.DefaultRootComponent
 import pro.masterdoc.client.presentation.shell.RootComponent
 import pro.masterdoc.client.session.ClientSession
 import pro.masterdoc.client.tracking.configureEngineerLocationTracking
+import pro.masterdoc.client.update.RuStoreAppUpdater
 
 class MainActivity : ComponentActivity() {
+    private lateinit var appUpdater: RuStoreAppUpdater
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         configureEngineerLocationTracking(this)
         configureAndroidAuthPlatform(this)
+        appUpdater = RuStoreAppUpdater(this)
+        appUpdater.checkAndStart()
         val koin =
             KoinPlatformTools.defaultContext().getOrNull()
                 ?: startKoin {
@@ -53,6 +58,11 @@ class MainActivity : ComponentActivity() {
                 aiMessagesRepository = koin.get<AiMessagesRepository>(),
             )
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::appUpdater.isInitialized) appUpdater.checkAndStart()
     }
 }
 

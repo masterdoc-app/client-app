@@ -40,6 +40,9 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        maven {
+            url = uri("https://artifactory-external.vkpartner.ru/artifactory/maven")
+        }
         val gprUser =
             providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
         val gprKey =

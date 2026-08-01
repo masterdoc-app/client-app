@@ -60,6 +60,7 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.ktx)
+            implementation(libs.rustore.appupdate)
         }
 
         val desktopMain by getting
@@ -84,6 +85,29 @@ android {
         targetSdk = 35
         versionCode = (findProperty("VERSION_CODE") as String?)?.toIntOrNull() ?: 10000
         versionName = findProperty("VERSION_NAME") as String? ?: "1.0.0"
+    }
+
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+            if (!keystorePath.isNullOrBlank()) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD").orEmpty()
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS").orEmpty()
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD").orEmpty()
+            }
+        }
+    }
+
+    buildTypes {
+        debug {}
+        release {
+            isMinifyEnabled = false
+            val keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+            if (!keystorePath.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
     }
 
     packaging {
