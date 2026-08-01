@@ -26,6 +26,18 @@ data class WorkOrderDto(
     val source: String,
     val createdAt: String,
     val updatedAt: String,
+    val startedAt: String? = null,
+    val closedAt: String? = null,
+)
+
+@Serializable
+data class DowntimeIntervalDto(
+    val assetId: String,
+    val workOrderId: String,
+    val title: String,
+    val startedAt: String,
+    val closedAt: String? = null,
+    val status: String,
 )
 
 @Serializable
@@ -118,6 +130,18 @@ class WorkOrdersRepository(
             throw GatewayHttpException(response.status, response.body.ifBlank { "get work order failed" })
         }
         return json.decodeFromString(WorkOrderDto.serializer(), response.body)
+    }
+
+    suspend fun equipmentDowntime(from: String, to: String): List<DowntimeIntervalDto> {
+        val response =
+            http.get(
+                url = "${base()}/reports/equipment-downtime?from=$from&to=$to",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, response.body.ifBlank { "equipment downtime report failed" })
+        }
+        return json.decodeFromString(response.body)
     }
 
     suspend fun create(request: CreateWorkOrderRequest): WorkOrderDto {
