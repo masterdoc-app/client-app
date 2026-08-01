@@ -16,9 +16,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import pro.masterdoc.client.auth.AdminUser
+import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AiMessageDto
 import pro.masterdoc.client.auth.AiMessagesRepository
+import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
@@ -31,13 +37,48 @@ private const val AiMessagesPageSize = 30
 fun AiMessagesScreen(
     repository: AiMessagesRepository,
     modifier: Modifier = Modifier,
+    adminUsersRepository: AdminUsersRepository? = null,
+    workOrdersRepository: WorkOrdersRepository? = null,
 ) {
     var messages by remember { mutableStateOf<List<AiMessageDto>>(emptyList()) }
+    var workOrderTitles by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     var hasMore by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var loadingMore by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+
+    suspend fun resolveLabels(items: List<AiMessageDto>) {
+        if (adminUsersRepository != null && users.isEmpty()) {
+            users =
+                runCatching { adminUsersRepository.listUsers(limit = 200).items }
+                    .getOrDefault(emptyList())
+        }
+        if (workOrdersRepository == null) return
+        val missing =
+            items.map { it.workOrderId }
+                .filter { it.isNotBlank() && it !in workOrderTitles }
+                .distinct()
+        if (missing.isEmpty()) return
+        val resolved =
+            coroutineScope {
+                missing
+                    .map { id ->
+                        async {
+                            id to
+                                runCatching { workOrdersRepository.get(id).title.trim() }
+                                    .getOrNull()
+                                    ?.takeIf { it.isNotEmpty() }
+                        }
+                    }.awaitAll()
+                    .mapNotNull { (id, title) -> title?.let { id to it } }
+                    .toMap()
+            }
+        if (resolved.isNotEmpty()) {
+            workOrderTitles = workOrderTitles + resolved
+        }
+    }
 
     fun reload() {
         scope.launch {
@@ -47,6 +88,7 @@ fun AiMessagesScreen(
                 val page = repository.list(limit = AiMessagesPageSize, offset = 0)
                 messages = page.items
                 hasMore = page.items.size == AiMessagesPageSize
+                resolveLabels(page.items)
             } catch (e: Exception) {
                 messages = emptyList()
                 hasMore = false
@@ -66,6 +108,7 @@ fun AiMessagesScreen(
                 val page = repository.list(limit = AiMessagesPageSize, offset = messages.size)
                 messages = messages + page.items
                 hasMore = page.items.size == AiMessagesPageSize
+                resolveLabels(page.items)
             } catch (e: Exception) {
                 error = e.message ?: "Не удалось загрузить сообщения ИИ"
             } finally {
@@ -97,11 +140,12 @@ fun AiMessagesScreen(
                             AppText(text = message.title)
                             AppText(text = message.body, style = AppTextStyle.Body)
                             AppText(text = message.createdAt, style = AppTextStyle.Label)
-                            listOf(
-                                message.workOrderId.takeIf { it.isNotBlank() }?.let { "Заявка: $it" },
-                                message.engineerId.takeIf { it.isNotBlank() }?.let { "Инженер: $it" },
-                            ).filterNotNull().takeIf { it.isNotEmpty() }?.let {
-                                AppText(text = it.joinToString(" · "), style = AppTextStyle.Label)
+                            aiMessageEntityLabels(
+                                message = message,
+                                workOrderTitleById = workOrderTitles,
+                                users = users,
+                            )?.let { labels ->
+                                AppText(text = labels, style = AppTextStyle.Label)
                             }
                         }
                     }
@@ -116,4 +160,22 @@ fun AiMessagesScreen(
             }
         }
     }
+}
+
+/** Visible meta for AI cards — titles/names only, never raw ids. */
+internal fun aiMessageEntityLabels(
+    message: AiMessageDto,
+    workOrderTitleById: Map<String, String>,
+    users: List<AdminUser>,
+): String? {
+    val parts =
+        listOfNotNull(
+            message.workOrderId.takeIf { it.isNotBlank() }?.let {
+                "Заявка: ${workOrderTitleById[it]?.takeIf { title -> title.isNotBlank() } ?: "без названия"}"
+            },
+            message.engineerId.takeIf { it.isNotBlank() }?.let {
+                "Инженер: ${formatAssigneeLabel(it, users)}"
+            },
+        )
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
 }

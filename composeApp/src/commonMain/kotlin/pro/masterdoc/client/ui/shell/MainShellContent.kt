@@ -258,7 +258,11 @@ private fun ActivePage(
                     }
                 NavDestinationId.Ai ->
                     if (aiMessagesRepository != null) {
-                        AiMessagesScreen(repository = aiMessagesRepository)
+                        AiMessagesScreen(
+                            repository = aiMessagesRepository,
+                            adminUsersRepository = adminUsersRepository,
+                            workOrdersRepository = workOrdersRepository,
+                        )
                     } else {
                         StubDestinationScreen(active.destination)
                     }

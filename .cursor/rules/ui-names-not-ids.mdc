@@ -1,0 +1,25 @@
+---
+description: UI shows human names/titles only — never raw IDs
+alwaysApply: true
+---
+
+# UI: names, not IDs
+
+In user-facing copy (screens, toasts, AI messages, map markers, labels):
+
+- **Never** show raw identifiers: UUIDs, numeric user ids, opaque tokens, truncated id prefixes.
+- **Always** show human names/titles: work order title, site name, user display name / email, equipment name, map/item titles.
+- If a name is missing, use a **generic label** (`Заявка`, `Инженер`, `Пользователь`, `Площадка`) — not the id.
+- IDs stay in APIs, logs, deep links, and internal state; they must not leak into visible text.
+
+## Examples
+
+```text
+❌ Заявка: 412138a9-249b-4790-a320-5e8cc9cf84d4 · Инженер: 383177205334671363
+✅ Заявка: Утечка · Инженер: Иван Петров
+
+❌ marker label = userId.take(8)
+✅ marker label = displayName ?: "Инженер"
+```
+
+Existing helpers: `formatAssigneeLabel`, `resolvePprLabels` — follow the same pattern for new UI.

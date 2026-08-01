@@ -51,7 +51,7 @@ internal fun engineerMapMarkers(
         val recordedAtMillis = location.recordedAtMillis() ?: return@mapNotNull null
         if (recordedAtMillis < nowEpochMillis - ENGINEER_LOCATION_FRESHNESS_MS) return@mapNotNull null
         EngineerMapMarker(
-            label = location.displayName?.takeIf { it.isNotBlank() } ?: location.userId.take(8),
+            label = location.displayName?.takeIf { it.isNotBlank() } ?: "Инженер",
             lat = location.lat,
             lon = location.lon,
         )

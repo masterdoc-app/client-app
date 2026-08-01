@@ -3,6 +3,7 @@ package pro.masterdoc.client.ui.screens
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import pro.masterdoc.client.auth.AdminUser
+import pro.masterdoc.client.auth.AiMessageDto
 
 class AssigneeLabelTest {
     @Test
@@ -109,6 +110,49 @@ class AssigneeLabelTest {
         assertEquals(
             listOf("a", "b"),
             filterEngineerEligibleAssignees(listOf("a", "b"), emptyList()),
+        )
+    }
+
+    @Test
+    fun aiMessageEntityLabelsUsesTitlesAndNamesNeverIds() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "383177205334671363",
+                    email = "eng@example.com",
+                    givenName = "Иван",
+                    familyName = "Петров",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        val message =
+            AiMessageDto(
+                id = "m1",
+                orgId = "o1",
+                kind = "outside_workshop_radius",
+                workOrderId = "412138a9-249b-4790-a320-5e8cc9cf84d4",
+                siteId = "s1",
+                engineerId = "383177205334671363",
+                title = "Инженер вне цеха",
+                body = "body",
+                createdAt = "2026-08-01T05:56:04Z",
+            )
+        assertEquals(
+            "Заявка: Утечка · Инженер: Иван Петров · eng@example.com",
+            aiMessageEntityLabels(
+                message = message,
+                workOrderTitleById = mapOf(message.workOrderId to "Утечка"),
+                users = users,
+            ),
+        )
+        assertEquals(
+            "Заявка: без названия · Инженер: Пользователь",
+            aiMessageEntityLabels(
+                message = message,
+                workOrderTitleById = emptyMap(),
+                users = emptyList(),
+            ),
         )
     }
 }

@@ -56,7 +56,7 @@ class MapScreenTest {
     }
 
     @Test
-    fun markers_preferDisplayName_andFallBackToShortUserId() {
+    fun markers_preferDisplayName_andFallBackToGenericLabelNeverId() {
         val markers =
             engineerMapMarkers(
                 listOf(
@@ -80,7 +80,7 @@ class MapScreenTest {
         assertEquals(
             listOf(
                 EngineerMapMarker("Иван Петров", 55.751244, 37.618423),
-                EngineerMapMarker("abcdef01", 59.93428, 30.335099),
+                EngineerMapMarker("Инженер", 59.93428, 30.335099),
             ),
             markers,
         )
