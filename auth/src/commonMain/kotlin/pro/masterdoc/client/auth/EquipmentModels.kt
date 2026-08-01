@@ -27,6 +27,9 @@ data class SiteDto(
     val orgId: String,
     val name: String,
     val address: String? = null,
+    val lat: Double? = null,
+    val lon: Double? = null,
+    val geofenceRadiusM: Int? = null,
 )
 
 @Serializable
@@ -37,12 +40,18 @@ data class CreateSiteRequest(
     val name: String,
     val address: String? = null,
     val id: String? = null,
+    val lat: Double? = null,
+    val lon: Double? = null,
+    val geofenceRadiusM: Int? = null,
 )
 
 @Serializable
 data class UpdateSiteRequest(
     val name: String? = null,
     val address: String? = null,
+    val lat: Double? = null,
+    val lon: Double? = null,
+    val geofenceRadiusM: Int? = null,
 )
 
 @Serializable

@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.EngineerLocationSnapshot
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.MaintenanceMapDto
@@ -320,7 +321,28 @@ fun WorkOrderDetailScreen(
                                             acting = true
                                             error = null
                                             try {
-                                                order = repository.patch(wo.id, status = "in_progress")
+                                                val location =
+                                                    try {
+                                                        locationTrackingController
+                                                            ?.currentLocation()
+                                                            ?.let {
+                                                                EngineerLocationSnapshot(
+                                                                    lat = it.lat,
+                                                                    lon = it.lon,
+                                                                    accuracyM = it.accuracyM,
+                                                                )
+                                                            }
+                                                    } catch (e: CancellationException) {
+                                                        throw e
+                                                    } catch (_: Exception) {
+                                                        null
+                                                    }
+                                                order =
+                                                    repository.patch(
+                                                        wo.id,
+                                                        status = "in_progress",
+                                                        location = location,
+                                                    )
                                                 locationTrackingController?.onStartedInProgress()
                                                 onChanged()
                                             } catch (e: Exception) {

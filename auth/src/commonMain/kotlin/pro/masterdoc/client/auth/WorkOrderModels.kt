@@ -51,6 +51,13 @@ data class CreateWorkOrderRequest(
     val source: String = "manual",
 )
 
+@Serializable
+data class EngineerLocationSnapshot(
+    val lat: Double,
+    val lon: Double,
+    val accuracyM: Double? = null,
+)
+
 class WorkOrdersRepository(
     private val config: AuthConfig,
     private val http: GatewayHttpClient,
@@ -137,6 +144,7 @@ class WorkOrdersRepository(
         durationHours: Int? = null,
         assigneeId: String? = null,
         clearAssignee: Boolean = false,
+        location: EngineerLocationSnapshot? = null,
     ): WorkOrderDto {
         val body =
             buildJsonObject {
@@ -147,6 +155,16 @@ class WorkOrdersRepository(
                 when {
                     clearAssignee -> put("assigneeId", JsonNull)
                     assigneeId != null -> put("assigneeId", JsonPrimitive(assigneeId))
+                }
+                location?.let { snapshot ->
+                    put(
+                        "location",
+                        buildJsonObject {
+                            put("lat", JsonPrimitive(snapshot.lat))
+                            put("lon", JsonPrimitive(snapshot.lon))
+                            snapshot.accuracyM?.let { put("accuracyM", JsonPrimitive(it)) }
+                        },
+                    )
                 }
             }
         val response =

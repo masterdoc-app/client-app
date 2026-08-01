@@ -263,6 +263,9 @@ private fun SitesTab(
     var error by remember { mutableStateOf<String?>(null) }
     var name by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
+    var latitude by remember { mutableStateOf("") }
+    var longitude by remember { mutableStateOf("") }
+    var geofenceRadiusM by remember { mutableStateOf("") }
     var addressSuggestions by remember { mutableStateOf<List<GeocodeSuggestItem>>(emptyList()) }
     var editingId by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -336,9 +339,42 @@ private fun SitesTab(
                 )
             }
         }
+        AppTextField(
+            value = latitude,
+            onValueChange = { latitude = it },
+            label = "Широта (опционально)",
+            modifier = Modifier.fillMaxWidth(),
+        )
+        AppTextField(
+            value = longitude,
+            onValueChange = { longitude = it },
+            label = "Долгота (опционально)",
+            modifier = Modifier.fillMaxWidth(),
+        )
+        AppTextField(
+            value = geofenceRadiusM,
+            onValueChange = { geofenceRadiusM = it },
+            label = "Радиус геозоны, м (опционально)",
+            modifier = Modifier.fillMaxWidth(),
+        )
+        val parsedLatitude = latitude.trim().takeIf { it.isNotEmpty() }?.toDoubleOrNull()
+        val parsedLongitude = longitude.trim().takeIf { it.isNotEmpty() }?.toDoubleOrNull()
+        val parsedRadius = geofenceRadiusM.trim().takeIf { it.isNotEmpty() }?.toIntOrNull()
+        val geofenceError =
+            when {
+                latitude.isBlank() != longitude.isBlank() -> "Укажите и широту, и долготу"
+                latitude.isNotBlank() && parsedLatitude == null -> "Некорректная широта"
+                longitude.isNotBlank() && parsedLongitude == null -> "Некорректная долгота"
+                parsedLatitude != null && parsedLatitude !in -90.0..90.0 -> "Широта должна быть от -90 до 90"
+                parsedLongitude != null && parsedLongitude !in -180.0..180.0 -> "Долгота должна быть от -180 до 180"
+                geofenceRadiusM.isNotBlank() && (parsedRadius == null || parsedRadius <= 0) ->
+                    "Радиус должен быть положительным числом"
+                else -> null
+            }
+        geofenceError?.let { AppText(text = it, style = AppTextStyle.Label) }
         AppButton(
             text = if (editingId == null) "Создать площадку" else "Сохранить",
-            enabled = !busy && name.isNotBlank(),
+            enabled = !busy && name.isNotBlank() && geofenceError == null,
             onClick = {
                 scope.launch {
                     busy = true
@@ -356,6 +392,9 @@ private fun SitesTab(
                                     name = name.trim(),
                                     address = address.trim().takeIf { it.isNotEmpty() },
                                     id = id,
+                                    lat = parsedLatitude,
+                                    lon = parsedLongitude,
+                                    geofenceRadiusM = parsedRadius,
                                 ),
                             )
                         } else {
@@ -363,12 +402,18 @@ private fun SitesTab(
                                 editingId!!,
                                 UpdateSiteRequest(
                                     name = name.trim(),
-                                    address = address.trim(),
+                                    address = address.trim().takeIf { it.isNotEmpty() },
+                                    lat = parsedLatitude,
+                                    lon = parsedLongitude,
+                                    geofenceRadiusM = parsedRadius,
                                 ),
                             )
                         }
                         name = ""
                         address = ""
+                        latitude = ""
+                        longitude = ""
+                        geofenceRadiusM = ""
                         editingId = null
                         reload()
                     } catch (e: Exception) {
@@ -387,6 +432,9 @@ private fun SitesTab(
                     editingId = null
                     name = ""
                     address = ""
+                    latitude = ""
+                    longitude = ""
+                    geofenceRadiusM = ""
                 },
             )
         }
@@ -405,7 +453,14 @@ private fun SitesTab(
                         Column(modifier = Modifier.weight(1f)) {
                             AppText(text = site.name)
                             AppText(
-                                text = siteSecondaryLine(site.address),
+                                text =
+                                    listOfNotNull(
+                                        site.address?.takeIf { it.isNotBlank() },
+                                        site.lat?.let { lat ->
+                                            site.lon?.let { lon -> "Координаты: $lat, $lon" }
+                                        },
+                                        site.geofenceRadiusM?.let { "Радиус: $it м" },
+                                    ).joinToString(" · ").ifBlank { "—" },
                                 style = AppTextStyle.Label,
                             )
                         }
@@ -417,6 +472,9 @@ private fun SitesTab(
                                 editingId = site.id
                                 name = site.name
                                 address = site.address.orEmpty()
+                                latitude = site.lat?.toString().orEmpty()
+                                longitude = site.lon?.toString().orEmpty()
+                                geofenceRadiusM = site.geofenceRadiusM?.toString().orEmpty()
                             },
                         )
                         AppButton(

@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.arkivanov.decompose.router.pages.ChildPages
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.AiMessagesRepository
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.EngineerLocationsGateway
@@ -46,6 +47,7 @@ import pro.masterdoc.client.presentation.shell.MainShellComponent
 import pro.masterdoc.client.session.ClientSession
 import pro.masterdoc.client.session.SessionUser
 import pro.masterdoc.client.ui.screens.BlackBoxScreen
+import pro.masterdoc.client.ui.screens.AiMessagesScreen
 import pro.masterdoc.client.ui.screens.BoardScreen
 import pro.masterdoc.client.ui.screens.ChartsScreen
 import pro.masterdoc.client.ui.screens.EquipmentDetailScreen
@@ -73,6 +75,7 @@ fun MainShellContent(
     userScopesRepository: UserScopesRepository? = null,
     engineerLocationsGateway: EngineerLocationsGateway? = null,
     geocodeRepository: GeocodeRepository? = null,
+    aiMessagesRepository: AiMessagesRepository? = null,
 ) {
     val pages by component.pages.subscribeAsState()
     val focusedMapId by component.focusedMapId.subscribeAsState()
@@ -118,6 +121,7 @@ fun MainShellContent(
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsGateway,
                         geocodeRepository = geocodeRepository,
+                        aiMessagesRepository = aiMessagesRepository,
                         locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
@@ -155,6 +159,7 @@ fun MainShellContent(
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsGateway,
                         geocodeRepository = geocodeRepository,
+                        aiMessagesRepository = aiMessagesRepository,
                         locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
@@ -189,6 +194,7 @@ private fun ActivePage(
     userScopesRepository: UserScopesRepository?,
     engineerLocationsGateway: EngineerLocationsGateway?,
     geocodeRepository: GeocodeRepository?,
+    aiMessagesRepository: AiMessagesRepository?,
     locationTrackingController: LocationTrackingController?,
     focusedMapId: String?,
     focusedAssetId: String?,
@@ -245,6 +251,12 @@ private fun ActivePage(
                 NavDestinationId.BlackBox ->
                     if (adminUsersRepository != null) {
                         BlackBoxScreen(repository = adminUsersRepository)
+                    } else {
+                        StubDestinationScreen(active.destination)
+                    }
+                NavDestinationId.Ai ->
+                    if (aiMessagesRepository != null) {
+                        AiMessagesScreen(repository = aiMessagesRepository)
                     } else {
                         StubDestinationScreen(active.destination)
                     }
@@ -332,5 +344,6 @@ private fun iconFor(destination: NavDestinationId): ImageVector =
         NavDestinationId.Equipment -> Icons.Filled.PrecisionManufacturing
         NavDestinationId.Profile -> Icons.Filled.Person
         NavDestinationId.BlackBox -> Icons.Filled.History
+        NavDestinationId.Ai -> Icons.Filled.History
         NavDestinationId.Users -> Icons.Filled.AdminPanelSettings
     }

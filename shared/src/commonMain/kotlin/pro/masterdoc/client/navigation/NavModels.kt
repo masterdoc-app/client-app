@@ -17,6 +17,9 @@ enum class FeatureId(val wireValue: String) {
     /** Audit journal («Чёрный ящик»). */
     BlackBox("black_box"),
 
+    /** System AI messages. */
+    Ai("ai"),
+
     /** Admin invite / user management (`admin` from feature-service). */
     Users("admin"),
     ;
@@ -40,6 +43,7 @@ enum class NavDestinationId {
     Equipment,
     Profile,
     BlackBox,
+    Ai,
     Users,
 }
 

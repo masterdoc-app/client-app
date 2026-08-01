@@ -51,6 +51,13 @@ fun authModule(
             )
         }
         single {
+            AiMessagesRepository(
+                config = get(),
+                http = get(),
+                tokenStore = get(),
+            )
+        }
+        single {
             EngineerLocationsRepository(
                 config = get(),
                 http = get(),

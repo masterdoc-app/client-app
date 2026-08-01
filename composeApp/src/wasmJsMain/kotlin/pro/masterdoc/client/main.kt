@@ -5,6 +5,7 @@ import androidx.compose.ui.window.ComposeViewport
 import kotlinx.browser.document
 import org.koin.core.context.startKoin
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.AiMessagesRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.ClientEventsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
@@ -34,6 +35,7 @@ fun main() {
     val clientEvents = koinApp.koin.get<ClientEventsRepository>()
     val engineerLocations = koinApp.koin.get<EngineerLocationsRepository>()
     val geocode = koinApp.koin.get<GeocodeRepository>()
+    val aiMessages = koinApp.koin.get<AiMessagesRepository>()
     ComposeViewport(document.body!!) {
         AuthenticatedApp(
             coordinator = coordinator,
@@ -44,6 +46,7 @@ fun main() {
             clientEventsRepository = clientEvents,
             engineerLocationsRepository = engineerLocations,
             geocodeRepository = geocode,
+            aiMessagesRepository = aiMessages,
         )
     }
 }

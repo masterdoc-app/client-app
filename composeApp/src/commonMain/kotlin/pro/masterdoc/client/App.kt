@@ -23,6 +23,7 @@ import pro.masterdoc.client.analytics.AnalyticsSink
 import pro.masterdoc.client.analytics.GatewayAnalyticsSink
 import pro.masterdoc.client.analytics.NoopAnalyticsSink
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.AiMessagesRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.ClientEventsRepository
@@ -76,6 +77,7 @@ fun AuthenticatedApp(
     clientEventsRepository: ClientEventsRepository? = null,
     engineerLocationsRepository: EngineerLocationsRepository? = null,
     geocodeRepository: GeocodeRepository? = null,
+    aiMessagesRepository: AiMessagesRepository? = null,
 ) {
     AppTextSelection {
         ClientTheme {
@@ -118,6 +120,7 @@ fun AuthenticatedApp(
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsRepository,
                         geocodeRepository = geocodeRepository,
+                        aiMessagesRepository = aiMessagesRepository,
                     )
                 is ShellUiState.Error ->
                     Column(

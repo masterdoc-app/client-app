@@ -157,6 +157,34 @@ class WorkOrdersRepositoryTest {
         }
 
     @Test
+    fun patchSendsLocationSnapshot() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            var body: String? = null
+            val http =
+                RecordingGatewayHttpClient { method, url, _, requestBody ->
+                    assertEquals("PATCH", method)
+                    assertTrue(url.endsWith("/work-orders/wo-1"))
+                    body = requestBody
+                    GatewayHttpResponse(
+                        200,
+                        """{"id":"wo-1","orgId":"o","type":"emergency","status":"in_progress","title":"T","assetId":"a","siteId":"s","dueAt":"2026-07-22","source":"api","createdAt":"t","updatedAt":"t"}""",
+                    )
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+            repo.patch(
+                "wo-1",
+                status = "in_progress",
+                location = EngineerLocationSnapshot(lat = 55.75, lon = 37.61, accuracyM = 12.0),
+            )
+            val location = Json.parseToJsonElement(body!!).jsonObject["location"]!!.jsonObject
+            assertEquals(55.75, location["lat"]!!.toString().toDouble())
+            assertEquals(37.61, location["lon"]!!.toString().toDouble())
+            assertEquals(12.0, location["accuracyM"]!!.toString().toDouble())
+        }
+
+    @Test
     fun patchSendsNullAssignee() =
         runBlocking {
             val tokens = InMemoryTokenStore()

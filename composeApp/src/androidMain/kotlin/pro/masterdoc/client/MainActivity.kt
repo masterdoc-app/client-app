@@ -10,6 +10,7 @@ import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import org.koin.core.context.startKoin
 import org.koin.mp.KoinPlatformTools
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.AiMessagesRepository
 import pro.masterdoc.client.auth.ClientEventsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
@@ -49,6 +50,7 @@ class MainActivity : ComponentActivity() {
                 clientEventsRepository = koin.get<ClientEventsRepository>(),
                 engineerLocationsRepository = koin.get<EngineerLocationsRepository>(),
                 geocodeRepository = koin.get<GeocodeRepository>(),
+                aiMessagesRepository = koin.get<AiMessagesRepository>(),
             )
         }
     }

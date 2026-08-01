@@ -47,6 +47,8 @@ class LocationTrackingController(
         syncTracking()
     }
 
+    suspend fun currentLocation(): EngineerLocationPoint? = locationSource.currentLocation()
+
     fun onWorkOrdersChanged(openAssigned: List<WorkOrderDto>) {
         this.openAssigned = openAssigned.filter { it.status == "new" || it.status == "in_progress" }
         syncTracking()
