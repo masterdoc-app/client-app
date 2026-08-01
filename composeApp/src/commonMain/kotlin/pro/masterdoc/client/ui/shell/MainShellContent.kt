@@ -55,6 +55,7 @@ import pro.masterdoc.client.ui.screens.EquipmentDetailScreen
 import pro.masterdoc.client.ui.screens.EquipmentScreen
 import pro.masterdoc.client.ui.screens.MapScreen
 import pro.masterdoc.client.ui.screens.ProfileScreen
+import pro.masterdoc.client.ui.screens.ReportsScreen
 import pro.masterdoc.client.ui.screens.MyWorkOrdersScreen
 import pro.masterdoc.client.ui.screens.TicketsScreen
 import pro.masterdoc.client.ui.screens.StubDestinationScreen
@@ -293,7 +294,14 @@ private fun ActivePage(
                         StubDestinationScreen(active.destination)
                     }
                 NavDestinationId.Reports ->
-                    StubDestinationScreen(active.destination)
+                    if (workOrdersRepository != null && equipmentRepository != null) {
+                        ReportsScreen(
+                            reportsRepository = workOrdersRepository,
+                            equipmentRepository = equipmentRepository,
+                        )
+                    } else {
+                        StubDestinationScreen(active.destination)
+                    }
                 NavDestinationId.Board ->
                     if (workOrdersRepository != null) {
                         BoardScreen(
