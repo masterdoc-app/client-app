@@ -8,6 +8,7 @@ import ru.rustore.sdk.appupdate.manager.factory.RuStoreAppUpdateManagerFactory
 import ru.rustore.sdk.appupdate.model.AppUpdateInfo
 import ru.rustore.sdk.appupdate.model.AppUpdateOptions
 import ru.rustore.sdk.appupdate.model.AppUpdateType
+import ru.rustore.sdk.appupdate.model.InstallState
 import ru.rustore.sdk.appupdate.model.InstallStatus
 import ru.rustore.sdk.appupdate.model.UpdateAvailability
 
@@ -20,6 +21,8 @@ class RuStoreAppUpdater(private val activity: ComponentActivity) {
             null
         }
     private var checking = false
+    private var silentInFlight = false
+    private var silentListener: ((InstallState) -> Unit)? = null
 
     fun checkAndStart() {
         if (checking || manager == null) return
@@ -67,16 +70,41 @@ class RuStoreAppUpdater(private val activity: ComponentActivity) {
     }
 
     private fun startSilent(info: AppUpdateInfo) {
-        val listener = { state: ru.rustore.sdk.appupdate.model.InstallState ->
-            if (state.installStatus == InstallStatus.DOWNLOADED) {
-                val options = AppUpdateOptions.Builder().appUpdateType(AppUpdateType.SILENT).build()
-                manager?.completeUpdate(options)
+        if (silentInFlight) return
+        silentInFlight = true
+
+        if (silentListener == null) {
+            silentListener = { state ->
+                when (state.installStatus) {
+                    InstallStatus.DOWNLOADED -> {
+                        val options = AppUpdateOptions.Builder().appUpdateType(AppUpdateType.SILENT).build()
+                        manager?.completeUpdate(options)
+                        resetSilentFlow()
+                    }
+                    InstallStatus.FAILED -> {
+                        Log.i(TAG, "Silent update download failed")
+                        resetSilentFlow()
+                    }
+                    else -> Unit
+                }
             }
+            manager?.registerListener(silentListener!!)
         }
-        manager?.registerListener(listener)
+
         val options = AppUpdateOptions.Builder().appUpdateType(AppUpdateType.SILENT).build()
         manager?.startUpdateFlow(info, options)
-            ?.addOnFailureListener { t -> Log.i(TAG, "Silent update failed", t) }
+            ?.addOnFailureListener { t ->
+                Log.i(TAG, "Silent update failed", t)
+                resetSilentFlow()
+            }
+    }
+
+    private fun resetSilentFlow() {
+        silentInFlight = false
+        silentListener?.let { listener ->
+            manager?.unregisterListener(listener)
+            silentListener = null
+        }
     }
 
     companion object {
