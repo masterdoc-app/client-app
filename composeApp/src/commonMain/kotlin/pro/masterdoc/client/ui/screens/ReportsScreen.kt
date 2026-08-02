@@ -269,7 +269,10 @@ private fun ManagerKpiSections(
         loading -> CircularProgressIndicator()
         error != null -> AppText(text = error)
         kpis == null -> AppText(text = "Нет данных KPI за выбранный период", style = AppTextStyle.Label)
-        else -> section(kpis)
+        else -> {
+            AppText(text = "Период: с ${kpis.from} по ${kpis.to}", style = AppTextStyle.Label)
+            section(kpis)
+        }
     }
 }
 
@@ -278,6 +281,12 @@ private fun KpiSummary(kpis: ManagerKpis) {
     KpiValue("MTTR", formatManagerKpiMetric(kpis.mttrHours, kpis.mttrSampleSize, " ч"))
     KpiValue("MTBF", formatManagerKpiMetric(kpis.mtbfHours, kpis.mtbfSampleSize, " ч"))
     KpiValue("Готовность", formatPercent(kpis.availabilityPercent))
+    val points = kpiSummaryChartPoints(kpis)
+    if (points.any { it.value != 0f }) {
+        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
+    } else {
+        EmptyKpiChartState()
+    }
 }
 
 @Composable
@@ -285,6 +294,12 @@ private fun KpiPlannedVsEmergency(kpis: ManagerKpis) {
     AppText(text = "Плановые vs аварийные", style = AppTextStyle.Title)
     KpiValue("Плановые", "${kpis.plannedCount} заявок · ${formatHours(kpis.plannedHours)}")
     KpiValue("Аварийные", "${kpis.emergencyCount} заявок · ${formatHours(kpis.emergencyHours)}")
+    val points = plannedVsEmergencyChartPoints(kpis)
+    if (points.any { it.value != 0f } || kpis.plannedHours != 0.0 || kpis.emergencyHours != 0.0) {
+        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
+    } else {
+        EmptyKpiChartState()
+    }
 }
 
 @Composable
@@ -294,6 +309,12 @@ private fun KpiPpr(kpis: ManagerKpis) {
     KpiValue("Выполнено с опозданием", kpis.pprLate.toString())
     KpiValue("Открытые просроченные", kpis.pprOpenOverdue.toString())
     KpiValue("Открытые в срок", kpis.pprOpenPending.toString())
+    val points = pprComplianceChartPoints(kpis)
+    if (points.any { it.value != 0f }) {
+        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
+    } else {
+        EmptyKpiChartState()
+    }
 }
 
 @Composable
@@ -303,15 +324,23 @@ private fun KpiBacklog(kpis: ManagerKpis) {
     KpiValue("От 7 до 30 дней", kpis.backlog7to30d.toString())
     KpiValue("Старше 30 дней", kpis.backlogOver30d.toString())
     KpiValue("Просроченные", kpis.backlogOverdue.toString())
+    val points = backlogChartPoints(kpis)
+    if (points.any { it.value != 0f } || kpis.backlogOverdue != 0) {
+        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
+    } else {
+        EmptyKpiChartState()
+    }
 }
 
 @Composable
 private fun KpiDowntimeRanking(kpis: ManagerKpis, assets: List<AssetDto>) {
     AppText(text = "Рейтинг простоев", style = AppTextStyle.Title)
     val rows = formatManagerKpiDowntimeRows(kpis, assets)
-    if (rows.isEmpty()) {
+    val points = downtimeRankingChartPoints(kpis, assets)
+    if (points.isEmpty()) {
         AppText(text = "Нет простоев за выбранный период", style = AppTextStyle.Label)
     } else {
+        ReportHorizontalBarChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
         rows.forEach { row ->
             KpiValue(
                 row.label,
@@ -319,6 +348,11 @@ private fun KpiDowntimeRanking(kpis: ManagerKpis, assets: List<AssetDto>) {
             )
         }
     }
+}
+
+@Composable
+private fun EmptyKpiChartState() {
+    AppText(text = "Нет данных за выбранный период", style = AppTextStyle.Label)
 }
 
 @Composable
