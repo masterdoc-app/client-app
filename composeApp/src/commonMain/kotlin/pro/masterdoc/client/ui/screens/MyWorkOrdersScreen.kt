@@ -49,7 +49,17 @@ fun MyWorkOrdersScreen(
     var selectedId by remember { mutableStateOf<String?>(null) }
     var mentorOpen by remember { mutableStateOf(false) }
     var qrDialogOpen by remember { mutableStateOf(false) }
+    var pendingQrToken by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableStateOf(0) }
+
+    LaunchedEffect(qrDialogOpen, pendingQrToken) {
+        if (!qrDialogOpen) {
+            pendingQrToken?.let { token ->
+                pendingQrToken = null
+                onOpenAssetQr(token)
+            }
+        }
+    }
 
     LaunchedEffect(repository, currentUserId, reloadKey) {
         loading = true
@@ -108,8 +118,8 @@ fun MyWorkOrdersScreen(
         AssetQrPasteDialog(
             onDismiss = { qrDialogOpen = false },
             onOpen = { token ->
+                pendingQrToken = token
                 qrDialogOpen = false
-                onOpenAssetQr(token)
             },
         )
     }

@@ -95,8 +95,18 @@ fun TicketsScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var selectedOrderId by remember { mutableStateOf<String?>(null) }
     var qrDialogOpen by remember { mutableStateOf(false) }
+    var pendingQrToken by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(qrDialogOpen, pendingQrToken) {
+        if (!qrDialogOpen) {
+            pendingQrToken?.let { token ->
+                pendingQrToken = null
+                onOpenAssetQr(token)
+            }
+        }
+    }
 
     LaunchedEffect(repository, equipmentRepository, userScopesRepository, currentUserId, reloadKey) {
         loading = true
@@ -152,8 +162,8 @@ fun TicketsScreen(
         AssetQrPasteDialog(
             onDismiss = { qrDialogOpen = false },
             onOpen = { token ->
+                pendingQrToken = token
                 qrDialogOpen = false
-                onOpenAssetQr(token)
             },
         )
     }
