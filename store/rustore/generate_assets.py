@@ -58,17 +58,14 @@ def crop_main_content(
     return src.crop(box)
 
 
-def fit_width_crop(img: Image.Image, tw: int, th: int, focus_y: float = 0.0) -> Image.Image:
+def fit_contain(img: Image.Image, tw: int, th: int, bg=(248, 250, 252)) -> Image.Image:
+    """Fit entire UI into frame with light letterboxing (desktop → portrait)."""
     iw, ih = img.size
-    scale = tw / iw
-    nh = int(ih * scale)
-    resized = img.resize((tw, nh), Image.Resampling.LANCZOS)
-    if nh >= th:
-        top = int((nh - th) * focus_y)
-        top = max(0, min(top, nh - th))
-        return resized.crop((0, top, tw, top + th))
-    canvas = Image.new("RGB", (tw, th), FRAME_BG)
-    canvas.paste(resized, (0, 0))
+    scale = min(tw / iw, th / ih)
+    nw, nh = max(1, int(iw * scale)), max(1, int(ih * scale))
+    resized = img.resize((nw, nh), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGB", (tw, th), bg)
+    canvas.paste(resized, ((tw - nw) // 2, (th - nh) // 2))
     return canvas
 
 
@@ -140,7 +137,7 @@ def compose_screenshot(
     frame_w = W - FRAME_PAD_X * 2
     frame_h = H - FRAME_TOP - FRAME_BOTTOM
 
-    ui = fit_width_crop(content, frame_w, frame_h, focus_y=focus_y)
+    ui = fit_contain(content, frame_w, frame_h)
 
     canvas = Image.new("RGB", (W, H), BG)
     draw = ImageDraw.Draw(canvas)
@@ -234,31 +231,27 @@ def main() -> None:
     UPLOAD.mkdir(parents=True, exist_ok=True)
 
     compose_screenshot(
-        ROOT / "smoke-uuid-06-mywo.png",
+        ROOT / "smoke-uuid-08-wo-detail.png",
         UPLOAD / "screenshot-01.png",
         caption="Заявки",
         subtitle="Список работ и статусы на объекте",
-        crop_box=(125, 0, 1100, 520),
-        focus_y=0.0,
+        crop_box=(110, 0, 1750, 1300),
     )
 
     compose_screenshot(
-        ROOT / ".superpowers/sdd/smoke-board2.png",
+        ROOT / "smoke-uuid-13-board.png",
         UPLOAD / "screenshot-02.png",
-        caption="Карта",
-        subtitle="Доска недели и заявки на линии",
-        crop_box=(125, 0, 2100, 860),
-        cover_boxes=[(1180, 365, 1585, 535)],
-        focus_y=0.08,
+        caption="Доска",
+        subtitle="План недели и заявки на линии",
+        crop_box=(110, 0, 2400, 1300),
     )
 
     compose_screenshot(
-        ROOT / "smoke-eq5-detail.png",
+        ROOT / "smoke-uuid-10-equipment.png",
         UPLOAD / "screenshot-03.png",
         caption="Оборудование",
         subtitle="Паспорт, документы и инвентарный номер",
-        crop_box=(95, 0, 1280, 820),
-        focus_y=0.0,
+        crop_box=(110, 0, 1900, 1300),
     )
 
     compose_screenshot(
@@ -266,8 +259,7 @@ def main() -> None:
         UPLOAD / "screenshot-04.png",
         caption="ППР",
         subtitle="Карты обслуживания и регламенты",
-        crop_box=(125, 0, 1650, 980),
-        focus_y=0.22,
+        crop_box=(110, 0, 2100, 1300),
     )
 
     generate_icon(OUT / "icon-512.png")
