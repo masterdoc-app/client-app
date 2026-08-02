@@ -9,8 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -519,11 +524,13 @@ private fun SitesTab(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RolesTab(repository: AdminUsersRepository) {
     var roles by remember { mutableStateOf<List<ProductRoleDto>>(emptyList()) }
     var featureCatalog by remember { mutableStateOf<List<FeatureDefinitionDto>>(emptyList()) }
     var selectedByRole by remember { mutableStateOf<Map<String, Set<String>>>(emptyMap()) }
+    var addMenuExpandedByRole by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var success by remember { mutableStateOf<String?>(null) }
@@ -566,45 +573,79 @@ private fun RolesTab(repository: AdminUsersRepository) {
             else ->
                 roles.forEach { role ->
                     val selected = selectedByRole[role.id].orEmpty()
+                    val assigned = featureCatalog.filter { it.id in selected }
+                    val available = featureCatalog.filter { it.id !in selected }
+                    val addMenuExpanded = addMenuExpandedByRole[role.id] == true
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         AppText(text = role.titleRu, style = AppTextStyle.Title)
-                        featureCatalog.forEach { feature ->
+                        assigned.forEach { feature ->
+                            val isProtectedAdminFeature = role.id == "admin" && feature.id == "admin"
                             Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                AppText(text = feature.titleRu)
+                                AppButton(
+                                    text = "Удалить",
+                                    variant = AppButtonVariant.Secondary,
+                                    fillMaxWidth = false,
+                                    enabled = !isProtectedAdminFeature,
+                                    onClick = {
+                                        selectedByRole =
+                                            selectedByRole + (role.id to (selected - feature.id))
+                                    },
+                                )
+                            }
+                        }
+                        ExposedDropdownMenuBox(
+                            expanded = addMenuExpanded && available.isNotEmpty(),
+                            onExpandedChange = {
+                                if (available.isNotEmpty()) {
+                                    addMenuExpandedByRole = addMenuExpandedByRole + (role.id to it)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            OutlinedTextField(
+                                value = "",
+                                onValueChange = {},
+                                readOnly = true,
+                                enabled = available.isNotEmpty(),
+                                label = { Text("Добавить функцию") },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = addMenuExpanded)
+                                },
                                 modifier =
                                     Modifier
                                         .fillMaxWidth()
-                                        .clickable {
-                                            selectedByRole =
-                                                selectedByRole + (
-                                                    role.id to
-                                                        if (feature.id in selected) {
-                                                            selected - feature.id
-                                                        } else {
-                                                            selected + feature.id
-                                                        }
-                                                )
-                                        },
-                                verticalAlignment = Alignment.CenterVertically,
+                                        .menuAnchor(),
+                            )
+                            ExposedDropdownMenu(
+                                expanded = addMenuExpanded,
+                                onDismissRequest = {
+                                    addMenuExpandedByRole = addMenuExpandedByRole + (role.id to false)
+                                },
                             ) {
-                                Checkbox(
-                                    checked = feature.id in selected,
-                                    onCheckedChange = { checked ->
-                                        selectedByRole =
-                                            selectedByRole + (
-                                                role.id to
-                                                    if (checked) selected + feature.id else selected - feature.id
-                                            )
-                                    },
-                                )
-                                AppText(text = feature.titleRu)
+                                available.forEach { feature ->
+                                    DropdownMenuItem(
+                                        text = { Text(feature.titleRu) },
+                                        onClick = {
+                                            selectedByRole =
+                                                selectedByRole + (role.id to (selected + feature.id))
+                                            addMenuExpandedByRole =
+                                                addMenuExpandedByRole + (role.id to false)
+                                        },
+                                    )
+                                }
                             }
                         }
                         AppButton(
                             text = if (savingId == role.id) "Сохранение…" else "Сохранить",
-                            enabled = savingId == null,
+                            enabled = savingId == null && selected.isNotEmpty(),
                             onClick = {
                                 scope.launch {
                                     savingId = role.id
