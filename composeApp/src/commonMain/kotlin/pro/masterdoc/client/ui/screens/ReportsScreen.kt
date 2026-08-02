@@ -295,7 +295,7 @@ private fun KpiPlannedVsEmergency(kpis: ManagerKpis) {
     KpiValue("Плановые", "${kpis.plannedCount} заявок · ${formatHours(kpis.plannedHours)}")
     KpiValue("Аварийные", "${kpis.emergencyCount} заявок · ${formatHours(kpis.emergencyHours)}")
     val points = plannedVsEmergencyChartPoints(kpis)
-    if (points.any { it.value != 0f } || kpis.plannedHours != 0.0 || kpis.emergencyHours != 0.0) {
+    if (points.any { it.value != 0f }) {
         ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
     } else {
         EmptyKpiChartState()
@@ -325,7 +325,7 @@ private fun KpiBacklog(kpis: ManagerKpis) {
     KpiValue("Старше 30 дней", kpis.backlogOver30d.toString())
     KpiValue("Просроченные", kpis.backlogOverdue.toString())
     val points = backlogChartPoints(kpis)
-    if (points.any { it.value != 0f } || kpis.backlogOverdue != 0) {
+    if (points.any { it.value != 0f }) {
         ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
     } else {
         EmptyKpiChartState()
