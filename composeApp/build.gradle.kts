@@ -50,6 +50,8 @@ kotlin {
             implementation(libs.essenty.lifecycle)
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
+            implementation(libs.vico.compose)
+            implementation(libs.vico.compose.m3)
         }
 
         commonTest.dependencies {

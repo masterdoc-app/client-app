@@ -2,6 +2,7 @@
 kotlin = "2.2.21"
 agp = "8.7.3"
 composeMultiplatform = "1.7.3"
+vico = "3.2.3"
 decompose = "3.3.0"
 essenty = "2.4.0"
 koin = "4.0.1"
@@ -22,6 +23,8 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 kotlincrypto-hash-sha2 = { module = "org.kotlincrypto.hash:sha2", version.ref = "kotlincryptoHash" }
 fixaverse-design-theme = { module = "pro.fixaverse:design-theme", version = "0.1.0" }
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 
 kotlinx-browser = { module = "org.jetbrains.kotlinx:kotlinx-browser", version = "0.3" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
