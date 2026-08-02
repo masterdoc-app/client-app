@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -32,6 +33,7 @@ import pro.masterdoc.client.auth.DowntimeIntervalDto
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.IsoDates
+import pro.masterdoc.client.auth.ManagerKpis
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppButtonVariant
@@ -64,7 +66,7 @@ internal fun buildDowntimeRows(
     fromDay: Long,
     toDay: Long,
 ): List<DowntimeRow> {
-    val names = assets.associate { it.id to (it.name.ifBlank { it.inventoryNo ?: it.id }) }
+    val names = assets.associate { it.id to it.displayName() }
     return intervals
         .mapNotNull { interval ->
             val start = IsoDates.parseToEpochDay(interval.startedAt.take(10)) ?: return@mapNotNull null
@@ -87,7 +89,7 @@ internal fun buildDowntimeRows(
         .map { (assetId, segments) ->
             DowntimeRow(
                 assetId = assetId,
-                label = names[assetId] ?: assetId,
+                label = names[assetId] ?: "Оборудование",
                 intervals = segments.sortedBy { it.startDay },
             )
         }
@@ -104,20 +106,47 @@ fun ReportsScreen(
     var rows by remember { mutableStateOf<List<DowntimeRow>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var kpis by remember { mutableStateOf<ManagerKpis?>(null) }
+    var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
+    var kpiLoading by remember { mutableStateOf(true) }
+    var kpiError by remember { mutableStateOf<String?>(null) }
     val today = localEpochDay()
     val fromDay = today - days + 1
 
     LaunchedEffect(reportsRepository, equipmentRepository, days) {
         loading = true
         error = null
+        rows = emptyList()
+        kpiLoading = true
+        kpiError = null
+        kpis = null
+        val from = IsoDates.formatEpochDay(fromDay)
+        val to = IsoDates.formatEpochDay(today)
+        val loadedAssets =
+            try {
+                equipmentRepository.listAssets().items
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val message = e.message ?: "Не удалось загрузить оборудование"
+                error = message
+                emptyList()
+            }
+        assets = loadedAssets
         try {
-            val assets = equipmentRepository.listAssets().items
-            val intervals =
-                reportsRepository.equipmentDowntime(
-                    from = IsoDates.formatEpochDay(fromDay),
-                    to = IsoDates.formatEpochDay(today),
-                )
-            rows = buildDowntimeRows(intervals, assets, fromDay, today)
+            kpis = reportsRepository.managerKpis(from = from, to = to)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: GatewayHttpException) {
+            kpiError = e.message ?: "Не удалось загрузить KPI"
+        } catch (e: Exception) {
+            kpiError = e.message ?: "Не удалось загрузить KPI"
+        } finally {
+            kpiLoading = false
+        }
+        try {
+            val intervals = reportsRepository.equipmentDowntime(from = from, to = to)
+            rows = buildDowntimeRows(intervals, loadedAssets, fromDay, today)
         } catch (e: CancellationException) {
             throw e
         } catch (e: GatewayHttpException) {
@@ -134,13 +163,15 @@ fun ReportsScreen(
             modifier =
                 Modifier.fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = ClientSpacing.md, vertical = ClientSpacing.md),
+                    .padding(horizontal = ClientSpacing.md, vertical = ClientSpacing.md)
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(ClientSpacing.md),
         ) {
-            AppText(text = "Простои оборудования", style = AppTextStyle.Title)
             PeriodSelector(selected = days, onSelected = { days = it })
+            ManagerKpiSections(kpis = kpis, assets = assets, loading = kpiLoading, error = kpiError)
+            AppText(text = "Простои оборудования", style = AppTextStyle.Title)
             when {
-                loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                loading -> CircularProgressIndicator()
                 error != null -> AppText(text = error!!)
                 rows.isEmpty() -> EmptyReportsState()
                 else -> DowntimeTimeline(rows = rows, fromDay = fromDay, toDay = today)
@@ -148,6 +179,89 @@ fun ReportsScreen(
         }
     }
 }
+
+@Composable
+private fun ManagerKpiSections(
+    kpis: ManagerKpis?,
+    assets: List<AssetDto>,
+    loading: Boolean,
+    error: String?,
+) {
+    AppText(text = "Сводка KPI", style = AppTextStyle.Title)
+    when {
+        loading -> CircularProgressIndicator()
+        error != null -> AppText(text = error)
+        kpis == null -> AppText(text = "Нет данных KPI за выбранный период", style = AppTextStyle.Label)
+        else -> {
+            KpiSummary(kpis)
+            KpiPlannedVsEmergency(kpis)
+            KpiPpr(kpis)
+            KpiBacklog(kpis)
+            KpiDowntimeRanking(kpis, assets)
+        }
+    }
+}
+
+@Composable
+private fun KpiSummary(kpis: ManagerKpis) {
+    KpiValue("MTTR", formatManagerKpiMetric(kpis.mttrHours, kpis.mttrSampleSize, " ч"))
+    KpiValue("MTBF", formatManagerKpiMetric(kpis.mtbfHours, kpis.mtbfSampleSize, " ч"))
+    KpiValue("Готовность", "${kpis.availabilityPercent.toString().replace('.', ',')}%")
+}
+
+@Composable
+private fun KpiPlannedVsEmergency(kpis: ManagerKpis) {
+    AppText(text = "Плановые vs аварийные", style = AppTextStyle.Title)
+    KpiValue("Плановые", "${kpis.plannedCount} заявок · ${hours(kpis.plannedHours)}")
+    KpiValue("Аварийные", "${kpis.emergencyCount} заявок · ${hours(kpis.emergencyHours)}")
+}
+
+@Composable
+private fun KpiPpr(kpis: ManagerKpis) {
+    AppText(text = "Выполнение ППР", style = AppTextStyle.Title)
+    KpiValue("Выполнено вовремя", kpis.pprOnTime.toString())
+    KpiValue("Выполнено с опозданием", kpis.pprLate.toString())
+    KpiValue("Открытые просроченные", kpis.pprOpenOverdue.toString())
+    KpiValue("Открытые в срок", kpis.pprOpenPending.toString())
+}
+
+@Composable
+private fun KpiBacklog(kpis: ManagerKpis) {
+    AppText(text = "Очередь заявок", style = AppTextStyle.Title)
+    KpiValue("Младше 7 дней", kpis.backlogUnder7d.toString())
+    KpiValue("От 7 до 30 дней", kpis.backlog7to30d.toString())
+    KpiValue("Старше 30 дней", kpis.backlogOver30d.toString())
+    KpiValue("Просроченные", kpis.backlogOverdue.toString())
+}
+
+@Composable
+private fun KpiDowntimeRanking(kpis: ManagerKpis, assets: List<AssetDto>) {
+    AppText(text = "Рейтинг простоев", style = AppTextStyle.Title)
+    val rows = formatManagerKpiDowntimeRows(kpis, assets)
+    if (rows.isEmpty()) {
+        AppText(text = "Нет простоев за выбранный период", style = AppTextStyle.Label)
+    } else {
+        rows.forEach { row ->
+            KpiValue(
+                row.label,
+                "${hours(row.downtimeHours)} · открытых интервалов: ${row.openIntervals}",
+            )
+        }
+    }
+}
+
+@Composable
+private fun KpiValue(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        AppText(text = label, style = AppTextStyle.Label)
+        AppText(text = value)
+    }
+}
+
+private fun hours(value: Double): String = "${value.toString().replace('.', ',')} ч"
 
 @Composable
 private fun PeriodSelector(selected: Int, onSelected: (Int) -> Unit) {

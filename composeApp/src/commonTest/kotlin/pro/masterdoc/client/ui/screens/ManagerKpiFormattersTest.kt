@@ -42,6 +42,12 @@ class ManagerKpiFormattersTest {
         assertEquals(false, rows.single().label.contains("missing-asset"))
     }
 
+    @Test
+    fun formatsEmptyKpiSampleAsNotAvailable() {
+        assertEquals("н/д", formatManagerKpiMetric(12.5, 0))
+        assertEquals("12,5 ч", formatManagerKpiMetric(12.5, 2, suffix = " ч"))
+    }
+
     private fun kpis(row: ManagerKpiDowntimeRow) =
         ManagerKpis(
             from = "2026-07-01",

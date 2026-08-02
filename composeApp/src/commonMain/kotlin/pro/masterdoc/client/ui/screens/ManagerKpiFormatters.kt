@@ -23,7 +23,18 @@ internal fun formatManagerKpiDowntimeRows(
     }
 }
 
-private fun AssetDto.displayName(): String =
+internal fun formatManagerKpiMetric(
+    value: Double,
+    sampleSize: Int,
+    suffix: String = "",
+): String =
+    if (sampleSize == 0) {
+        "н/д"
+    } else {
+        "${value.toString().replace('.', ',')}$suffix"
+    }
+
+internal fun AssetDto.displayName(): String =
     name.trim().takeIf { it.isNotEmpty() }
         ?: inventoryNo?.trim()?.takeIf { it.isNotEmpty() }
         ?: "Оборудование"
