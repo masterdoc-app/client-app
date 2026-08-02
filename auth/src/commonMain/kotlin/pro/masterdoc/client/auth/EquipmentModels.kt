@@ -16,10 +16,26 @@ data class AssetDto(
     val status: String,
     val source: String,
     val documentIds: List<String> = emptyList(),
+    val qrToken: String? = null,
 )
 
 @Serializable
 data class AssetListDto(val items: List<AssetDto>)
+
+@Serializable
+data class AssetQrResponseDto(
+    val qrToken: String,
+    val qrUrl: String,
+    val asset: AssetDto,
+)
+
+@Serializable
+data class AssetQrResolveDto(
+    val assetId: String,
+    val name: String,
+    val siteId: String,
+    val siteName: String? = null,
+)
 
 @Serializable
 data class SiteDto(
@@ -294,6 +310,27 @@ class EquipmentRepository(
             )
         if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
         return json.decodeFromString(AssetDto.serializer(), response.body)
+    }
+
+    suspend fun generateQr(assetId: String): AssetQrResponseDto {
+        val response =
+            http.postForm(
+                url = "${base()}/assets/$assetId/qr",
+                body = "",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(AssetQrResponseDto.serializer(), response.body)
+    }
+
+    suspend fun resolveQr(token: String): AssetQrResolveDto {
+        val response =
+            http.get(
+                url = "${base()}/assets/by-qr/$token",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
+        return json.decodeFromString(AssetQrResolveDto.serializer(), response.body)
     }
 
     suspend fun moveAsset(id: String, siteId: String): AssetDto {

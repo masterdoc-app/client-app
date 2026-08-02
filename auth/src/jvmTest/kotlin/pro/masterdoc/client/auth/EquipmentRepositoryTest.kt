@@ -41,6 +41,58 @@ class EquipmentRepositoryTest {
         }
 
     @Test
+    fun generateQrPostsToAssetQrEndpoint() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            var capturedMethod = ""
+            var capturedUrl = ""
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    capturedMethod = method
+                    capturedUrl = url
+                    GatewayHttpResponse(
+                        200,
+                        """{"qrToken":"qr-token","qrUrl":"https://app.fixaverse.ru/#/qr/qr-token","asset":{"id":"a1","orgId":"o","siteId":"s","name":"Насос","status":"active","source":"manual","qrToken":"qr-token"}}""",
+                    )
+                }
+            val repo = EquipmentRepository(config = config, http = http, tokenStore = tokens)
+
+            val response = repo.generateQr("a1")
+
+            assertEquals("POST", capturedMethod)
+            assertTrue(capturedUrl.endsWith("/assets/a1/qr"))
+            assertEquals("qr-token", response.qrToken)
+            assertEquals("qr-token", response.asset.qrToken)
+        }
+
+    @Test
+    fun resolveQrGetsAssetByToken() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            var capturedMethod = ""
+            var capturedUrl = ""
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    capturedMethod = method
+                    capturedUrl = url
+                    GatewayHttpResponse(
+                        200,
+                        """{"assetId":"a1","name":"Насос","siteId":"s1","siteName":"Цех 1"}""",
+                    )
+                }
+            val repo = EquipmentRepository(config = config, http = http, tokenStore = tokens)
+
+            val response = repo.resolveQr("qr-token")
+
+            assertEquals("GET", capturedMethod)
+            assertTrue(capturedUrl.endsWith("/assets/by-qr/qr-token"))
+            assertEquals("a1", response.assetId)
+            assertEquals("Цех 1", response.siteName)
+        }
+
+    @Test
     fun updateAssetPatchesNameAndInventoryNo() =
         runBlocking {
             val tokens = InMemoryTokenStore()

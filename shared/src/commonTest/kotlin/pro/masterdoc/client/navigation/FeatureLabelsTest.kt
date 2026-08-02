@@ -14,6 +14,7 @@ class FeatureLabelsTest {
         assertEquals("ППР", FeatureId.Charts.titleRu())
         assertEquals("Отчёты", FeatureId.Reports.titleRu())
         assertEquals("Оборудование", FeatureId.Equipment.titleRu())
+        assertEquals("QR оборудования", FeatureId.AssetQr.titleRu())
         assertEquals("Профиль", FeatureId.Profile.titleRu())
         assertEquals("Чёрный ящик", FeatureId.BlackBox.titleRu())
         assertEquals("ИИ", FeatureId.Ai.titleRu())
@@ -26,5 +27,10 @@ class FeatureLabelsTest {
     @Test
     fun fromWire_readsAiFeature() {
         assertEquals(FeatureId.Ai, FeatureId.fromWire("ai"))
+    }
+
+    @Test
+    fun fromWire_readsAssetQrFeature() {
+        assertEquals(FeatureId.AssetQr, FeatureId.fromWire("asset_qr"))
     }
 }
