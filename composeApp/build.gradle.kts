@@ -79,12 +79,12 @@ kotlin {
 
 android {
     namespace = "pro.masterdoc.client"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "pro.masterdoc.client"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = (findProperty("VERSION_CODE") as String?)?.toIntOrNull() ?: 10000
         versionName = findProperty("VERSION_NAME") as String? ?: "1.0.0"
     }
