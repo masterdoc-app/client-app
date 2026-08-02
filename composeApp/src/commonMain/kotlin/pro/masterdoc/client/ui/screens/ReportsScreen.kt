@@ -1,6 +1,7 @@
 package pro.masterdoc.client.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -102,6 +105,51 @@ fun ReportsScreen(
     equipmentRepository: EquipmentRepository,
     modifier: Modifier = Modifier,
 ) {
+    var selectedReport by remember { mutableStateOf<ReportId?>(null) }
+
+    selectedReport?.let { reportId ->
+        ReportDetailScreen(
+            reportId = reportId,
+            reportsRepository = reportsRepository,
+            equipmentRepository = equipmentRepository,
+            onBack = { selectedReport = null },
+            modifier = modifier,
+        )
+        return
+    }
+
+    AppScaffold(title = "Отчёты", modifier = modifier) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(ClientSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+        ) {
+            items(reportCatalogItems(), key = { it.id.name }) { item ->
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedReport = item.id }
+                            .padding(vertical = ClientSpacing.sm),
+                    verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
+                ) {
+                    AppText(text = item.title, style = AppTextStyle.Title)
+                    AppText(text = item.subtitle, style = AppTextStyle.Label)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReportDetailScreen(
+    reportId: ReportId,
+    reportsRepository: WorkOrdersRepository,
+    equipmentRepository: EquipmentRepository,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val catalogItem = reportCatalogItems().first { it.id == reportId }
     var days by remember { mutableStateOf(30) }
     var rows by remember { mutableStateOf<List<DowntimeRow>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -113,7 +161,7 @@ fun ReportsScreen(
     val today = localEpochDay()
     val fromDay = today - days + 1
 
-    LaunchedEffect(reportsRepository, equipmentRepository, days) {
+    LaunchedEffect(reportsRepository, equipmentRepository, days, reportId) {
         loading = true
         error = null
         rows = emptyList()
@@ -133,32 +181,40 @@ fun ReportsScreen(
                 emptyList()
             }
         assets = loadedAssets
-        try {
-            kpis = reportsRepository.managerKpis(from = from, to = to)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: GatewayHttpException) {
-            kpiError = e.message ?: "Не удалось загрузить KPI"
-        } catch (e: Exception) {
-            kpiError = e.message ?: "Не удалось загрузить KPI"
-        } finally {
+        if (reportId != ReportId.EquipmentDowntime) {
+            try {
+                kpis = reportsRepository.managerKpis(from = from, to = to)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: GatewayHttpException) {
+                kpiError = e.message ?: "Не удалось загрузить KPI"
+            } catch (e: Exception) {
+                kpiError = e.message ?: "Не удалось загрузить KPI"
+            } finally {
+                kpiLoading = false
+            }
+        } else {
             kpiLoading = false
         }
-        try {
-            val intervals = reportsRepository.equipmentDowntime(from = from, to = to)
-            rows = buildDowntimeRows(intervals, loadedAssets, fromDay, today)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: GatewayHttpException) {
-            error = e.message ?: "Не удалось загрузить отчёт"
-        } catch (e: Exception) {
-            error = e.message ?: "Не удалось загрузить отчёт"
-        } finally {
+        if (reportId == ReportId.EquipmentDowntime) {
+            try {
+                val intervals = reportsRepository.equipmentDowntime(from = from, to = to)
+                rows = buildDowntimeRows(intervals, loadedAssets, fromDay, today)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: GatewayHttpException) {
+                error = e.message ?: "Не удалось загрузить отчёт"
+            } catch (e: Exception) {
+                error = e.message ?: "Не удалось загрузить отчёт"
+            } finally {
+                loading = false
+            }
+        } else {
             loading = false
         }
     }
 
-    AppScaffold(title = "Отчёты", modifier = modifier) { padding ->
+    AppScaffold(title = catalogItem.title, onNavigateBack = onBack, modifier = modifier) { padding ->
         Column(
             modifier =
                 Modifier.fillMaxSize()
@@ -168,13 +224,22 @@ fun ReportsScreen(
             verticalArrangement = Arrangement.spacedBy(ClientSpacing.md),
         ) {
             PeriodSelector(selected = days, onSelected = { days = it })
-            ManagerKpiSections(kpis = kpis, assets = assets, loading = kpiLoading, error = kpiError)
-            AppText(text = "Простои оборудования", style = AppTextStyle.Title)
-            when {
-                loading -> CircularProgressIndicator()
-                error != null -> AppText(text = error!!)
-                rows.isEmpty() -> EmptyReportsState()
-                else -> DowntimeTimeline(rows = rows, fromDay = fromDay, toDay = today)
+            if (reportId == ReportId.EquipmentDowntime) {
+                AppText(text = "Простои оборудования", style = AppTextStyle.Title)
+                when {
+                    loading -> CircularProgressIndicator()
+                    error != null -> AppText(text = error!!)
+                    rows.isEmpty() -> EmptyReportsState()
+                    else -> DowntimeTimeline(rows = rows, fromDay = fromDay, toDay = today)
+                }
+            } else {
+                ManagerKpiSections(
+                    reportId = reportId,
+                    kpis = kpis,
+                    assets = assets,
+                    loading = kpiLoading,
+                    error = kpiError,
+                )
             }
         }
     }
@@ -182,23 +247,29 @@ fun ReportsScreen(
 
 @Composable
 private fun ManagerKpiSections(
+    reportId: ReportId,
     kpis: ManagerKpis?,
     assets: List<AssetDto>,
     loading: Boolean,
     error: String?,
 ) {
-    AppText(text = "Сводка KPI", style = AppTextStyle.Title)
+    val section: @Composable (ManagerKpis) -> Unit = when (reportId) {
+        ReportId.KpiSummary -> { kpis -> KpiSummary(kpis) }
+        ReportId.PlannedVsEmergency -> { kpis -> KpiPlannedVsEmergency(kpis) }
+        ReportId.PprCompliance -> { kpis -> KpiPpr(kpis) }
+        ReportId.Backlog -> { kpis -> KpiBacklog(kpis) }
+        ReportId.DowntimeRanking -> { kpis -> KpiDowntimeRanking(kpis, assets) }
+        ReportId.EquipmentDowntime -> { _ -> }
+    }
+    AppText(
+        text = reportCatalogItems().first { it.id == reportId }.title,
+        style = AppTextStyle.Title,
+    )
     when {
         loading -> CircularProgressIndicator()
         error != null -> AppText(text = error)
         kpis == null -> AppText(text = "Нет данных KPI за выбранный период", style = AppTextStyle.Label)
-        else -> {
-            KpiSummary(kpis)
-            KpiPlannedVsEmergency(kpis)
-            KpiPpr(kpis)
-            KpiBacklog(kpis)
-            KpiDowntimeRanking(kpis, assets)
-        }
+        else -> section(kpis)
     }
 }
 
@@ -206,14 +277,14 @@ private fun ManagerKpiSections(
 private fun KpiSummary(kpis: ManagerKpis) {
     KpiValue("MTTR", formatManagerKpiMetric(kpis.mttrHours, kpis.mttrSampleSize, " ч"))
     KpiValue("MTBF", formatManagerKpiMetric(kpis.mtbfHours, kpis.mtbfSampleSize, " ч"))
-    KpiValue("Готовность", "${kpis.availabilityPercent.toString().replace('.', ',')}%")
+    KpiValue("Готовность", formatPercent(kpis.availabilityPercent))
 }
 
 @Composable
 private fun KpiPlannedVsEmergency(kpis: ManagerKpis) {
     AppText(text = "Плановые vs аварийные", style = AppTextStyle.Title)
-    KpiValue("Плановые", "${kpis.plannedCount} заявок · ${hours(kpis.plannedHours)}")
-    KpiValue("Аварийные", "${kpis.emergencyCount} заявок · ${hours(kpis.emergencyHours)}")
+    KpiValue("Плановые", "${kpis.plannedCount} заявок · ${formatHours(kpis.plannedHours)}")
+    KpiValue("Аварийные", "${kpis.emergencyCount} заявок · ${formatHours(kpis.emergencyHours)}")
 }
 
 @Composable
@@ -244,7 +315,7 @@ private fun KpiDowntimeRanking(kpis: ManagerKpis, assets: List<AssetDto>) {
         rows.forEach { row ->
             KpiValue(
                 row.label,
-                "${hours(row.downtimeHours)} · открытых интервалов: ${row.openIntervals}",
+                "${formatHours(row.downtimeHours)} · открытых интервалов: ${row.openIntervals}",
             )
         }
     }
@@ -260,8 +331,6 @@ private fun KpiValue(label: String, value: String) {
         AppText(text = value)
     }
 }
-
-private fun hours(value: Double): String = "${value.toString().replace('.', ',')} ч"
 
 @Composable
 private fun PeriodSelector(selected: Int, onSelected: (Int) -> Unit) {
