@@ -64,13 +64,13 @@ fun resolveTicketsEmptyState(
     assets: List<AssetDto>,
     scopesLoaded: Boolean,
 ): TicketsEmptyState? {
+    if (assets.isNotEmpty()) return null
     if (scopesLoaded) {
+        // Scope unknown/denied but gateway returned no assets → ask admin to bind цех.
         if (!hasAssignedScope(scope)) return TicketsEmptyState.NoScope
-        if (assets.isEmpty()) return TicketsEmptyState.NoEquipment
-    } else if (assets.isEmpty()) {
         return TicketsEmptyState.NoEquipment
     }
-    return null
+    return TicketsEmptyState.NoEquipment
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,7 +108,13 @@ fun TicketsScreen(
         }
         try {
             if (userScopesRepository != null) {
-                userScope = userScopesRepository.get(currentUserId)
+                try {
+                    userScope = userScopesRepository.get(currentUserId)
+                } catch (e: GatewayHttpException) {
+                    // Self-scope may be denied for some roles; gateway still filters /assets.
+                    if (e.status != 403) throw e
+                    userScope = null
+                }
                 scopesLoaded = true
             }
             assets = equipmentRepository.listAssets().items

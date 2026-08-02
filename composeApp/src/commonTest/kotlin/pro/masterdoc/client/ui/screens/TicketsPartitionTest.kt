@@ -68,6 +68,17 @@ class TicketsPartitionTest {
         assertNull(state)
     }
 
+    @Test
+    fun resolveTicketsEmptyStateReadyWhenAssetsPresentEvenIfScopeUnknown() {
+        val state =
+            resolveTicketsEmptyState(
+                scope = null,
+                assets = listOf(asset("a1")),
+                scopesLoaded = true,
+            )
+        assertNull(state)
+    }
+
     private fun asset(id: String) =
         AssetDto(
             id = id,
