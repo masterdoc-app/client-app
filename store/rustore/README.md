@@ -4,9 +4,8 @@
 
 | Файл | Назначение |
 |------|------------|
-| `icon-mark.svg` | Векторная метка Fixaverse (по бренду `masterdoc-toir` / `logo-fixaverse`) |
-| `icon-512.png` | Иконка 512×512, растеризация SVG (растры в landing слишком мягкие) |
-| `icon-512-opaque.png` | RGB на тёмном фоне — для загрузки в RuStore Console |
+| `icon-512.png` | Иконка 512×512 — метка с [`fixaverse.ru`](https://fixaverse.ru/) (`logo-fixaverse.png`) на белом фоне |
+| `icon-512-opaque.png` | То же, RGB — для загрузки в RuStore Console |
 | `upload/screenshot-*.png` | Портретные скриншоты 1080×1920 |
 | `copy.md` | Тексты карточки и комментарий модератору |
 | `console-checklist.md` | Чеклист ручной публикации |

@@ -262,29 +262,62 @@ def main() -> None:
         crop_box=(110, 0, 2100, 1300),
     )
 
-    # Raster sources in masterdoc*/landing are soft/pixelated; prefer crisp SVG mark.
-    render_store_icon(OUT)
+    # Store icon: mark from https://fixaverse.ru/assets/logo-fixaverse.png on white (as on site).
+    render_store_icon_from_site(OUT)
 
 
-def render_store_icon(out_dir: Path) -> None:
-    """Rasterize store/rustore/icon-mark.svg → icon-512(+opaque)."""
+def render_store_icon_from_site(out_dir: Path, url: str = "https://fixaverse.ru/assets/logo-fixaverse.png") -> None:
+    """Build 512×512 white-bg icon from the site logo lockup mark."""
+    import urllib.request
+
+    raw = urllib.request.urlopen(url, timeout=30).read()
     from io import BytesIO
 
-    svg_path = out_dir / "icon-mark.svg"
-    if not svg_path.is_file():
-        raise SystemExit(f"missing {svg_path}")
-    try:
-        import cairosvg
-    except ImportError as exc:
-        raise SystemExit("cairosvg required to rasterize icon-mark.svg") from exc
+    logo = Image.open(BytesIO(raw)).convert("RGB")
+    w, h = logo.size
+    px = logo.load()
 
-    raw = cairosvg.svg2png(url=str(svg_path), output_width=1024, output_height=1024)
-    img = Image.open(BytesIO(raw)).convert("RGBA").resize((512, 512), Image.Resampling.LANCZOS)
-    img.save(out_dir / "icon-512.png", "PNG")
-    opaque = Image.new("RGB", (512, 512), BG)
-    opaque.paste(img.convert("RGB"), mask=img.split()[-1])
-    opaque.save(out_dir / "icon-512-opaque.png", "PNG")
-    print(f"rasterized {svg_path.name} → icon-512.png / icon-512-opaque.png")
+    def col_dark(x: int) -> int:
+        return sum(1 for y in range(h) if px[x, y][0] < 230 or px[x, y][1] < 230 or px[x, y][2] < 230)
+
+    counts = [col_dark(x) for x in range(w)]
+    start = next(i for i, c in enumerate(counts) if c > 20)
+    run = 0
+    gap = w // 2
+    for x in range(start, w):
+        if counts[x] < 5:
+            run += 1
+            if run > 12:
+                gap = x - run
+                break
+        else:
+            run = 0
+    miny, maxy = h, 0
+    for y in range(h):
+        for x in range(start, gap):
+            r, g, b = px[x, y]
+            if r < 230 or g < 230 or b < 230:
+                miny = min(miny, y)
+                maxy = max(maxy, y)
+    pad = 6
+    mark = logo.crop((max(0, start - pad), max(0, miny - pad), min(w, gap + pad), min(h, maxy + pad))).convert("RGBA")
+    cleaned = []
+    for r, g, b, a in mark.getdata():
+        cleaned.append((255, 255, 255, 0) if r > 248 and g > 248 and b > 248 else (r, g, b, 255))
+    mark.putdata(cleaned)
+
+    size = 512
+    canvas = Image.new("RGBA", (size, size), (255, 255, 255, 255))
+    margin = int(size * 0.14)
+    box = size - 2 * margin
+    mw, mh = mark.size
+    scale = min(box / mw, box / mh)
+    nw, nh = max(1, int(mw * scale)), max(1, int(mh * scale))
+    resized = mark.resize((nw, nh), Image.Resampling.LANCZOS)
+    canvas.paste(resized, ((size - nw) // 2, (size - nh) // 2), resized)
+    canvas.save(out_dir / "icon-512.png", "PNG")
+    canvas.convert("RGB").save(out_dir / "icon-512-opaque.png", "PNG")
+    print(f"wrote white icon from {url}")
 
 
 if __name__ == "__main__":
