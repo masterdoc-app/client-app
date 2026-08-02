@@ -262,17 +262,29 @@ def main() -> None:
         crop_box=(110, 0, 2100, 1300),
     )
 
-    # Official mark from landing (masterdocapp / https://fixaverse.ru/assets/icon-512.png).
-    import shutil
+    # Raster sources in masterdoc*/landing are soft/pixelated; prefer crisp SVG mark.
+    render_store_icon(OUT)
 
-    landing_icon = ROOT.parent / "masterdocapp/composeApp/src/wasmJsMain/resources/assets/icon-512.png"
-    if not landing_icon.is_file():
-        raise SystemExit(f"missing landing icon: {landing_icon}")
-    shutil.copy2(landing_icon, OUT / "icon-512.png")
-    src = Image.open(landing_icon).convert("RGBA")
-    opaque = Image.alpha_composite(Image.new("RGBA", src.size, (0, 0, 0, 255)), src).convert("RGB")
-    opaque.save(OUT / "icon-512-opaque.png", "PNG")
-    print(f"copied icon from {landing_icon} (+ opaque PNG for Console)")
+
+def render_store_icon(out_dir: Path) -> None:
+    """Rasterize store/rustore/icon-mark.svg → icon-512(+opaque)."""
+    from io import BytesIO
+
+    svg_path = out_dir / "icon-mark.svg"
+    if not svg_path.is_file():
+        raise SystemExit(f"missing {svg_path}")
+    try:
+        import cairosvg
+    except ImportError as exc:
+        raise SystemExit("cairosvg required to rasterize icon-mark.svg") from exc
+
+    raw = cairosvg.svg2png(url=str(svg_path), output_width=1024, output_height=1024)
+    img = Image.open(BytesIO(raw)).convert("RGBA").resize((512, 512), Image.Resampling.LANCZOS)
+    img.save(out_dir / "icon-512.png", "PNG")
+    opaque = Image.new("RGB", (512, 512), BG)
+    opaque.paste(img.convert("RGB"), mask=img.split()[-1])
+    opaque.save(out_dir / "icon-512-opaque.png", "PNG")
+    print(f"rasterized {svg_path.name} → icon-512.png / icon-512-opaque.png")
 
 
 if __name__ == "__main__":
