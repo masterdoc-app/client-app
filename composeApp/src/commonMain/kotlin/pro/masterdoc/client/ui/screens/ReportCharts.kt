@@ -48,10 +48,10 @@ private fun ReportBarChart(
     horizontal: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    if (points.isEmpty()) return
+    if (points.isEmpty() || !hasNonZeroChartSeries(points)) return
     val barColor = MaterialTheme.colorScheme.primary
     val trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-    val maxValue = points.maxOf { it.value }.coerceAtLeast(1f)
+    val maxValue = chartMaxValue(points)
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (horizontal) {
@@ -119,15 +119,5 @@ private fun ReportBarChart(
                 }
             }
         }
-    }
-}
-
-private fun formatChartValue(value: Float): String {
-    val scaled = kotlin.math.round(value * 10f) / 10f
-    val asLong = scaled.toLong()
-    return if (scaled == asLong.toFloat()) {
-        asLong.toString()
-    } else {
-        scaled.toString().replace('.', ',')
     }
 }
