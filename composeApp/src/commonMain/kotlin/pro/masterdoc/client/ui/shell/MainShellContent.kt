@@ -297,6 +297,7 @@ private fun ActivePage(
                             EquipmentDetailScreen(
                                 assetId = focus,
                                 repository = equipmentRepository,
+                                canManageQr = FeatureId.AssetQr in session.features,
                                 onBack = onEquipmentBack,
                                 onOpenLinkedPpr = onOpenLinkedPpr,
                                 onPprDraftReady = onPprDraftReady,

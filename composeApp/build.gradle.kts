@@ -50,6 +50,7 @@ kotlin {
             implementation(libs.essenty.lifecycle)
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
+            implementation("io.github.alexzhirkevich:qrose:1.0.0")
         }
 
         commonTest.dependencies {

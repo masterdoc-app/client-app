@@ -1,12 +1,20 @@
 package pro.masterdoc.client.ui.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,8 +22,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import io.github.alexzhirkevich.qrose.rememberQrCodePainter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
@@ -27,6 +40,8 @@ import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.TechnologistJobDto
 import pro.masterdoc.client.auth.UpdateAssetRequest
 import pro.masterdoc.client.designsystem.components.AppScaffold
+import pro.masterdoc.client.designsystem.components.AppButton
+import pro.masterdoc.client.designsystem.components.AppButtonVariant
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
@@ -36,6 +51,7 @@ import pro.masterdoc.client.platform.openAuthenticatedDocument
 fun EquipmentDetailScreen(
     assetId: String,
     repository: EquipmentRepository,
+    canManageQr: Boolean,
     onBack: () -> Unit,
     onOpenLinkedPpr: (MaintenanceMapDto) -> Unit = {},
     onPprDraftReady: (mapId: String) -> Unit = {},
@@ -49,6 +65,8 @@ fun EquipmentDetailScreen(
     var loading by remember(assetId) { mutableStateOf(true) }
     var acting by remember(assetId) { mutableStateOf(false) }
     var error by remember(assetId) { mutableStateOf<String?>(null) }
+    var qrUrl by remember(assetId) { mutableStateOf<String?>(null) }
+    var confirmQrRotation by remember(assetId) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     suspend fun reload() {
@@ -84,6 +102,7 @@ fun EquipmentDetailScreen(
 
             sites = loadedSites
             asset = loadedAsset
+            qrUrl = equipmentQrUrl(loadedAsset?.qrToken)
             linkedMap =
                 loadedMaps.firstOrNull { it.status == "draft" }
                     ?: loadedMaps.firstOrNull { it.status == "active" }
@@ -300,6 +319,149 @@ fun EquipmentDetailScreen(
                             } else {
                                 null
                             },
+                    )
+                    if (shouldShowEquipmentQr(canManageQr, current.status)) {
+                        EquipmentQrBlock(
+                            assetName = current.name.ifBlank { "Оборудование" },
+                            qrUrl = qrUrl,
+                            acting = acting,
+                            onGenerate = {
+                                if (qrUrl == null) {
+                                    scope.launch {
+                                        acting = true
+                                        try {
+                                            val response = repository.generateQr(current.id)
+                                            asset = response.asset
+                                            qrUrl = response.qrUrl
+                                            error = null
+                                        } catch (e: Exception) {
+                                            error = e.message ?: "Не удалось сгенерировать QR-код"
+                                        } finally {
+                                            acting = false
+                                        }
+                                    }
+                                } else {
+                                    confirmQrRotation = true
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (confirmQrRotation) {
+        AlertDialog(
+            onDismissRequest = { if (!acting) confirmQrRotation = false },
+            title = { AppText(text = "Перевыпустить QR-код?", style = AppTextStyle.Title) },
+            text = {
+                AppText(
+                    text = "Старые наклейки перестанут работать. Их потребуется заменить.",
+                    style = AppTextStyle.Body,
+                )
+            },
+            confirmButton = {
+                AppButton(
+                    text = if (acting) "…" else "Перевыпустить",
+                    enabled = !acting,
+                    fillMaxWidth = false,
+                    onClick = {
+                        val current = asset ?: return@AppButton
+                        scope.launch {
+                            acting = true
+                            try {
+                                val response = repository.generateQr(current.id)
+                                asset = response.asset
+                                qrUrl = response.qrUrl
+                                confirmQrRotation = false
+                                error = null
+                            } catch (e: Exception) {
+                                error = e.message ?: "Не удалось перевыпустить QR-код"
+                            } finally {
+                                acting = false
+                            }
+                        }
+                    },
+                )
+            },
+            dismissButton = {
+                AppButton(
+                    text = "Отмена",
+                    enabled = !acting,
+                    variant = AppButtonVariant.Secondary,
+                    fillMaxWidth = false,
+                    onClick = { confirmQrRotation = false },
+                )
+            },
+        )
+    }
+}
+
+@Suppress("DEPRECATION")
+@Composable
+private fun EquipmentQrBlock(
+    assetName: String,
+    qrUrl: String?,
+    acting: Boolean,
+    onGenerate: () -> Unit,
+) {
+    val clipboard = LocalClipboardManager.current
+    var copied by remember(qrUrl) { mutableStateOf(false) }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(
+            modifier = Modifier.padding(ClientSpacing.md),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+        ) {
+            AppText(text = "QR-код оборудования", style = AppTextStyle.Title)
+            AppText(text = assetName, style = AppTextStyle.Body)
+            if (qrUrl != null) {
+                Image(
+                    painter = rememberQrCodePainter(qrUrl),
+                    contentDescription = "QR-код оборудования «$assetName»",
+                    modifier =
+                        Modifier
+                            .size(240.dp)
+                            .background(Color.White)
+                            .padding(ClientSpacing.sm),
+                )
+                if (copied) {
+                    AppText(text = "Ссылка скопирована", style = AppTextStyle.Label)
+                }
+            } else {
+                AppText(
+                    text = "Создайте QR-код для печати наклейки.",
+                    style = AppTextStyle.Body,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+            ) {
+                AppButton(
+                    text = if (acting) "…" else equipmentQrActionLabel(qrUrl),
+                    enabled = !acting,
+                    fillMaxWidth = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onGenerate,
+                )
+                if (qrUrl != null) {
+                    AppButton(
+                        text = "Скопировать ссылку",
+                        enabled = !acting,
+                        variant = AppButtonVariant.Secondary,
+                        fillMaxWidth = false,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            clipboard.setText(AnnotatedString(qrUrl))
+                            copied = true
+                        },
                     )
                 }
             }
