@@ -144,6 +144,18 @@ class WorkOrdersRepository(
         return json.decodeFromString(response.body)
     }
 
+    suspend fun managerKpis(from: String, to: String): ManagerKpis {
+        val response =
+            http.get(
+                url = "${base()}/reports/manager-kpis?from=$from&to=$to",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, response.body.ifBlank { "manager KPI report failed" })
+        }
+        return json.decodeFromString(ManagerKpis.serializer(), response.body)
+    }
+
     suspend fun create(request: CreateWorkOrderRequest): WorkOrderDto {
         val response =
             http.postForm(

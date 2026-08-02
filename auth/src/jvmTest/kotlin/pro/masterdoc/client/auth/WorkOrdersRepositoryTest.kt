@@ -229,4 +229,52 @@ class WorkOrdersRepositoryTest {
             assertEquals("engineer-1", json["assigneeId"]!!.toString().trim('"'))
             assertEquals("engineer-1", updated.assigneeId)
         }
+
+    @Test
+    fun managerKpisUsesReportPeriodAndDecodesRanking() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertEquals("https://api.test/reports/manager-kpis?from=2026-07-01&to=2026-07-31", url)
+                    GatewayHttpResponse(
+                        200,
+                        """
+                        {
+                          "from":"2026-07-01",
+                          "to":"2026-07-31",
+                          "mttrHours":4.5,
+                          "mttrSampleSize":3,
+                          "mtbfHours":120.0,
+                          "mtbfSampleSize":2,
+                          "plannedCount":10,
+                          "emergencyCount":4,
+                          "plannedHours":40.0,
+                          "emergencyHours":12.0,
+                          "pprOnTime":7,
+                          "pprLate":1,
+                          "pprOpenOverdue":1,
+                          "pprOpenPending":1,
+                          "backlogUnder7d":2,
+                          "backlog7to30d":1,
+                          "backlogOver30d":0,
+                          "backlogOverdue":1,
+                          "downtimeRanking":[{"assetId":"asset-1","downtimeHours":18.5,"openIntervals":1}],
+                          "availabilityPercent":92.1
+                        }
+                        """.trimIndent(),
+                    )
+                }
+            val report = WorkOrdersRepository(config = config, http = http, tokenStore = tokens).managerKpis(
+                from = "2026-07-01",
+                to = "2026-07-31",
+            )
+
+            assertEquals("2026-07-01", report.from)
+            assertEquals(4.5, report.mttrHours)
+            assertEquals("asset-1", report.downtimeRanking.single().assetId)
+            assertEquals(18.5, report.downtimeRanking.single().downtimeHours)
+        }
 }
