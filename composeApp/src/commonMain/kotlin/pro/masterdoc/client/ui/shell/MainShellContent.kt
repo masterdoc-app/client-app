@@ -109,6 +109,11 @@ fun MainShellContent(
         BrowserNav.setHash(AppDeepLink.EquipmentDetail(id).toHash())
         component.navigateTo(NavDestinationId.Equipment, assetId = id)
     }
+    val onOpenAssetQr: (String) -> Unit = { token ->
+        val hash = AppDeepLink.AssetQr(token).toHash()
+        BrowserNav.setHash(hash)
+        component.applyDeepLinkHash(hash)
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val useRail = maxWidth >= CompactWidthBreakpoint
@@ -135,6 +140,7 @@ fun MainShellContent(
                             BrowserNav.setHash("")
                             component.closeAssetQr()
                         },
+                        onOpenAssetQr = onOpenAssetQr,
                         onOpenEquipment = onOpenEquipment,
                         onEquipmentBack = {
                             BrowserNav.setHash(AppDeepLink.Equipment.toHash())
@@ -178,6 +184,7 @@ fun MainShellContent(
                             BrowserNav.setHash("")
                             component.closeAssetQr()
                         },
+                        onOpenAssetQr = onOpenAssetQr,
                         onOpenEquipment = onOpenEquipment,
                         onEquipmentBack = {
                             BrowserNav.setHash(AppDeepLink.Equipment.toHash())
@@ -215,6 +222,7 @@ private fun ActivePage(
     focusedAssetId: String?,
     assetQrToken: String,
     onAssetQrClose: () -> Unit,
+    onOpenAssetQr: (String) -> Unit,
     onOpenEquipment: (String) -> Unit,
     onEquipmentBack: () -> Unit,
     onOpenLinkedPpr: (pro.masterdoc.client.auth.MaintenanceMapDto) -> Unit,
@@ -238,6 +246,7 @@ private fun ActivePage(
                     equipmentRepository = equipmentRepository,
                     currentUserId = session.user?.id,
                     onOpenEquipment = onOpenEquipment,
+                    onOpenAssetQr = onOpenAssetQr,
                     locationTrackingController = locationTrackingController,
                 )
             } else {
@@ -252,6 +261,7 @@ private fun ActivePage(
                             equipmentRepository = equipmentRepository,
                             currentUserId = session.user?.id,
                             userScopesRepository = userScopesRepository,
+                            onOpenAssetQr = onOpenAssetQr,
                         )
                     } else {
                         StubDestinationScreen(active.destination)

@@ -19,6 +19,20 @@ sealed class AppDeepLink {
     data object Charts : AppDeepLink()
 }
 
+private const val AssetQrUrlPrefix = "https://app.fixaverse.ru/#/qr/"
+private val AssetQrTokenPattern = Regex("[A-Za-z0-9_-]+")
+
+fun parseAssetQrInput(input: String): String? {
+    val trimmed = input.trim()
+    val token =
+        when {
+            trimmed.startsWith(AssetQrUrlPrefix) -> trimmed.removePrefix(AssetQrUrlPrefix)
+            "://" in trimmed -> return null
+            else -> trimmed
+        }
+    return token.takeIf { it.matches(AssetQrTokenPattern) }
+}
+
 fun parseAppDeepLink(hash: String): AppDeepLink? {
     val raw = hash.trim().removePrefix("#").removePrefix("/")
     if (raw.isBlank()) return null

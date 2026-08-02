@@ -80,6 +80,7 @@ fun TicketsScreen(
     equipmentRepository: EquipmentRepository,
     currentUserId: String?,
     userScopesRepository: UserScopesRepository? = null,
+    onOpenAssetQr: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
@@ -93,6 +94,7 @@ fun TicketsScreen(
     var acting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var selectedOrderId by remember { mutableStateOf<String?>(null) }
+    var qrDialogOpen by remember { mutableStateOf(false) }
     var reloadKey by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
 
@@ -146,6 +148,15 @@ fun TicketsScreen(
     val (active, done) = partitionCustomerTickets(orders)
     val emptyState = resolveTicketsEmptyState(userScope, assets, scopesLoaded)
     val createFormEnabled = emptyState == null
+    if (qrDialogOpen) {
+        AssetQrPasteDialog(
+            onDismiss = { qrDialogOpen = false },
+            onOpen = { token ->
+                qrDialogOpen = false
+                onOpenAssetQr(token)
+            },
+        )
+    }
     AppScaffold(title = "Заявки", modifier = modifier) { padding ->
         if (loading) {
             CircularProgressIndicator(modifier = Modifier.padding(padding).padding(ClientSpacing.md))
@@ -158,6 +169,10 @@ fun TicketsScreen(
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+                    AppButton(
+                        text = "Сканировать QR",
+                        onClick = { qrDialogOpen = true },
+                    )
                     AppText(text = "Новая аварийная заявка", style = AppTextStyle.Title)
                     when (emptyState) {
                         TicketsEmptyState.NoScope ->

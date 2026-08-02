@@ -50,4 +50,21 @@ class AppDeepLinkTest {
         assertNull(parseAppDeepLink("#/qr"))
         assertNull(parseAppDeepLink("#/qr/"))
     }
+
+    @Test
+    fun parsesAssetQrInputFromFullUrlOrBareToken() {
+        assertEquals(
+            "opaque_token-42",
+            parseAssetQrInput("https://app.fixaverse.ru/#/qr/opaque_token-42"),
+        )
+        assertEquals("opaque_token-42", parseAssetQrInput("  opaque_token-42  "))
+    }
+
+    @Test
+    fun rejectsInvalidAssetQrInput() {
+        assertNull(parseAssetQrInput(""))
+        assertNull(parseAssetQrInput("https://example.com/#/qr/opaque-token"))
+        assertNull(parseAssetQrInput("not a token"))
+        assertNull(parseAssetQrInput("https://app.fixaverse.ru/#/qr/"))
+    }
 }
