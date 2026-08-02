@@ -48,6 +48,23 @@ class ManagerKpiFormattersTest {
         assertEquals("12,5 ч", formatManagerKpiMetric(12.5, 2, suffix = " ч"))
     }
 
+    @Test
+    fun roundsHoursToOneDecimal() {
+        assertEquals("4,6 ч", formatHours(4.567))
+        assertEquals("0,0 ч", formatHours(0.0))
+    }
+
+    @Test
+    fun roundsPercentToOneDecimal() {
+        assertEquals("92,1%", formatPercent(92.14))
+        assertEquals("100,0%", formatPercent(100.0))
+    }
+
+    @Test
+    fun formatsMetricWithLongDoubleAsOneDecimal() {
+        assertEquals("4,6 ч", formatManagerKpiMetric(4.567, 2, suffix = " ч"))
+    }
+
     private fun kpis(row: ManagerKpiDowntimeRow) =
         ManagerKpis(
             from = "2026-07-01",

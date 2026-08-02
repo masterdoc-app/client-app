@@ -23,6 +23,12 @@ internal fun formatManagerKpiDowntimeRows(
     }
 }
 
+internal fun formatHours(value: Double): String =
+    "${formatOneDecimal(value)} ч"
+
+internal fun formatPercent(value: Double): String =
+    "${formatOneDecimal(value)}%"
+
 internal fun formatManagerKpiMetric(
     value: Double,
     sampleSize: Int,
@@ -31,8 +37,18 @@ internal fun formatManagerKpiMetric(
     if (sampleSize == 0) {
         "н/д"
     } else {
-        "${value.toString().replace('.', ',')}$suffix"
+        "${formatOneDecimal(value)}$suffix"
     }
+
+private fun formatOneDecimal(value: Double): String {
+    val scaled = kotlin.math.round(value * 10.0) / 10.0
+    val asLong = scaled.toLong()
+    return if (scaled == asLong.toDouble()) {
+        "$asLong,0"
+    } else {
+        scaled.toString().replace('.', ',')
+    }
+}
 
 internal fun AssetDto.displayName(): String =
     name.trim().takeIf { it.isNotEmpty() }
