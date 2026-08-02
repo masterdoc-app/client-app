@@ -4,7 +4,8 @@
 
 | Файл | Назначение |
 |------|------------|
-| `icon-512.png` | Иконка 512×512 — с лендинга `fixaverse.ru` / `masterdocapp` (`assets/icon-512.png`) |
+| `icon-512.png` | Иконка 512×512 — [`fixaverse.ru/assets/icon-512.png`](https://fixaverse.ru/assets/icon-512.png) (`masterdocapp`) |
+| `icon-512-opaque.png` | Та же метка, RGB на чёрном фоне (для Console) |
 | `upload/screenshot-*.png` | Портретные скриншоты 1080×1920 |
 | `copy.md` | Тексты карточки и комментарий модератору |
 | `console-checklist.md` | Чеклист ручной публикации |

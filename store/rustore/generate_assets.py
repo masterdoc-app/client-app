@@ -262,16 +262,17 @@ def main() -> None:
         crop_box=(110, 0, 2100, 1300),
     )
 
-    # Official mark from landing (masterdocapp / fixaverse.ru), not a generated substitute.
-    landing_icon = ROOT.parent / "masterdocapp/composeApp/src/wasmJsMain/resources/assets/icon-512.png"
-    if landing_icon.is_file():
-        import shutil
+    # Official mark from landing (masterdocapp / https://fixaverse.ru/assets/icon-512.png).
+    import shutil
 
-        shutil.copy2(landing_icon, OUT / "icon-512.png")
-        print(f"copied icon from {landing_icon}")
-    else:
-        generate_icon(OUT / "icon-512.png")
-        print(f"landing icon missing at {landing_icon}; wrote generated fallback")
+    landing_icon = ROOT.parent / "masterdocapp/composeApp/src/wasmJsMain/resources/assets/icon-512.png"
+    if not landing_icon.is_file():
+        raise SystemExit(f"missing landing icon: {landing_icon}")
+    shutil.copy2(landing_icon, OUT / "icon-512.png")
+    src = Image.open(landing_icon).convert("RGBA")
+    opaque = Image.alpha_composite(Image.new("RGBA", src.size, (0, 0, 0, 255)), src).convert("RGB")
+    opaque.save(OUT / "icon-512-opaque.png", "PNG")
+    print(f"copied icon from {landing_icon} (+ opaque PNG for Console)")
 
 
 if __name__ == "__main__":
