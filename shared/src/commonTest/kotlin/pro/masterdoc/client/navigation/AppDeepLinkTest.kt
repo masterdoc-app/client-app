@@ -36,4 +36,18 @@ class AppDeepLinkTest {
     fun equipmentListStillParsesWithoutId() {
         assertEquals(AppDeepLink.Equipment, parseAppDeepLink("#/equipment"))
     }
+
+    @Test
+    fun parsesAssetQrDeepLink() {
+        val link = parseAppDeepLink("#/qr/opaque-token")
+        assertIs<AppDeepLink.AssetQr>(link)
+        assertEquals("opaque-token", link.token)
+        assertEquals("#/qr/opaque-token", link.toHash())
+    }
+
+    @Test
+    fun rejectsAssetQrDeepLinkWithoutToken() {
+        assertNull(parseAppDeepLink("#/qr"))
+        assertNull(parseAppDeepLink("#/qr/"))
+    }
 }

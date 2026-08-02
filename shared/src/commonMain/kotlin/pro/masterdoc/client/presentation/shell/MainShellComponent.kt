@@ -32,11 +32,16 @@ interface MainShellComponent {
     /** Focused equipment asset id from deep link `#/equipment/{id}` (empty when unset). */
     val focusedAssetId: Value<String>
 
+    /** Opaque QR token for the transient ticket screen (empty when closed). */
+    val assetQrToken: Value<String>
+
     fun onNavItemSelected(index: Int)
 
     fun navigateTo(destination: NavDestinationId, mapId: String? = null, assetId: String? = null)
 
     fun applyDeepLinkHash(hash: String)
+
+    fun closeAssetQr()
 
     @Serializable
     data class PageConfig(val destination: NavDestinationId)
@@ -66,6 +71,8 @@ class DefaultMainShellComponent(
     override val focusedMapId: Value<String> = _focusedMapId
     private val _focusedAssetId = MutableValue("")
     override val focusedAssetId: Value<String> = _focusedAssetId
+    private val _assetQrToken = MutableValue("")
+    override val assetQrToken: Value<String> = _assetQrToken
 
     override val pages: Value<ChildPages<MainShellComponent.PageConfig, MainShellComponent.PageChild>> =
         childPages(
@@ -87,6 +94,7 @@ class DefaultMainShellComponent(
         )
 
     override fun onNavItemSelected(index: Int) {
+        _assetQrToken.value = ""
         val destination = navItems.getOrNull(index)?.destination?.name.orEmpty()
         track(
             "ui.shell.nav.select",
@@ -104,6 +112,7 @@ class DefaultMainShellComponent(
     override fun navigateTo(destination: NavDestinationId, mapId: String?, assetId: String?) {
         val index = navItems.indexOfFirst { it.destination == destination }
         if (index < 0) return
+        _assetQrToken.value = ""
         track(
             "ui.shell.nav.navigate",
             mapOf(
@@ -138,6 +147,11 @@ class DefaultMainShellComponent(
             AppDeepLink.Equipment -> navigateTo(NavDestinationId.Equipment, mapId = null)
             is AppDeepLink.EquipmentDetail ->
                 navigateTo(NavDestinationId.Equipment, assetId = link.assetId)
+            is AppDeepLink.AssetQr -> _assetQrToken.value = link.token
         }
+    }
+
+    override fun closeAssetQr() {
+        _assetQrToken.value = ""
     }
 }

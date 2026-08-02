@@ -73,4 +73,20 @@ class MainShellAnalyticsTest {
         assertEquals("", shell.focusedAssetId.value)
         assertEquals("", shell.focusedMapId.value)
     }
+
+    @Test
+    fun assetQrDeepLinkOpensTransientScreenWithoutEquipmentNavigation() {
+        val shell =
+            DefaultMainShellComponent(
+                componentContext = DefaultComponentContext(LifecycleRegistry()),
+                session = ClientSession.stub(features = setOf(FeatureId.Engineer, FeatureId.Profile)),
+            )
+
+        assertTrue(shell.navItems.none { it.destination == NavDestinationId.Equipment })
+        shell.applyDeepLinkHash("#/qr/opaque-token")
+
+        assertEquals("opaque-token", shell.assetQrToken.value)
+        shell.closeAssetQr()
+        assertEquals("", shell.assetQrToken.value)
+    }
 }

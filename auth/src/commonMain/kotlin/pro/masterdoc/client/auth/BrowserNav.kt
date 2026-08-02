@@ -12,6 +12,10 @@ expect object BrowserNav {
 
     fun setHash(hash: String)
 
+    fun savePendingDeepLink(hash: String)
+
+    fun consumePendingDeepLink(): String?
+
     fun navigateTo(url: String)
 
     fun replaceTo(url: String)

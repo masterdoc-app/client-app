@@ -28,6 +28,23 @@ actual object BrowserNav {
 
     actual fun setHash(hash: String) = Unit
 
+    actual fun savePendingDeepLink(hash: String) {
+        hostActivity
+            ?.getSharedPreferences(AUTH_NAV_PREFERENCES, Context.MODE_PRIVATE)
+            ?.edit()
+            ?.putString(KEY_PENDING_DEEP_LINK, hash)
+            ?.apply()
+    }
+
+    actual fun consumePendingDeepLink(): String? {
+        val preferences =
+            hostActivity?.getSharedPreferences(AUTH_NAV_PREFERENCES, Context.MODE_PRIVATE)
+                ?: return null
+        return preferences.getString(KEY_PENDING_DEEP_LINK, null)?.also {
+            preferences.edit().remove(KEY_PENDING_DEEP_LINK).apply()
+        }
+    }
+
     actual fun navigateTo(url: String) {
         val activity = hostActivity ?: return
         activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -40,6 +57,9 @@ actual object BrowserNav {
         }
     }
 }
+
+private const val AUTH_NAV_PREFERENCES = "fixaverse.auth.navigation"
+private const val KEY_PENDING_DEEP_LINK = "fixaverse.pending_deep_link"
 
 /**
  * Must be called before creating the auth Koin module so browser navigation and

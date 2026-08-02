@@ -49,6 +49,7 @@ import pro.masterdoc.client.session.ClientSession
 import pro.masterdoc.client.session.SessionUser
 import pro.masterdoc.client.ui.screens.BlackBoxScreen
 import pro.masterdoc.client.ui.screens.AiMessagesScreen
+import pro.masterdoc.client.ui.screens.AssetQrScreen
 import pro.masterdoc.client.ui.screens.BoardScreen
 import pro.masterdoc.client.ui.screens.ChartsScreen
 import pro.masterdoc.client.ui.screens.EquipmentDetailScreen
@@ -82,7 +83,9 @@ fun MainShellContent(
     val pages by component.pages.subscribeAsState()
     val focusedMapId by component.focusedMapId.subscribeAsState()
     val focusedAssetId by component.focusedAssetId.subscribeAsState()
+    val assetQrToken by component.assetQrToken.subscribeAsState()
     val navUiItems = component.navItems.toAppNavItems(pages) { index ->
+        BrowserNav.setHash("")
         component.onNavItemSelected(index)
     }
     val locationTrackingController =
@@ -127,6 +130,11 @@ fun MainShellContent(
                         locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
+                        assetQrToken = assetQrToken,
+                        onAssetQrClose = {
+                            BrowserNav.setHash("")
+                            component.closeAssetQr()
+                        },
                         onOpenEquipment = onOpenEquipment,
                         onEquipmentBack = {
                             BrowserNav.setHash(AppDeepLink.Equipment.toHash())
@@ -165,6 +173,11 @@ fun MainShellContent(
                         locationTrackingController = locationTrackingController,
                         focusedMapId = focusedMapId,
                         focusedAssetId = focusedAssetId,
+                        assetQrToken = assetQrToken,
+                        onAssetQrClose = {
+                            BrowserNav.setHash("")
+                            component.closeAssetQr()
+                        },
                         onOpenEquipment = onOpenEquipment,
                         onEquipmentBack = {
                             BrowserNav.setHash(AppDeepLink.Equipment.toHash())
@@ -200,11 +213,22 @@ private fun ActivePage(
     locationTrackingController: LocationTrackingController?,
     focusedMapId: String?,
     focusedAssetId: String?,
+    assetQrToken: String,
+    onAssetQrClose: () -> Unit,
     onOpenEquipment: (String) -> Unit,
     onEquipmentBack: () -> Unit,
     onOpenLinkedPpr: (pro.masterdoc.client.auth.MaintenanceMapDto) -> Unit,
     onPprDraftReady: (mapId: String) -> Unit,
 ) {
+    if (assetQrToken.isNotBlank() && equipmentRepository != null && workOrdersRepository != null) {
+        AssetQrScreen(
+            token = assetQrToken,
+            equipmentRepository = equipmentRepository,
+            workOrdersRepository = workOrdersRepository,
+            onClose = onAssetQrClose,
+        )
+        return
+    }
     val active = pages.items.getOrNull(pages.selectedIndex)?.instance ?: return
     when (active) {
         is MainShellComponent.PageChild.MyWorkOrders ->

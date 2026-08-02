@@ -179,7 +179,7 @@ private suspend fun bootstrap(
                 ?: return ShellUiState.Error("Нет code в callback")
         return try {
             val me = coordinator.completeCallback(code, params["state"])
-            BrowserNav.replaceTo("/")
+            BrowserNav.replaceTo(postLoginLocation(BrowserNav.consumePendingDeepLink()))
             ShellUiState.Ready(rootForSession(ClientSession.fromMe(me), analyticsSink))
         } catch (e: Exception) {
             ShellUiState.Error(e.message ?: "Ошибка обмена кода")
@@ -199,13 +199,15 @@ private suspend fun bootstrap(
     }
 }
 
-private suspend fun startLoginOrError(coordinator: AuthCoordinator): ShellUiState =
-    runCatching { coordinator.startLogin() }
+private suspend fun startLoginOrError(coordinator: AuthCoordinator): ShellUiState {
+    pendingDeepLinkHash(BrowserNav.currentHash())?.let(BrowserNav::savePendingDeepLink)
+    return runCatching { coordinator.startLogin() }
         .onSuccess { BrowserNav.navigateTo(it) }
         .fold(
             onSuccess = { ShellUiState.Loading },
             onFailure = { ShellUiState.Error(it.message ?: "Не удалось начать вход") },
         )
+}
 
 @Composable
 expect fun rememberRootComponent(

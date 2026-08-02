@@ -20,6 +20,15 @@ actual object BrowserNav {
         window.location.hash = normalized
     }
 
+    actual fun savePendingDeepLink(hash: String) {
+        localStorage.setItem(KEY_PENDING_DEEP_LINK, hash)
+    }
+
+    actual fun consumePendingDeepLink(): String? =
+        localStorage.getItem(KEY_PENDING_DEEP_LINK)?.also {
+            localStorage.removeItem(KEY_PENDING_DEEP_LINK)
+        }
+
     actual fun navigateTo(url: String) {
         window.location.href = url
     }
@@ -39,6 +48,7 @@ private const val KEY_ACCESS = "fixaverse.auth.access_token"
 private const val KEY_REFRESH = "fixaverse.auth.refresh_token"
 private const val KEY_ID = "fixaverse.auth.id_token"
 private const val KEY_SESSIONS = "fixaverse.auth.pkce_sessions"
+private const val KEY_PENDING_DEEP_LINK = "fixaverse.pending_deep_link"
 /** Legacy single-slot keys — migrated on first read. */
 private const val KEY_VERIFIER_LEGACY = "fixaverse.auth.pkce_verifier"
 private const val KEY_STATE_LEGACY = "fixaverse.auth.pkce_state"
