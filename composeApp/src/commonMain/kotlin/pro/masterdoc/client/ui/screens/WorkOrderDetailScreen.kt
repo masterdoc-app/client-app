@@ -279,7 +279,11 @@ fun WorkOrderDetailScreen(
                             } ?: "не назначен"
                         DetailRow("Исполнитель", assignee)
                     }
-                    DetailRow("Источник", wo.source)
+                    val creator =
+                        wo.createdBy?.takeIf { it.isNotBlank() }?.let { id ->
+                            formatAssigneeLabel(id, directoryUsers, currentUserId)
+                        } ?: "не указан"
+                    DetailRow("Создатель", creator)
                     if (wo.type == "ppr") {
                         val itemTitle =
                             wo.maintenanceMapItemId
