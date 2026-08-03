@@ -192,21 +192,23 @@ private fun UsersTab(
     LaunchedEffect(repository) { reload() }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
-            AppButton(text = "Пригласить", onClick = onInvite)
-            if (canBindScopes) {
+        AppButton(text = "Пригласить", onClick = onInvite)
+        if (canBindScopes) {
+            Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
                 AppButton(
                     text = "Привязка инженеров",
                     onClick = onOpenEngineerScopeBinding,
                     variant = AppButtonVariant.Secondary,
+                    fillMaxWidth = false,
                 )
                 AppButton(
                     text = "Привязка заказчиков",
                     onClick = onOpenCustomerScopeBinding,
                     variant = AppButtonVariant.Secondary,
+                    fillMaxWidth = false,
                 )
             }
         }
@@ -315,7 +317,7 @@ private fun SitesTab(
     LaunchedEffect(equipmentRepository) { reload() }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AppText(
@@ -561,7 +563,7 @@ private fun RolesTab(repository: AdminUsersRepository) {
     LaunchedEffect(repository) { reload() }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         error?.let { AppText(text = it) }
