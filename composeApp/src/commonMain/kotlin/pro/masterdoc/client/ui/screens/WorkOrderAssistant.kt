@@ -116,7 +116,14 @@ internal fun WorkOrderAssistantDialog(
                     }
                     messages.forEach { msg ->
                         val label = if (msg.role == "user") "Вы" else "Ассистент"
-                        AppText(text = "$label: ${msg.content}", style = AppTextStyle.Body)
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            AppText(text = "$label:", style = AppTextStyle.Label)
+                            if (msg.role == "assistant") {
+                                MentorMarkdownText(content = msg.content)
+                            } else {
+                                AppText(text = msg.content, style = AppTextStyle.Body)
+                            }
+                        }
                     }
                 }
                 if (error != null) {

@@ -88,7 +88,14 @@ fun WorkOrderMentorScreen(
                 }
                 items(messages) { message ->
                     val label = if (message.role == "user") "Вы" else "Наставник"
-                    AppText(text = "$label: ${message.content}", style = AppTextStyle.Body)
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        AppText(text = "$label:", style = AppTextStyle.Label)
+                        if (message.role == "assistant") {
+                            MentorMarkdownText(content = message.content)
+                        } else {
+                            AppText(text = message.content, style = AppTextStyle.Body)
+                        }
+                    }
                 }
             }
             if (error != null) {
