@@ -21,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -36,12 +37,13 @@ import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
 import pro.masterdoc.client.auth.workOrderTypeLabelRu
 import pro.masterdoc.client.designsystem.components.AppButton
+import pro.masterdoc.client.designsystem.components.AppButtonVariant
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppStatusChip
 import pro.masterdoc.client.designsystem.components.AppStatusChipTone
 import pro.masterdoc.client.designsystem.components.AppText
-import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.components.AppTextField
+import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 import pro.masterdoc.client.platform.localEpochDay
 
@@ -97,6 +99,7 @@ fun TicketsScreen(
     var qrDialogOpen by remember { mutableStateOf(false) }
     var pendingQrToken by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableStateOf(0) }
+    var createStep by remember { mutableStateOf(defaultTicketsCreateStep()) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(qrDialogOpen, pendingQrToken) {
@@ -167,23 +170,97 @@ fun TicketsScreen(
             },
         )
     }
-    AppScaffold(title = "Заявки", modifier = modifier) { padding ->
-        if (loading) {
-            CircularProgressIndicator(modifier = Modifier.padding(padding).padding(ClientSpacing.md))
-            return@AppScaffold
-        }
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(ClientSpacing.md),
-            verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
-        ) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
-                    AppButton(
-                        text = "Сканировать QR",
-                        onClick = { qrDialogOpen = true },
-                    )
-                    AppText(text = "Новая аварийная заявка", style = AppTextStyle.Title)
+
+    when (createStep) {
+        TicketsCreateStep.List ->
+            AppScaffold(title = "Заявки", modifier = modifier) { padding ->
+                if (loading) {
+                    CircularProgressIndicator(modifier = Modifier.padding(padding).padding(ClientSpacing.md))
+                    return@AppScaffold
+                }
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(padding),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(ClientSpacing.md),
+                    verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                ) {
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+                            AppButton(
+                                text = "Новая заявка",
+                                onClick = { createStep = openCreate(createStep) },
+                            )
+                            error?.let { AppText(text = it) }
+                        }
+                    }
+                    ticketSection("Активные", active) { selectedOrderId = it }
+                    ticketSection("Завершённые", done) { selectedOrderId = it }
+                }
+            }
+
+        TicketsCreateStep.Method ->
+            AppScaffold(
+                title = "Новая заявка",
+                onNavigateBack = { createStep = backFromMethod(createStep) },
+                modifier = modifier,
+            ) { padding ->
+                Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(horizontal = ClientSpacing.md),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        AppButton(
+                            text = "Сканировать QR",
+                            onClick = { qrDialogOpen = true },
+                        )
+                        AppText(
+                            text = "Вставьте код или ссылку с наклейки",
+                            style = AppTextStyle.Label,
+                            modifier = Modifier.padding(top = ClientSpacing.sm),
+                        )
+                    }
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    horizontal = ClientSpacing.md,
+                                    vertical = ClientSpacing.md,
+                                ),
+                        verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                    ) {
+                        AppButton(
+                            text = "Выбрать из списка",
+                            variant = AppButtonVariant.Secondary,
+                            onClick = { createStep = chooseList(createStep) },
+                        )
+                        AppText(
+                            text = "или выберите оборудование вручную",
+                            style = AppTextStyle.Label,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        )
+                    }
+                }
+            }
+
+        TicketsCreateStep.Form ->
+            AppScaffold(
+                title = "Новая заявка",
+                onNavigateBack = { createStep = backFromForm(createStep) },
+                modifier = modifier,
+            ) { padding ->
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(ClientSpacing.md),
+                    verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                ) {
                     when (emptyState) {
                         TicketsEmptyState.NoScope ->
                             AppText(text = "Обратитесь к администратору для привязки к цеху")
@@ -255,6 +332,7 @@ fun TicketsScreen(
                                     description = ""
                                     selectedAsset = null
                                     reloadKey++
+                                    createStep = afterSuccessfulCreate(createStep)
                                 } catch (e: Exception) {
                                     error = e.message ?: "Ошибка создания заявки"
                                 } finally {
@@ -266,9 +344,6 @@ fun TicketsScreen(
                     error?.let { AppText(text = it) }
                 }
             }
-            ticketSection("Активные", active) { selectedOrderId = it }
-            ticketSection("Завершённые", done) { selectedOrderId = it }
-        }
     }
 }
 
