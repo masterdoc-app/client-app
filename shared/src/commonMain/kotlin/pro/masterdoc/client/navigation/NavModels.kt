@@ -13,7 +13,6 @@ enum class FeatureId(val wireValue: String) {
     Charts("charts"),
     Reports("reports"),
     Equipment("equipment"),
-    AssetQr("asset_qr"),
     Profile("profile"),
 
     /** Audit journal («Чёрный ящик»). */
