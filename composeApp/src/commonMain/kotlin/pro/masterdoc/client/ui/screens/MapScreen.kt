@@ -151,38 +151,28 @@ fun MapScreen(
                     .padding(padding)
                     .padding(horizontal = ClientSpacing.md, vertical = 16.dp),
         ) {
-            when {
-                loading ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                displayMarkers.isNotEmpty() -> {
-                    EngineerLocationsMap(markers = displayMarkers, modifier = Modifier.fillMaxSize())
-                    Column(
-                        modifier =
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = ClientSpacing.sm),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
-                    ) {
-                        if (noEngineersOnline) {
-                            AppText(text = "Нет инженеров на линии")
-                        }
-                        if (error != null) {
-                            AppText(text = error!!)
-                        }
-                    }
+            if (loading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
-                else -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm, Alignment.CenterVertically),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
+            } else {
+                // Always open the map: engineers when online, else first цех with coords,
+                // else OSM default view (still a map, not a blank empty-state page).
+                EngineerLocationsMap(markers = displayMarkers, modifier = Modifier.fillMaxSize())
+                Column(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = ClientSpacing.sm),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                ) {
+                    if (noEngineersOnline) {
                         AppText(text = "Нет инженеров на линии")
-                        if (error != null) {
-                            AppText(text = error!!)
+                    }
+                    if (error != null) {
+                        AppText(text = error!!)
+                        if (displayMarkers.isEmpty()) {
                             AppButton(
                                 text = "Повторить",
                                 enabled = isMapRetryEnabled(),

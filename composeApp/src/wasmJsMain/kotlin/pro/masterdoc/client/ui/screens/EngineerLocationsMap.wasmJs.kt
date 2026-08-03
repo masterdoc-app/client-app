@@ -157,6 +157,9 @@ private fun String.toJsonString(): String =
           map.setView(points[0], 14);
         } else if (points.length > 1) {
           map.fitBounds(points, { padding: [32, 32] });
+        } else {
+          // No engineers and no site coords: still keep a usable map view.
+          map.setView([55.751244, 37.618423], 10);
         }
         map.invalidateSize();
       };
