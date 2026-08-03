@@ -3,7 +3,9 @@ package pro.masterdoc.client.ui.screens
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import pro.masterdoc.client.auth.EngineerLocationDto
+import pro.masterdoc.client.auth.SiteDto
 
 class MapScreenTest {
     @Test
@@ -11,6 +13,54 @@ class MapScreenTest {
         assertEquals(
             "https://www.openstreetmap.org/?mlat=55.751244&mlon=37.618423",
             engineerMapUrl(EngineerMapMarker("Инженер", 55.751244, 37.618423)),
+        )
+    }
+
+    @Test
+    fun mapMarkers_whenNoEngineers_centerOnFirstSiteWithCoordinates() {
+        val sites =
+            listOf(
+                SiteDto(id = "no-coords", orgId = "o", name = "Склад"),
+                SiteDto(
+                    id = "ceh-1",
+                    orgId = "o",
+                    name = "Цех 1",
+                    lat = 55.8123,
+                    lon = 37.4567,
+                ),
+                SiteDto(
+                    id = "ceh-2",
+                    orgId = "o",
+                    name = "Цех 2",
+                    lat = 59.93,
+                    lon = 30.33,
+                ),
+            )
+
+        assertEquals(
+            listOf(EngineerMapMarker("Цех 1", 55.8123, 37.4567)),
+            mapDisplayMarkers(engineerMarkers = emptyList(), sites = sites),
+        )
+    }
+
+    @Test
+    fun mapMarkers_whenEngineersPresent_keepEngineerMarkersOnly() {
+        val engineers = listOf(EngineerMapMarker("Иван", 55.75, 37.61))
+        val sites =
+            listOf(
+                SiteDto(id = "ceh-1", orgId = "o", name = "Цех 1", lat = 55.8123, lon = 37.4567),
+            )
+
+        assertEquals(engineers, mapDisplayMarkers(engineerMarkers = engineers, sites = sites))
+    }
+
+    @Test
+    fun mapMarkers_whenNoEngineersAndNoSiteCoords_stayEmpty() {
+        assertTrue(
+            mapDisplayMarkers(
+                engineerMarkers = emptyList(),
+                sites = listOf(SiteDto(id = "s", orgId = "o", name = "Цех")),
+            ).isEmpty(),
         )
     }
 

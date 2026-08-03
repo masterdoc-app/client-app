@@ -24,6 +24,8 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import pro.masterdoc.client.auth.EngineerLocationDto
 import pro.masterdoc.client.auth.EngineerLocationsGateway
+import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppText
@@ -57,6 +59,24 @@ internal fun engineerMapMarkers(
         )
     }
 
+/** Markers actually drawn: engineers when online, otherwise first цех with coordinates. */
+internal fun mapDisplayMarkers(
+    engineerMarkers: List<EngineerMapMarker>,
+    sites: List<SiteDto>,
+): List<EngineerMapMarker> {
+    if (engineerMarkers.isNotEmpty()) return engineerMarkers
+    val site = sites.firstOrNull { it.lat != null && it.lon != null } ?: return emptyList()
+    val lat = site.lat ?: return emptyList()
+    val lon = site.lon ?: return emptyList()
+    return listOf(
+        EngineerMapMarker(
+            label = site.name.takeIf { it.isNotBlank() } ?: "Площадка",
+            lat = lat,
+            lon = lon,
+        ),
+    )
+}
+
 private fun EngineerLocationDto.recordedAtMillis(): Long? =
     runCatching { Instant.parse(recordedAt).toEpochMilliseconds() }.getOrNull()
 
@@ -75,12 +95,26 @@ private fun nextMarkerRefreshDelayMillis(
 @Composable
 fun MapScreen(
     repository: EngineerLocationsGateway,
+    equipmentRepository: EquipmentRepository? = null,
     modifier: Modifier = Modifier,
 ) {
-    var markers by remember { mutableStateOf<List<EngineerMapMarker>>(emptyList()) }
+    var engineerMarkers by remember { mutableStateOf<List<EngineerMapMarker>>(emptyList()) }
+    var sites by remember { mutableStateOf<List<SiteDto>>(emptyList()) }
     var latestLocations by remember { mutableStateOf<List<EngineerLocationDto>>(emptyList()) }
-    var loading by remember { mutableStateOf(true) }
+    var locationsLoaded by remember { mutableStateOf(false) }
+    var sitesLoaded by remember { mutableStateOf(equipmentRepository == null) }
     var error by remember { mutableStateOf<String?>(null) }
+    val loading = !locationsLoaded || !sitesLoaded
+
+    LaunchedEffect(equipmentRepository) {
+        if (equipmentRepository == null) {
+            sites = emptyList()
+            sitesLoaded = true
+            return@LaunchedEffect
+        }
+        sites = runCatching { equipmentRepository.listSites().items }.getOrDefault(emptyList())
+        sitesLoaded = true
+    }
 
     LaunchedEffect(repository) {
         while (true) {
@@ -92,7 +126,7 @@ fun MapScreen(
             } catch (e: Exception) {
                 error = e.message ?: "Ошибка загрузки карты"
             } finally {
-                loading = false
+                locationsLoaded = true
             }
             delay(mapPollingDelayMillis())
         }
@@ -101,10 +135,13 @@ fun MapScreen(
     LaunchedEffect(latestLocations) {
         while (true) {
             val nowEpochMillis = Clock.System.now().toEpochMilliseconds()
-            markers = engineerMapMarkers(latestLocations, nowEpochMillis)
+            engineerMarkers = engineerMapMarkers(latestLocations, nowEpochMillis)
             delay(nextMarkerRefreshDelayMillis(latestLocations, nowEpochMillis))
         }
     }
+
+    val displayMarkers = remember(engineerMarkers, sites) { mapDisplayMarkers(engineerMarkers, sites) }
+    val noEngineersOnline = !loading && engineerMarkers.isEmpty()
 
     AppScaffold(title = "Карта", modifier = modifier) { padding ->
         Box(
@@ -115,10 +152,29 @@ fun MapScreen(
                     .padding(horizontal = ClientSpacing.md, vertical = 16.dp),
         ) {
             when {
-                loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                loading ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                displayMarkers.isNotEmpty() -> {
+                    EngineerLocationsMap(markers = displayMarkers, modifier = Modifier.fillMaxSize())
+                    Column(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = ClientSpacing.sm),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                    ) {
+                        if (noEngineersOnline) {
+                            AppText(text = "Нет инженеров на линии")
+                        }
+                        if (error != null) {
+                            AppText(text = error!!)
+                        }
+                    }
                 }
-                markers.isEmpty() -> {
+                else -> {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm, Alignment.CenterVertically),
@@ -133,12 +189,6 @@ fun MapScreen(
                                 onClick = {},
                             )
                         }
-                    }
-                }
-                else -> {
-                    EngineerLocationsMap(markers = markers, modifier = Modifier.fillMaxSize())
-                    if (error != null) {
-                        AppText(text = error!!)
                     }
                 }
             }

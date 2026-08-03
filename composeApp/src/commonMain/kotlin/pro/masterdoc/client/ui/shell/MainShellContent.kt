@@ -359,7 +359,10 @@ private fun ActivePage(
                     }
                 NavDestinationId.Map ->
                     if (engineerLocationsGateway != null) {
-                        MapScreen(repository = engineerLocationsGateway)
+                        MapScreen(
+                            repository = engineerLocationsGateway,
+                            equipmentRepository = equipmentRepository,
+                        )
                     } else {
                         StubDestinationScreen(active.destination)
                     }
