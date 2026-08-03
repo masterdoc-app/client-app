@@ -31,6 +31,7 @@ data class SessionUser(
     val email: String? = null,
     val givenName: String? = null,
     val familyName: String? = null,
+    val orgName: String? = null,
 )
 
 /**
@@ -59,6 +60,7 @@ data class ClientSession(
                         email = info.email?.trim()?.takeIf { it.isNotEmpty() },
                         givenName = info.givenName?.trim()?.takeIf { it.isNotEmpty() },
                         familyName = info.familyName?.trim()?.takeIf { it.isNotEmpty() },
+                        orgName = info.orgName?.trim()?.takeIf { it.isNotEmpty() },
                     ),
             )
         }

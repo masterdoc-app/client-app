@@ -30,6 +30,7 @@ data class UserInfoDto(
     val givenName: String? = null,
     val familyName: String? = null,
     val email: String? = null,
+    val orgName: String? = null,
 )
 
 data class AuthTokens(

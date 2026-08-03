@@ -53,7 +53,8 @@ private fun ProfileFields(user: SessionUser?) {
     val email = user.email
     val givenName = user.givenName
     val familyName = user.familyName
-    if (email == null && givenName == null && familyName == null) return
+    val orgName = user.orgName
+    if (email == null && givenName == null && familyName == null && orgName == null) return
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (email != null) {
@@ -64,6 +65,9 @@ private fun ProfileFields(user: SessionUser?) {
         }
         if (familyName != null) {
             ProfileRow(label = "Фамилия", value = familyName)
+        }
+        if (orgName != null) {
+            ProfileRow(label = "Организация", value = orgName)
         }
     }
 }

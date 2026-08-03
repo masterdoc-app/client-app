@@ -18,6 +18,21 @@ class MeResponseDecodeTest {
         assertEquals("u1", me.userInfo.id)
         assertEquals("i@e.com", me.userInfo.email)
     }
+
+    @Test
+    fun meResponse_decodesOrgName() {
+        val body =
+            """{"userInfo":{"id":"u1","orgName":"Fixaverse Demo"},"features":["board"]}"""
+        val me = json.decodeFromString(MeResponse.serializer(), body)
+        assertEquals("Fixaverse Demo", me.userInfo.orgName)
+    }
+
+    @Test
+    fun meResponse_orgNameAbsentWhenMissing() {
+        val body = """{"userInfo":{"id":"u1"},"features":[]}"""
+        val me = json.decodeFromString(MeResponse.serializer(), body)
+        assertEquals(null, me.userInfo.orgName)
+    }
 }
 
 class AdminUsersRepositoryTest {

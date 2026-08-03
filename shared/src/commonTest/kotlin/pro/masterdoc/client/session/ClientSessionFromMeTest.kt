@@ -75,4 +75,36 @@ class ClientSessionFromMeTest {
         assertEquals("Иван", session.user?.givenName)
         assertNull(session.user?.familyName)
     }
+
+    @Test
+    fun fromMe_mapsOrgName() {
+        val session =
+            ClientSession.fromMe(
+                MeResponse(
+                    userInfo =
+                        UserInfoDto(
+                            id = "u1",
+                            orgName = "Fixaverse Smoke",
+                        ),
+                    features = listOf("board"),
+                ),
+            )
+        assertEquals("Fixaverse Smoke", session.user?.orgName)
+    }
+
+    @Test
+    fun fromMe_omitsBlankOrgName() {
+        val session =
+            ClientSession.fromMe(
+                MeResponse(
+                    userInfo =
+                        UserInfoDto(
+                            id = "u1",
+                            orgName = "  ",
+                        ),
+                    features = listOf("board"),
+                ),
+            )
+        assertNull(session.user?.orgName)
+    }
 }
