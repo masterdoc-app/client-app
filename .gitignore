@@ -12,6 +12,7 @@ local.properties
 
 # local agent/smoke secrets
 .local/
+.smoke_pass
 
 .secrets/
 .superpowers/
