@@ -16,7 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.EquipmentRepository
@@ -24,7 +23,6 @@ import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
 import pro.masterdoc.client.auth.workOrderTypeLabelRu
-import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppStatusChip
 import pro.masterdoc.client.designsystem.components.AppStatusChipTone
@@ -39,7 +37,6 @@ fun MyWorkOrdersScreen(
     equipmentRepository: EquipmentRepository?,
     currentUserId: String?,
     onOpenEquipment: (String) -> Unit = {},
-    onOpenAssetQr: (String) -> Unit = {},
     locationTrackingController: LocationTrackingController? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -48,18 +45,7 @@ fun MyWorkOrdersScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var mentorOpen by remember { mutableStateOf(false) }
-    var qrDialogOpen by remember { mutableStateOf(false) }
-    var pendingQrToken by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableStateOf(0) }
-
-    LaunchedEffect(qrDialogOpen, pendingQrToken) {
-        if (!qrDialogOpen) {
-            pendingQrToken?.let { token ->
-                pendingQrToken = null
-                onOpenAssetQr(token)
-            }
-        }
-    }
 
     LaunchedEffect(repository, currentUserId, reloadKey) {
         loading = true
@@ -114,27 +100,12 @@ fun MyWorkOrdersScreen(
         return
     }
 
-    if (qrDialogOpen) {
-        AssetQrPasteDialog(
-            onDismiss = { qrDialogOpen = false },
-            onOpen = { token ->
-                pendingQrToken = token
-                qrDialogOpen = false
-            },
-        )
-    }
     AppScaffold(title = "Мои заявки", modifier = modifier) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(ClientSpacing.md),
             verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
         ) {
-            item {
-                AppButton(
-                    text = "Сканировать QR",
-                    onClick = { qrDialogOpen = true },
-                )
-            }
             when {
                 loading -> item { CircularProgressIndicator() }
                 error != null -> item { AppText(text = error!!) }

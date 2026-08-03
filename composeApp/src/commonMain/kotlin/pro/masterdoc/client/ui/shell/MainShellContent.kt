@@ -246,7 +246,6 @@ private fun ActivePage(
                     equipmentRepository = equipmentRepository,
                     currentUserId = session.user?.id,
                     onOpenEquipment = onOpenEquipment,
-                    onOpenAssetQr = onOpenAssetQr,
                     locationTrackingController = locationTrackingController,
                 )
             } else {
