@@ -315,6 +315,7 @@ private fun ActivePage(
                         } else {
                             EquipmentScreen(
                                 repository = equipmentRepository,
+                                onOpenEquipment = onOpenEquipment,
                                 onOpenLinkedPpr = onOpenLinkedPpr,
                                 onPprDraftReady = onPprDraftReady,
                             )

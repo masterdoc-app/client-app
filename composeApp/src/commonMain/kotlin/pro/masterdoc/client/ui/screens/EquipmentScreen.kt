@@ -40,6 +40,7 @@ import pro.masterdoc.client.platform.pickPdfFile
 @Composable
 fun EquipmentScreen(
     repository: EquipmentRepository,
+    onOpenEquipment: (String) -> Unit = {},
     onOpenLinkedPpr: (MaintenanceMapDto) -> Unit = {},
     onPprDraftReady: (mapId: String) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -492,6 +493,7 @@ fun EquipmentScreen(
                                         ?: asset.orgId,
                                 ].orEmpty(),
                             acting = actingId == asset.id,
+                            onOpenDetails = { onOpenEquipment(asset.id) },
                             onOpenLinkedPpr = onOpenLinkedPpr,
                             onOpenStorageFolder = ::openFolder,
                             onOpenDocument = ::openDocument,

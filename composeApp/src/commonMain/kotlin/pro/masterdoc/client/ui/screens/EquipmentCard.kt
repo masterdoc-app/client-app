@@ -74,6 +74,7 @@ fun EquipmentCard(
     onOpenLinkedPpr: ((MaintenanceMapDto) -> Unit)? = null,
     onOpenStorageFolder: ((String) -> Unit)? = null,
     onOpenDocument: ((DocumentMetaDto) -> Unit)? = null,
+    onOpenDetails: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val siteLabel = siteDisplayName(siteName)
@@ -105,6 +106,7 @@ fun EquipmentCard(
             modifier
                 .fillMaxWidth()
                 .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large)
+                .then(if (onOpenDetails != null) Modifier.clickable(onClick = onOpenDetails) else Modifier)
                 .animateContentSize(animationSpec = tween(220)),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surface,

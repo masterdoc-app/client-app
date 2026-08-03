@@ -41,30 +41,16 @@ class EquipmentRepositoryTest {
         }
 
     @Test
-    fun generateQrPostsToAssetQrEndpoint() =
-        runBlocking {
-            val tokens = InMemoryTokenStore()
-            tokens.write(AuthTokens(accessToken = "at"))
-            var capturedMethod = ""
-            var capturedUrl = ""
-            val http =
-                RecordingGatewayHttpClient { method, url, _, _ ->
-                    capturedMethod = method
-                    capturedUrl = url
-                    GatewayHttpResponse(
-                        200,
-                        """{"qrToken":"qr-token","qrUrl":"https://app.fixaverse.ru/#/qr/qr-token","asset":{"id":"a1","orgId":"o","siteId":"s","name":"Насос","status":"active","source":"manual","qrToken":"qr-token"}}""",
-                    )
-                }
-            val repo = EquipmentRepository(config = config, http = http, tokenStore = tokens)
+    fun qrPdfUrlTargetsAssetPdfEndpoint() {
+        val repo =
+            EquipmentRepository(
+                config = config,
+                http = RecordingGatewayHttpClient { _, _, _, _ -> error("HTTP must not be called") },
+                tokenStore = InMemoryTokenStore(),
+            )
 
-            val response = repo.generateQr("a1")
-
-            assertEquals("POST", capturedMethod)
-            assertTrue(capturedUrl.endsWith("/assets/a1/qr"))
-            assertEquals("qr-token", response.qrToken)
-            assertEquals("qr-token", response.asset.qrToken)
-        }
+        assertEquals("https://api.test/assets/a1/qr.pdf", repo.qrPdfUrl("a1"))
+    }
 
     @Test
     fun resolveQrGetsAssetByToken() =

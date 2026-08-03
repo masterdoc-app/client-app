@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -66,7 +65,6 @@ fun EquipmentDetailScreen(
     var acting by remember(assetId) { mutableStateOf(false) }
     var error by remember(assetId) { mutableStateOf<String?>(null) }
     var qrUrl by remember(assetId) { mutableStateOf<String?>(null) }
-    var confirmQrRotation by remember(assetId) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     suspend fun reload() {
@@ -139,6 +137,28 @@ fun EquipmentDetailScreen(
                 error = null
             } catch (e: Exception) {
                 error = e.message ?: "Не удалось открыть документ"
+            }
+        }
+    }
+
+    fun openQrPdf(current: AssetDto) {
+        scope.launch {
+            acting = true
+            try {
+                val assetName = current.name.ifBlank { "Оборудование" }
+                openAuthenticatedDocument(
+                    url = repository.qrPdfUrl(current.id),
+                    bearerToken = repository.accessToken(),
+                    filename = "$assetName QR.pdf",
+                    mimeType = "application/pdf",
+                )
+                error = null
+                reload()
+            } catch (e: Exception) {
+                val assetName = current.name.ifBlank { "Оборудование" }
+                error = e.message ?: "Не удалось открыть PDF для «$assetName»"
+            } finally {
+                acting = false
             }
         }
     }
@@ -325,76 +345,12 @@ fun EquipmentDetailScreen(
                             assetName = current.name.ifBlank { "Оборудование" },
                             qrUrl = qrUrl,
                             acting = acting,
-                            onGenerate = {
-                                if (qrUrl == null) {
-                                    scope.launch {
-                                        acting = true
-                                        try {
-                                            val response = repository.generateQr(current.id)
-                                            asset = response.asset
-                                            qrUrl = response.qrUrl
-                                            error = null
-                                        } catch (e: Exception) {
-                                            error = e.message ?: "Не удалось сгенерировать QR-код"
-                                        } finally {
-                                            acting = false
-                                        }
-                                    }
-                                } else {
-                                    confirmQrRotation = true
-                                }
-                            },
+                            onOpenPdf = { openQrPdf(current) },
                         )
                     }
                 }
             }
         }
-    }
-
-    if (confirmQrRotation) {
-        AlertDialog(
-            onDismissRequest = { if (!acting) confirmQrRotation = false },
-            title = { AppText(text = "Перевыпустить QR-код?", style = AppTextStyle.Title) },
-            text = {
-                AppText(
-                    text = "Старые наклейки перестанут работать. Их потребуется заменить.",
-                    style = AppTextStyle.Body,
-                )
-            },
-            confirmButton = {
-                AppButton(
-                    text = if (acting) "…" else "Перевыпустить",
-                    enabled = !acting,
-                    fillMaxWidth = false,
-                    onClick = {
-                        val current = asset ?: return@AppButton
-                        scope.launch {
-                            acting = true
-                            try {
-                                val response = repository.generateQr(current.id)
-                                asset = response.asset
-                                qrUrl = response.qrUrl
-                                confirmQrRotation = false
-                                error = null
-                            } catch (e: Exception) {
-                                error = e.message ?: "Не удалось перевыпустить QR-код"
-                            } finally {
-                                acting = false
-                            }
-                        }
-                    },
-                )
-            },
-            dismissButton = {
-                AppButton(
-                    text = "Отмена",
-                    enabled = !acting,
-                    variant = AppButtonVariant.Secondary,
-                    fillMaxWidth = false,
-                    onClick = { confirmQrRotation = false },
-                )
-            },
-        )
     }
 }
 
@@ -404,7 +360,7 @@ private fun EquipmentQrBlock(
     assetName: String,
     qrUrl: String?,
     acting: Boolean,
-    onGenerate: () -> Unit,
+    onOpenPdf: () -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
     var copied by remember(qrUrl) { mutableStateOf(false) }
@@ -436,7 +392,7 @@ private fun EquipmentQrBlock(
                 }
             } else {
                 AppText(
-                    text = "Создайте QR-код для печати наклейки.",
+                    text = "Откройте PDF — QR-код будет создан автоматически.",
                     style = AppTextStyle.Body,
                 )
             }
@@ -445,11 +401,11 @@ private fun EquipmentQrBlock(
                 horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
             ) {
                 AppButton(
-                    text = if (acting) "…" else equipmentQrActionLabel(qrUrl),
+                    text = if (acting) "…" else equipmentQrActionLabel(),
                     enabled = !acting,
                     fillMaxWidth = false,
                     modifier = Modifier.weight(1f),
-                    onClick = onGenerate,
+                    onClick = onOpenPdf,
                 )
                 if (qrUrl != null) {
                     AppButton(

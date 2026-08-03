@@ -15,17 +15,17 @@ class EquipmentQrUiTest {
     }
 
     @Test
-    fun existingTokenProducesCanonicalQrUrlAndRotateAction() {
+    fun existingTokenProducesCanonicalQrUrlAndPdfAction() {
         val url = equipmentQrUrl("opaque-token")
 
         assertEquals("https://app.fixaverse.ru/#/qr/opaque-token", url)
-        assertEquals("Перевыпустить", equipmentQrActionLabel(url))
+        assertEquals("Открыть PDF", equipmentQrActionLabel())
     }
 
     @Test
-    fun missingTokenProducesGenerateActionWithoutUrl() {
+    fun missingTokenStillProducesPdfActionWithoutUrl() {
         assertNull(equipmentQrUrl(null))
         assertNull(equipmentQrUrl(""))
-        assertEquals("Сгенерировать", equipmentQrActionLabel(null))
+        assertEquals("Открыть PDF", equipmentQrActionLabel())
     }
 }

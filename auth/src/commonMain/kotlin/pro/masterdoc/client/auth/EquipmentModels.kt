@@ -23,13 +23,6 @@ data class AssetDto(
 data class AssetListDto(val items: List<AssetDto>)
 
 @Serializable
-data class AssetQrResponseDto(
-    val qrToken: String,
-    val qrUrl: String,
-    val asset: AssetDto,
-)
-
-@Serializable
 data class AssetQrResolveDto(
     val assetId: String,
     val name: String,
@@ -312,16 +305,7 @@ class EquipmentRepository(
         return json.decodeFromString(AssetDto.serializer(), response.body)
     }
 
-    suspend fun generateQr(assetId: String): AssetQrResponseDto {
-        val response =
-            http.postForm(
-                url = "${base()}/assets/$assetId/qr",
-                body = "",
-                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
-            )
-        if (!response.isSuccessful) throw GatewayHttpException(response.status, response.body)
-        return json.decodeFromString(AssetQrResponseDto.serializer(), response.body)
-    }
+    fun qrPdfUrl(assetId: String): String = "${base()}/assets/$assetId/qr.pdf"
 
     suspend fun resolveQr(token: String): AssetQrResolveDto {
         val response =

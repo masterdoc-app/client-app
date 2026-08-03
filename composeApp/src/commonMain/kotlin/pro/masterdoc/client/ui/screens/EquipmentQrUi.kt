@@ -12,5 +12,4 @@ internal fun equipmentQrUrl(qrToken: String?): String? =
         ?.takeIf { it.isNotBlank() }
         ?.let { "$ASSET_QR_URL_PREFIX$it" }
 
-internal fun equipmentQrActionLabel(qrUrl: String?): String =
-    if (qrUrl == null) "Сгенерировать" else "Перевыпустить"
+internal fun equipmentQrActionLabel(): String = "Открыть PDF"
