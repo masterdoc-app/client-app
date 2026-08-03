@@ -296,8 +296,13 @@ fun WorkOrderDetailScreen(
                                 mapId = wo.maintenanceMapId,
                                 itemId = wo.maintenanceMapItemId,
                             )
-                        DetailRow("ППР", mapLabel)
-                        DetailRow("Пункт ППР", itemLabel)
+                        // Skip when value is only the generic fallback (label ≡ value).
+                        if (mapLabel != "ППР" && mapLabel != "—") {
+                            DetailRow("ППР", mapLabel)
+                        }
+                        if (itemLabel != "Пункт ППР" && itemLabel != "—") {
+                            DetailRow("Пункт ППР", itemLabel)
+                        }
                     }
                     if (error != null) {
                         AppText(text = error!!)
