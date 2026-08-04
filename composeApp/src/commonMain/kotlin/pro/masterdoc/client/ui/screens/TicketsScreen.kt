@@ -424,14 +424,18 @@ fun TicketsScreen(
                         AppButton(
                             text = "С диска",
                             variant = AppButtonVariant.Secondary,
+                            modifier = Modifier.weight(1f),
                             enabled = createFormEnabled && pendingPhotos.size < 10 && !acting,
                             onClick = imagePickers.openGallery,
+                            fillMaxWidth = false,
                         )
                         AppButton(
                             text = "Камера",
                             variant = AppButtonVariant.Secondary,
+                            modifier = Modifier.weight(1f),
                             enabled = createFormEnabled && pendingPhotos.size < 10 && !acting,
                             onClick = imagePickers.openCamera,
+                            fillMaxWidth = false,
                         )
                     }
                     AppButton(
