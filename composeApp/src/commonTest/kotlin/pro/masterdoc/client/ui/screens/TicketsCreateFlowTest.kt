@@ -15,13 +15,23 @@ class TicketsCreateFlowTest {
     }
 
     @Test
-    fun chooseListFromMethodGoesToForm() {
-        assertEquals(TicketsCreateStep.Form, chooseList(TicketsCreateStep.Method))
+    fun chooseListFromMethodGoesToEquipmentList() {
+        assertEquals(TicketsCreateStep.EquipmentList, chooseList(TicketsCreateStep.Method))
     }
 
     @Test
-    fun backFromFormGoesToMethod() {
-        assertEquals(TicketsCreateStep.Method, backFromForm(TicketsCreateStep.Form))
+    fun selectEquipmentFromEquipmentListGoesToForm() {
+        assertEquals(TicketsCreateStep.Form, selectEquipment(TicketsCreateStep.EquipmentList))
+    }
+
+    @Test
+    fun backFromFormGoesToEquipmentList() {
+        assertEquals(TicketsCreateStep.EquipmentList, backFromForm(TicketsCreateStep.Form))
+    }
+
+    @Test
+    fun backFromEquipmentListGoesToMethod() {
+        assertEquals(TicketsCreateStep.Method, backFromEquipmentList(TicketsCreateStep.EquipmentList))
     }
 
     @Test

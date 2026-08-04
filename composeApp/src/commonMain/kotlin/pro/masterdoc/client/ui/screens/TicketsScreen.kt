@@ -221,10 +221,16 @@ fun TicketsScreen(
                 }
             }
 
-        TicketsCreateStep.Method ->
+        TicketsCreateStep.Method, TicketsCreateStep.EquipmentList ->
             AppScaffold(
                 title = "Новая заявка",
-                onNavigateBack = { createStep = backFromMethod(createStep) },
+                onNavigateBack = {
+                    createStep =
+                        when (createStep) {
+                            TicketsCreateStep.EquipmentList -> backFromEquipmentList(createStep)
+                            else -> backFromMethod(createStep)
+                        }
+                },
                 modifier = modifier,
             ) { padding ->
                 Column(modifier = Modifier.fillMaxSize().padding(padding)) {

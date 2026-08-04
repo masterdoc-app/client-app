@@ -3,6 +3,7 @@ package pro.masterdoc.client.ui.screens
 enum class TicketsCreateStep {
     List,
     Method,
+    EquipmentList,
     Form,
 }
 
@@ -16,13 +17,25 @@ fun openCreate(step: TicketsCreateStep): TicketsCreateStep =
 
 fun chooseList(step: TicketsCreateStep): TicketsCreateStep =
     when (step) {
-        TicketsCreateStep.Method -> TicketsCreateStep.Form
+        TicketsCreateStep.Method -> TicketsCreateStep.EquipmentList
+        else -> step
+    }
+
+fun selectEquipment(step: TicketsCreateStep): TicketsCreateStep =
+    when (step) {
+        TicketsCreateStep.EquipmentList -> TicketsCreateStep.Form
         else -> step
     }
 
 fun backFromForm(step: TicketsCreateStep): TicketsCreateStep =
     when (step) {
-        TicketsCreateStep.Form -> TicketsCreateStep.Method
+        TicketsCreateStep.Form -> TicketsCreateStep.EquipmentList
+        else -> step
+    }
+
+fun backFromEquipmentList(step: TicketsCreateStep): TicketsCreateStep =
+    when (step) {
+        TicketsCreateStep.EquipmentList -> TicketsCreateStep.Method
         else -> step
     }
 
