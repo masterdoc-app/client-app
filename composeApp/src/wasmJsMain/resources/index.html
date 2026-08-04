@@ -18,12 +18,163 @@
             padding: 0;
             overflow: hidden;
             color-scheme: light;
-            /* Paper canvas — matches FixaverseTheme background */
             background-color: #FFFFFF;
         }
+        #fixaverse-compose-root {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+        }
+        #fixaverse-compose-root canvas {
+            display: block;
+        }
+        body.fixaverse-camera-open #fixaverse-compose-root {
+            visibility: hidden;
+        }
+        #fixaverse-camera-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 2147483647;
+            background: #000;
+            pointer-events: auto;
+        }
+        #fixaverse-camera-overlay.active {
+            display: block;
+        }
+        #fixaverse-camera-preview {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: #111;
+        }
+        #fixaverse-camera-status {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            font: 600 15px/1.4 system-ui, sans-serif;
+            text-align: center;
+            padding: 24px;
+            pointer-events: none;
+            z-index: 2;
+            background: rgba(0, 0, 0, 0.35);
+        }
+        #fixaverse-camera-overlay.waiting #fixaverse-camera-status {
+            display: flex;
+        }
+        #fixaverse-camera-hint {
+            position: absolute;
+            top: max(20px, env(safe-area-inset-top));
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.92);
+            font: 600 11px/1.2 monospace;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 3;
+            padding: 0 56px;
+        }
+        #fixaverse-camera-back {
+            position: absolute;
+            top: max(12px, env(safe-area-inset-top));
+            left: max(12px, env(safe-area-inset-left));
+            z-index: 4;
+            width: 48px;
+            height: 48px;
+            border: 0;
+            border-radius: 50%;
+            background: rgba(13, 27, 58, 0.55);
+            color: #FFFFFF;
+            font: 600 28px/1 system-ui, sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0 2px 0;
+        }
+        #fixaverse-camera-controls {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 24px max(32px, env(safe-area-inset-bottom));
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+            pointer-events: none;
+        }
+        #fixaverse-camera-capture {
+            pointer-events: auto;
+            width: 76px;
+            height: 76px;
+            border: 4px solid #FFFFFF;
+            border-radius: 50%;
+            padding: 4px;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        #fixaverse-camera-capture:disabled {
+            opacity: 0.45;
+            cursor: wait;
+        }
+        #fixaverse-camera-capture.ready:active .fixaverse-shutter-inner {
+            transform: scale(0.88);
+        }
+        .fixaverse-shutter-inner {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #FFFFFF;
+            transition: transform 0.12s ease;
+        }
+        #fixaverse-camera-capture.ready .fixaverse-shutter-inner {
+            background: #1A6FFF;
+        }
+        /* HTML hit target above Skiko canvas — trusted gesture for getUserMedia. */
+        #fixaverse-scan-shutter {
+            display: none;
+            position: fixed;
+            z-index: 2147483646;
+            left: 50%;
+            top: 42%;
+            transform: translate(-50%, -50%);
+            width: min(180px, 52vw);
+            height: min(180px, 52vw);
+            margin: 0;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: transparent;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #fixaverse-scan-shutter:not([hidden]) {
+            display: block;
+        }
+        body.fixaverse-camera-open #fixaverse-scan-shutter {
+            display: none !important;
+        }
     </style>
-    <!-- Absolute path: relative src breaks on /auth/callback (loads /auth/composeApp.js → HTML). -->
     <script type="application/javascript" src="/composeApp.js"></script>
 </head>
-<body></body>
+<body>
+<div id="fixaverse-compose-root"></div>
+<button id="fixaverse-scan-shutter" type="button" hidden aria-label="Сканировать камерой"></button>
+<script src="/fixaverse-asset-qr-camera.js"></script>
+</body>
 </html>

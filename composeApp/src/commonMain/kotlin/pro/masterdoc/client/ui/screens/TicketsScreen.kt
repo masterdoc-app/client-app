@@ -21,6 +21,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.CancellationException
@@ -46,6 +48,7 @@ import pro.masterdoc.client.designsystem.components.AppTextField
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 import pro.masterdoc.client.platform.localEpochDay
+import pro.masterdoc.client.platform.rememberAssetQrCameraController
 
 fun partitionCustomerTickets(orders: List<WorkOrderDto>): Pair<List<WorkOrderDto>, List<WorkOrderDto>> {
     val active = orders.filter { it.status == "new" || it.status == "in_progress" }
@@ -100,7 +103,27 @@ fun TicketsScreen(
     var pendingQrToken by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableStateOf(0) }
     var createStep by remember { mutableStateOf(defaultTicketsCreateStep()) }
+    var cameraError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val qrCamera =
+        rememberAssetQrCameraController(
+            active = createStep == TicketsCreateStep.Method,
+            onRawQr = { raw ->
+                val token = resolveScannedAssetQrToken(raw)
+                if (token != null) {
+                    cameraError = null
+                    onOpenAssetQr(token)
+                } else {
+                    cameraError = "Код не найден или устарел"
+                    qrDialogOpen = true
+                }
+            },
+            onError = { message ->
+                cameraError = message
+                qrDialogOpen = true
+            },
+            onCancelled = { },
+        )
 
     LaunchedEffect(qrDialogOpen, pendingQrToken) {
         if (!qrDialogOpen) {
@@ -213,15 +236,27 @@ fun TicketsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
-                        AppButton(
-                            text = "Сканировать QR",
-                            onClick = { qrDialogOpen = true },
+                        TicketsCameraHeroButton(
+                            onClick = {
+                                cameraError = null
+                                qrCamera.openCamera()
+                            },
+                        )
+                        Spacer(modifier = Modifier.height(ClientSpacing.md))
+                        AppText(
+                            text = "Сканировать QR или шильдик",
+                            style = AppTextStyle.Title,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                         AppText(
-                            text = "Вставьте код или ссылку с наклейки",
+                            text = "Нажмите, чтобы открыть камеру",
                             style = AppTextStyle.Label,
-                            modifier = Modifier.padding(top = ClientSpacing.sm),
+                            modifier = Modifier.padding(top = ClientSpacing.xs).fillMaxWidth(),
                         )
+                        cameraError?.let { message ->
+                            Spacer(modifier = Modifier.height(ClientSpacing.sm))
+                            AppText(text = message, style = AppTextStyle.Label)
+                        }
                     }
                     Column(
                         modifier =
@@ -234,7 +269,7 @@ fun TicketsScreen(
                         verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
                     ) {
                         AppButton(
-                            text = "Выбрать из списка",
+                            text = "Список оборудования",
                             variant = AppButtonVariant.Secondary,
                             onClick = { createStep = chooseList(createStep) },
                         )

@@ -36,7 +36,11 @@ fun main() {
     val engineerLocations = koinApp.koin.get<EngineerLocationsRepository>()
     val geocode = koinApp.koin.get<GeocodeRepository>()
     val aiMessages = koinApp.koin.get<AiMessagesRepository>()
-    ComposeViewport(document.body!!) {
+    val viewportRoot =
+        document.getElementById("fixaverse-compose-root")
+            ?: document.body
+            ?: error("No document body")
+    ComposeViewport(viewportRoot) {
         AuthenticatedApp(
             coordinator = coordinator,
             adminUsersRepository = adminUsers,
