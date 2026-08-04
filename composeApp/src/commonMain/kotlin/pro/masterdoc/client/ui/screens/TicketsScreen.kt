@@ -56,10 +56,9 @@ import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 import pro.masterdoc.client.platform.localEpochDay
 import pro.masterdoc.client.platform.PickedImage
+import pro.masterdoc.client.platform.decodePickedImage
 import pro.masterdoc.client.platform.rememberImagePickerLaunchers
 import pro.masterdoc.client.platform.rememberAssetQrCameraController
-import org.jetbrains.skia.Image.Companion.makeFromEncoded
-import androidx.compose.ui.graphics.toComposeImageBitmap
 
 fun partitionCustomerTickets(orders: List<WorkOrderDto>): Pair<List<WorkOrderDto>, List<WorkOrderDto>> {
     val active = orders.filter { it.status == "new" || it.status == "in_progress" }
@@ -396,9 +395,7 @@ fun TicketsScreen(
                         ) {
                             pendingPhotos.forEachIndexed { index, photo ->
                                 Box(modifier = Modifier.size(96.dp)) {
-                                    val bitmap = remember(photo) {
-                                        runCatching { makeFromEncoded(photo.bytes).toComposeImageBitmap() }.getOrNull()
-                                    }
+                                    val bitmap = remember(photo) { decodePickedImage(photo.bytes) }
                                     if (bitmap != null) {
                                         Image(
                                             bitmap = bitmap,
