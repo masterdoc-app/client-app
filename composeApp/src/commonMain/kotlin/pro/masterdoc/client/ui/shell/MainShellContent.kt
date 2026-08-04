@@ -30,6 +30,7 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.arkivanov.decompose.router.pages.ChildPages
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AiMessagesRepository
+import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.EngineerLocationsGateway
@@ -75,6 +76,7 @@ fun MainShellContent(
     adminUsersRepository: AdminUsersRepository? = null,
     equipmentRepository: EquipmentRepository? = null,
     workOrdersRepository: WorkOrdersRepository? = null,
+    attachmentsRepository: AttachmentsRepository? = null,
     userScopesRepository: UserScopesRepository? = null,
     engineerLocationsGateway: EngineerLocationsGateway? = null,
     geocodeRepository: GeocodeRepository? = null,
@@ -254,10 +256,11 @@ private fun ActivePage(
         is MainShellComponent.PageChild.Stub ->
             when (active.destination) {
                 NavDestinationId.Tickets ->
-                    if (workOrdersRepository != null && equipmentRepository != null) {
+                    if (workOrdersRepository != null && equipmentRepository != null && attachmentsRepository != null) {
                         TicketsScreen(
                             repository = workOrdersRepository,
                             equipmentRepository = equipmentRepository,
+                            attachmentsRepository = attachmentsRepository,
                             currentUserId = session.user?.id,
                             userScopesRepository = userScopesRepository,
                             onOpenAssetQr = onOpenAssetQr,

@@ -24,6 +24,7 @@ import pro.masterdoc.client.analytics.GatewayAnalyticsSink
 import pro.masterdoc.client.analytics.NoopAnalyticsSink
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AiMessagesRepository
+import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.ClientEventsRepository
@@ -73,6 +74,7 @@ fun AuthenticatedApp(
     adminUsersRepository: AdminUsersRepository,
     equipmentRepository: EquipmentRepository,
     workOrdersRepository: WorkOrdersRepository,
+    attachmentsRepository: AttachmentsRepository,
     userScopesRepository: UserScopesRepository,
     clientEventsRepository: ClientEventsRepository? = null,
     engineerLocationsRepository: EngineerLocationsRepository? = null,
@@ -117,6 +119,7 @@ fun AuthenticatedApp(
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
+                        attachmentsRepository = attachmentsRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsRepository,
                         geocodeRepository = geocodeRepository,

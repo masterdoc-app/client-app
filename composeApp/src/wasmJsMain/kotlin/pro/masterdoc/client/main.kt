@@ -6,6 +6,7 @@ import kotlinx.browser.document
 import org.koin.core.context.startKoin
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AiMessagesRepository
+import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.ClientEventsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
@@ -43,6 +44,7 @@ fun main() {
     ComposeViewport(viewportRoot) {
         AuthenticatedApp(
             coordinator = coordinator,
+            attachmentsRepository = koinApp.koin.get<AttachmentsRepository>(),
             adminUsersRepository = adminUsers,
             equipmentRepository = equipment,
             workOrdersRepository = workOrders,

@@ -1,19 +1,22 @@
 package pro.masterdoc.client.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,10 +28,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.CreateWorkOrderRequest
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
@@ -49,7 +55,11 @@ import pro.masterdoc.client.designsystem.components.AppTextField
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 import pro.masterdoc.client.platform.localEpochDay
+import pro.masterdoc.client.platform.PickedImage
+import pro.masterdoc.client.platform.rememberImagePickerLaunchers
 import pro.masterdoc.client.platform.rememberAssetQrCameraController
+import org.jetbrains.skia.Image.Companion.makeFromEncoded
+import androidx.compose.ui.graphics.toComposeImageBitmap
 
 fun partitionCustomerTickets(orders: List<WorkOrderDto>): Pair<List<WorkOrderDto>, List<WorkOrderDto>> {
     val active = orders.filter { it.status == "new" || it.status == "in_progress" }
@@ -84,6 +94,7 @@ fun resolveTicketsEmptyState(
 fun TicketsScreen(
     repository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository,
+    attachmentsRepository: AttachmentsRepository,
     currentUserId: String?,
     userScopesRepository: UserScopesRepository? = null,
     onOpenAssetQr: (String) -> Unit = {},
@@ -95,7 +106,7 @@ fun TicketsScreen(
     var orders by remember { mutableStateOf<List<WorkOrderDto>>(emptyList()) }
     var selectedAsset by remember { mutableStateOf<AssetDto?>(null) }
     var description by remember { mutableStateOf("") }
-    var assetMenuExpanded by remember { mutableStateOf(false) }
+    var pendingPhotos by remember { mutableStateOf<List<PickedImage>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var acting by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -106,6 +117,15 @@ fun TicketsScreen(
     var createStep by remember { mutableStateOf(defaultTicketsCreateStep()) }
     var cameraError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val imagePickers =
+        rememberImagePickerLaunchers(
+            onResult = { picked ->
+                if (picked != null && pendingPhotos.size < 10) {
+                    pendingPhotos = pendingPhotos + picked
+                }
+            },
+            onError = { error = it },
+        )
     val qrCamera =
         rememberAssetQrCameraController(
             active = createStep == TicketsCreateStep.Method,
@@ -221,15 +241,11 @@ fun TicketsScreen(
                 }
             }
 
-        TicketsCreateStep.Method, TicketsCreateStep.EquipmentList ->
+        TicketsCreateStep.Method ->
             AppScaffold(
                 title = "Новая заявка",
                 onNavigateBack = {
-                    createStep =
-                        when (createStep) {
-                            TicketsCreateStep.EquipmentList -> backFromEquipmentList(createStep)
-                            else -> backFromMethod(createStep)
-                        }
+                    createStep = backFromMethod(createStep)
                 },
                 modifier = modifier,
             ) { padding ->
@@ -291,6 +307,55 @@ fun TicketsScreen(
                 }
             }
 
+        TicketsCreateStep.EquipmentList ->
+            AppScaffold(
+                title = "Новая заявка",
+                onNavigateBack = { createStep = backFromEquipmentList(createStep) },
+                modifier = modifier,
+            ) { padding ->
+                if (assets.isEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(padding).padding(ClientSpacing.md),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        when (emptyState) {
+                            TicketsEmptyState.NoScope ->
+                                AppText(text = "Обратитесь к администратору для привязки к цеху")
+                            TicketsEmptyState.NoEquipment ->
+                                AppText(text = "Нет оборудования в вашем цехе")
+                            null -> CircularProgressIndicator()
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(ClientSpacing.md),
+                        verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                    ) {
+                        items(assets, key = { it.id }) { asset ->
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedAsset = asset
+                                            createStep = selectEquipment(createStep)
+                                        }
+                                        .padding(vertical = ClientSpacing.sm),
+                                verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
+                            ) {
+                                AppText(
+                                    text = asset.name.takeIf { it.isNotBlank() } ?: "Оборудование",
+                                    style = AppTextStyle.Title,
+                                )
+                                AppText(text = "Выбрать оборудование", style = AppTextStyle.Label)
+                            }
+                        }
+                    }
+                }
+            }
+
         TicketsCreateStep.Form ->
             AppScaffold(
                 title = "Новая заявка",
@@ -312,38 +377,10 @@ fun TicketsScreen(
                             AppText(text = "Нет оборудования в вашем цехе")
                         null -> Unit
                     }
-                    ExposedDropdownMenuBox(
-                        expanded = assetMenuExpanded && createFormEnabled,
-                        onExpandedChange = {
-                            if (createFormEnabled) assetMenuExpanded = !assetMenuExpanded
-                        },
-                    ) {
-                        OutlinedTextField(
-                            value = selectedAsset?.name ?: "",
-                            onValueChange = {},
-                            readOnly = true,
-                            enabled = createFormEnabled,
-                            label = { androidx.compose.material3.Text("Оборудование") },
-                            trailingIcon = {
-                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = assetMenuExpanded)
-                            },
-                            modifier = Modifier.fillMaxWidth().menuAnchor(),
-                        )
-                        ExposedDropdownMenu(
-                            expanded = assetMenuExpanded,
-                            onDismissRequest = { assetMenuExpanded = false },
-                        ) {
-                            assets.forEach { asset ->
-                                DropdownMenuItem(
-                                    text = { androidx.compose.material3.Text(asset.name) },
-                                    onClick = {
-                                        selectedAsset = asset
-                                        assetMenuExpanded = false
-                                    },
-                                )
-                            }
-                        }
-                    }
+                    AppText(
+                        text = selectedAsset?.name?.takeIf { it.isNotBlank() } ?: "Оборудование",
+                        style = AppTextStyle.Title,
+                    )
                     AppTextField(
                         value = description,
                         onValueChange = { description = it },
@@ -352,6 +389,54 @@ fun TicketsScreen(
                         enabled = createFormEnabled,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    if (pendingPhotos.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                        ) {
+                            pendingPhotos.forEachIndexed { index, photo ->
+                                Box(modifier = Modifier.size(96.dp)) {
+                                    val bitmap = remember(photo) {
+                                        runCatching { makeFromEncoded(photo.bytes).toComposeImageBitmap() }.getOrNull()
+                                    }
+                                    if (bitmap != null) {
+                                        Image(
+                                            bitmap = bitmap,
+                                            contentDescription = photo.fileName,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.size(96.dp).padding(ClientSpacing.xs),
+                                        )
+                                    } else {
+                                        AppText(text = photo.fileName, modifier = Modifier.padding(ClientSpacing.sm))
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            pendingPhotos = pendingPhotos.filterIndexed { photoIndex, _ -> photoIndex != index }
+                                        },
+                                    ) {
+                                        AppText(text = "×")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                    ) {
+                        AppButton(
+                            text = "С диска",
+                            variant = AppButtonVariant.Secondary,
+                            enabled = createFormEnabled && pendingPhotos.size < 10 && !acting,
+                            onClick = imagePickers.openGallery,
+                        )
+                        AppButton(
+                            text = "Камера",
+                            variant = AppButtonVariant.Secondary,
+                            enabled = createFormEnabled && pendingPhotos.size < 10 && !acting,
+                            onClick = imagePickers.openCamera,
+                        )
+                    }
                     AppButton(
                         text = if (acting) "Создание…" else "Создать",
                         enabled = createFormEnabled && !acting && selectedAsset != null && description.isNotBlank(),
@@ -361,6 +446,14 @@ fun TicketsScreen(
                                 acting = true
                                 error = null
                                 try {
+                                    val attachmentIds =
+                                        pendingPhotos.map { photo ->
+                                            attachmentsRepository.upload(
+                                                bytes = photo.bytes,
+                                                filename = photo.fileName,
+                                                contentType = photo.contentType,
+                                            ).id
+                                        }
                                     val title =
                                         description.lineSequence().first().trim().take(120).ifBlank { "Заявка" }
                                     repository.create(
@@ -371,10 +464,12 @@ fun TicketsScreen(
                                             siteId = asset.siteId,
                                             dueAt = IsoDates.formatEpochDay(localEpochDay()),
                                             description = description,
+                                            attachmentIds = attachmentIds.ifEmpty { null },
                                         ),
                                     )
                                     description = ""
                                     selectedAsset = null
+                                    pendingPhotos = emptyList()
                                     reloadKey++
                                     createStep = afterSuccessfulCreate(createStep)
                                 } catch (e: Exception) {

@@ -11,6 +11,7 @@ import org.koin.core.context.startKoin
 import org.koin.mp.KoinPlatformTools
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AiMessagesRepository
+import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.ClientEventsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
@@ -48,6 +49,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             AuthenticatedApp(
                 coordinator = koin.get(),
+                attachmentsRepository = koin.get(),
                 adminUsersRepository = koin.get<AdminUsersRepository>(),
                 equipmentRepository = koin.get<EquipmentRepository>(),
                 workOrdersRepository = koin.get<WorkOrdersRepository>(),
