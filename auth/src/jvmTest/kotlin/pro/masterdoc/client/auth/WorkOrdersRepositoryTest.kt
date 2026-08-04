@@ -231,6 +231,66 @@ class WorkOrdersRepositoryTest {
         }
 
     @Test
+    fun createEncodesAttachmentIds() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            var body = ""
+            val http =
+                RecordingGatewayHttpClient { method, url, _, requestBody ->
+                    assertEquals("POST", method)
+                    assertEquals("https://api.test/work-orders", url)
+                    body = requestBody.orEmpty()
+                    GatewayHttpResponse(
+                        200,
+                        """{"id":"wo-1","orgId":"o","type":"emergency","status":"new","title":"Фото","assetId":"a","siteId":"s","dueAt":"2026-07-22","source":"api","createdAt":"t","updatedAt":"t","attachmentIds":["att-1","att-2"]}""",
+                    )
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+
+            val created =
+                repo.create(
+                    CreateWorkOrderRequest(
+                        type = "emergency",
+                        title = "Фото",
+                        assetId = "a",
+                        siteId = "s",
+                        dueAt = "2026-07-22",
+                        attachmentIds = listOf("att-1", "att-2"),
+                    ),
+                )
+
+            val json = Json.parseToJsonElement(body).jsonObject
+            assertEquals("""["att-1","att-2"]""", json["attachmentIds"].toString())
+            assertEquals(listOf("att-1", "att-2"), created.attachmentIds)
+        }
+
+    @Test
+    fun attachPostsAttachmentIds() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            var body = ""
+            val http =
+                RecordingGatewayHttpClient { method, url, _, requestBody ->
+                    assertEquals("POST", method)
+                    assertEquals("https://api.test/work-orders/wo-1/attachments", url)
+                    body = requestBody.orEmpty()
+                    GatewayHttpResponse(
+                        200,
+                        """{"id":"wo-1","orgId":"o","type":"emergency","status":"new","title":"Фото","assetId":"a","siteId":"s","dueAt":"2026-07-22","source":"api","createdAt":"t","updatedAt":"t","attachmentIds":["att-1"]}""",
+                    )
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+
+            val updated = repo.attach("wo-1", listOf("att-1"))
+
+            val json = Json.parseToJsonElement(body).jsonObject
+            assertEquals("""["att-1"]""", json["attachmentIds"].toString())
+            assertEquals(listOf("att-1"), updated.attachmentIds)
+        }
+
+    @Test
     fun managerKpisUsesReportPeriodAndDecodesRanking() =
         runBlocking {
             val tokens = InMemoryTokenStore()

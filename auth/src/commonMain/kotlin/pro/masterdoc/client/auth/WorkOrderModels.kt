@@ -28,6 +28,7 @@ data class WorkOrderDto(
     val updatedAt: String,
     val startedAt: String? = null,
     val closedAt: String? = null,
+    val attachmentIds: List<String> = emptyList(),
 )
 
 @Serializable
@@ -61,6 +62,7 @@ data class CreateWorkOrderRequest(
     val maintenanceMapId: String? = null,
     val maintenanceMapItemId: String? = null,
     val source: String = "manual",
+    val attachmentIds: List<String>? = null,
 )
 
 @Serializable
@@ -165,6 +167,28 @@ class WorkOrdersRepository(
             )
         if (!response.isSuccessful) {
             throw GatewayHttpException(response.status, response.body.ifBlank { "create work order failed" })
+        }
+        return json.decodeFromString(WorkOrderDto.serializer(), response.body)
+    }
+
+    suspend fun attach(orderId: String, attachmentIds: List<String>): WorkOrderDto {
+        val body =
+            buildJsonObject {
+                put(
+                    "attachmentIds",
+                    kotlinx.serialization.json.buildJsonArray {
+                        attachmentIds.forEach { add(JsonPrimitive(it)) }
+                    },
+                )
+            }
+        val response =
+            http.postForm(
+                url = "${base()}/work-orders/$orderId/attachments",
+                body = body.toString(),
+                headers = authJsonHeaders(),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, response.body.ifBlank { "attach work order attachments failed" })
         }
         return json.decodeFromString(WorkOrderDto.serializer(), response.body)
     }

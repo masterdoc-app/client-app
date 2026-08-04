@@ -51,6 +51,13 @@ fun authModule(
             )
         }
         single {
+            AttachmentsRepository(
+                config = get(),
+                http = get(),
+                tokenStore = get(),
+            )
+        }
+        single {
             AiMessagesRepository(
                 config = get(),
                 http = get(),
