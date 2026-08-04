@@ -175,6 +175,7 @@ fun MainShellContent(
                         adminUsersRepository = adminUsersRepository,
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
+                        attachmentsRepository = attachmentsRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsGateway,
                         geocodeRepository = geocodeRepository,
