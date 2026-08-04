@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
@@ -246,11 +247,13 @@ fun TicketsScreen(
                         AppText(
                             text = "Сканировать QR или шильдик",
                             style = AppTextStyle.Title,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         AppText(
                             text = "Нажмите, чтобы открыть камеру",
                             style = AppTextStyle.Label,
+                            textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = ClientSpacing.xs).fillMaxWidth(),
                         )
                         cameraError?.let { message ->

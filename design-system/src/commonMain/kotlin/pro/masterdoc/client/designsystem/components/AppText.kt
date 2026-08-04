@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 
 enum class AppTextStyle {
@@ -21,6 +22,7 @@ fun AppText(
     modifier: Modifier = Modifier,
     style: AppTextStyle = AppTextStyle.Body,
     color: Color = Color.Unspecified,
+    textAlign: TextAlign? = null,
     maxLines: Int = Int.MAX_VALUE,
 ) {
     val resolvedColor =
@@ -38,6 +40,7 @@ fun AppText(
         modifier = modifier,
         style = style.toTextStyle(),
         color = resolvedColor,
+        textAlign = textAlign,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
     )
