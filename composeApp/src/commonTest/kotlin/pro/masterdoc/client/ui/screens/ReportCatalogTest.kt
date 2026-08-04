@@ -2,6 +2,7 @@ package pro.masterdoc.client.ui.screens
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class ReportCatalogTest {
     @Test
@@ -21,5 +22,8 @@ class ReportCatalogTest {
         )
         assertEquals("Сводка KPI", items.first().title)
         assertEquals("Простои оборудования", items.last().title)
+        items.forEach { item ->
+            assertTrue(item.description.isNotBlank(), "description missing for ${item.id}")
+        }
     }
 }

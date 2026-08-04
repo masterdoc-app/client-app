@@ -241,7 +241,19 @@ private fun ReportDetailScreen(
                     error = kpiError,
                 )
             }
+            ReportHelpFooter(text = catalogItem.description)
         }
+    }
+}
+
+@Composable
+private fun ReportHelpFooter(text: String) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = ClientSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
+    ) {
+        AppText(text = "Справка", style = AppTextStyle.Label)
+        AppText(text = text, style = AppTextStyle.Body)
     }
 }
 
