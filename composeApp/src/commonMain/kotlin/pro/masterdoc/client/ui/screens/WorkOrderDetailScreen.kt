@@ -1,12 +1,17 @@
 package pro.masterdoc.client.ui.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -14,6 +19,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -31,12 +38,15 @@ import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.AttachmentsRepository
+import pro.masterdoc.client.auth.CommentsRepository
+import pro.masterdoc.client.auth.CreateWorkOrderCommentRequest
 import pro.masterdoc.client.auth.EngineerLocationSnapshot
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.UserScopesRepository
+import pro.masterdoc.client.auth.WorkOrderCommentDto
 import pro.masterdoc.client.auth.WorkOrderDuration
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
@@ -51,8 +61,10 @@ import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextField
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
-import pro.masterdoc.client.tracking.LocationTrackingController
+import pro.masterdoc.client.platform.PickedImage
+import pro.masterdoc.client.platform.decodePickedImage
 import pro.masterdoc.client.platform.rememberImagePickerLaunchers
+import pro.masterdoc.client.tracking.LocationTrackingController
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -72,6 +84,7 @@ fun WorkOrderDetailScreen(
     locationTrackingController: LocationTrackingController? = null,
     readOnly: Boolean = false,
     attachmentsRepository: AttachmentsRepository? = null,
+    commentsRepository: CommentsRepository? = null,
     modifier: Modifier = Modifier,
 ) {
     var order by remember { mutableStateOf<WorkOrderDto?>(null) }
@@ -83,11 +96,22 @@ fun WorkOrderDetailScreen(
     var directoryUsers by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     var pprMap by remember { mutableStateOf<MaintenanceMapDto?>(null) }
     var uploadingPhoto by remember { mutableStateOf(false) }
+    var comments by remember { mutableStateOf<List<WorkOrderCommentDto>>(emptyList()) }
+    var commentsLoading by remember { mutableStateOf(false) }
+    var commentDraft by remember { mutableStateOf("") }
+    var pendingCommentPhoto by remember { mutableStateOf<PickedImage?>(null) }
+    var sendingComment by remember { mutableStateOf(false) }
+    var pickingCommentPhoto by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val imagePickers =
         rememberImagePickerLaunchers(
             onResult = { picked ->
-                if (picked != null && !uploadingPhoto && (order?.attachmentIds?.size ?: 0) < 10) {
+                if (pickingCommentPhoto) {
+                    pickingCommentPhoto = false
+                    if (picked != null && !sendingComment) {
+                        pendingCommentPhoto = picked
+                    }
+                } else if (picked != null && !uploadingPhoto && (order?.attachmentIds?.size ?: 0) < 10) {
                     scope.launch {
                         uploadingPhoto = true
                         error = null
@@ -131,6 +155,20 @@ fun WorkOrderDetailScreen(
 
     LaunchedEffect(repository, orderId) {
         reload()
+    }
+
+    LaunchedEffect(commentsRepository, orderId) {
+        val commentsRepo = commentsRepository ?: return@LaunchedEffect
+        commentsLoading = true
+        try {
+            comments = commentsRepo.list(orderId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            error = e.message ?: "Не удалось загрузить комментарии"
+        } finally {
+            commentsLoading = false
+        }
     }
 
     LaunchedEffect(equipmentRepository, order?.assetId) {
@@ -259,6 +297,62 @@ fun WorkOrderDetailScreen(
                                 )
                             }
                         }
+                    }
+                    commentsRepository?.let { commentsRepo ->
+                        WorkOrderCommentsSection(
+                            comments = comments,
+                            loading = commentsLoading,
+                            users = directoryUsers,
+                            currentUserId = currentUserId,
+                            draft = commentDraft,
+                            pendingPhoto = pendingCommentPhoto,
+                            sending = sendingComment,
+                            onDraftChange = { commentDraft = it.take(2000) },
+                            onRemovePhoto = { pendingCommentPhoto = null },
+                            onPickFromDisk = {
+                                pickingCommentPhoto = true
+                                imagePickers.openGallery()
+                            },
+                            onPickFromCamera = {
+                                pickingCommentPhoto = true
+                                imagePickers.openCamera()
+                            },
+                            onSubmit = {
+                                if (!canSubmitWorkOrderComment(commentDraft, sendingComment)) return@WorkOrderCommentsSection
+                                scope.launch {
+                                    sendingComment = true
+                                    error = null
+                                    try {
+                                        val attachmentId =
+                                            pendingCommentPhoto?.let { photo ->
+                                                val attachments = attachmentsRepository
+                                                    ?: error("Не удалось добавить фото")
+                                                attachments.upload(
+                                                    bytes = photo.bytes,
+                                                    filename = photo.fileName,
+                                                    contentType = photo.contentType,
+                                                ).id
+                                            }
+                                        commentsRepo.create(
+                                            CreateWorkOrderCommentRequest(
+                                                workOrderId = wo.id,
+                                                text = commentDraft.trim(),
+                                                attachmentId = attachmentId,
+                                            ),
+                                        )
+                                        commentDraft = ""
+                                        pendingCommentPhoto = null
+                                        comments = commentsRepo.list(wo.id)
+                                    } catch (e: CancellationException) {
+                                        throw e
+                                    } catch (e: Exception) {
+                                        error = e.message ?: "Не удалось отправить комментарий"
+                                    } finally {
+                                        sendingComment = false
+                                    }
+                                }
+                            },
+                        )
                     }
                     if (wo.status == "closed" || readOnly) {
                         DetailRow("Длительность, ч", wo.durationHours.toString())
@@ -647,6 +741,99 @@ internal fun filterEngineerEligibleAssignees(
     return candidates.filter { id ->
         val user = byId[id] ?: return@filter true
         "engineer" in user.features
+    }
+}
+
+internal fun canSubmitWorkOrderComment(
+    text: String,
+    sending: Boolean,
+): Boolean = text.isNotBlank() && !sending
+
+@Composable
+private fun WorkOrderCommentsSection(
+    comments: List<WorkOrderCommentDto>,
+    loading: Boolean,
+    users: List<AdminUser>,
+    currentUserId: String?,
+    draft: String,
+    pendingPhoto: PickedImage?,
+    sending: Boolean,
+    onDraftChange: (String) -> Unit,
+    onRemovePhoto: () -> Unit,
+    onPickFromDisk: () -> Unit,
+    onPickFromCamera: () -> Unit,
+    onSubmit: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+        AppText(text = "Комментарии", style = AppTextStyle.Label)
+        when {
+            loading -> CircularProgressIndicator()
+            comments.isEmpty() -> AppText(text = "Нет комментариев")
+            else ->
+                comments.forEach { comment ->
+                    Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs)) {
+                        AppText(
+                            text = "${formatAssigneeLabel(comment.authorId, users, currentUserId)} · ${comment.createdAt}",
+                            style = AppTextStyle.Label,
+                        )
+                        AppText(text = comment.text)
+                        if (comment.attachmentId != null) {
+                            AppText(text = "Фото", style = AppTextStyle.Label)
+                        }
+                    }
+                }
+        }
+        AppTextField(
+            value = draft,
+            onValueChange = onDraftChange,
+            label = "Комментарий",
+            singleLine = false,
+            enabled = !sending,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        pendingPhoto?.let { photo ->
+            Box(modifier = Modifier.size(96.dp)) {
+                val bitmap = remember(photo) { decodePickedImage(photo.bytes) }
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap,
+                        contentDescription = "Фото",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(96.dp).padding(ClientSpacing.xs),
+                    )
+                } else {
+                    AppText(text = "Фото", modifier = Modifier.padding(ClientSpacing.sm))
+                }
+                IconButton(onClick = onRemovePhoto, enabled = !sending) {
+                    AppText(text = "×")
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+        ) {
+            AppButton(
+                text = "С диска",
+                variant = AppButtonVariant.Secondary,
+                onClick = onPickFromDisk,
+                enabled = !sending,
+                fillMaxWidth = false,
+            )
+            AppButton(
+                text = "Камера",
+                variant = AppButtonVariant.Secondary,
+                onClick = onPickFromCamera,
+                enabled = !sending,
+                fillMaxWidth = false,
+            )
+        }
+        AppButton(
+            text = if (sending) "Отправка…" else "Отправить",
+            onClick = onSubmit,
+            enabled = canSubmitWorkOrderComment(draft, sending),
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 

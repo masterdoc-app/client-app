@@ -9,6 +9,7 @@ import pro.masterdoc.client.auth.AiMessagesRepository
 import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.ClientEventsRepository
+import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GeocodeRepository
@@ -45,6 +46,7 @@ fun main() {
         AuthenticatedApp(
             coordinator = coordinator,
             attachmentsRepository = koinApp.koin.get<AttachmentsRepository>(),
+            commentsRepository = koinApp.koin.get<CommentsRepository>(),
             adminUsersRepository = adminUsers,
             equipmentRepository = equipment,
             workOrdersRepository = workOrders,

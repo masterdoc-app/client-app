@@ -28,6 +28,7 @@ import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.AuthCoordinator
 import pro.masterdoc.client.auth.BrowserNav
 import pro.masterdoc.client.auth.ClientEventsRepository
+import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GeocodeRepository
@@ -75,6 +76,7 @@ fun AuthenticatedApp(
     equipmentRepository: EquipmentRepository,
     workOrdersRepository: WorkOrdersRepository,
     attachmentsRepository: AttachmentsRepository,
+    commentsRepository: CommentsRepository,
     userScopesRepository: UserScopesRepository,
     clientEventsRepository: ClientEventsRepository? = null,
     engineerLocationsRepository: EngineerLocationsRepository? = null,
@@ -120,6 +122,7 @@ fun AuthenticatedApp(
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
                         attachmentsRepository = attachmentsRepository,
+                        commentsRepository = commentsRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsRepository,
                         geocodeRepository = geocodeRepository,

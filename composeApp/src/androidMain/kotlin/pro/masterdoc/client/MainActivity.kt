@@ -13,6 +13,7 @@ import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AiMessagesRepository
 import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.ClientEventsRepository
+import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GeocodeRepository
@@ -50,6 +51,7 @@ class MainActivity : ComponentActivity() {
             AuthenticatedApp(
                 coordinator = koin.get(),
                 attachmentsRepository = koin.get(),
+                commentsRepository = koin.get<CommentsRepository>(),
                 adminUsersRepository = koin.get<AdminUsersRepository>(),
                 equipmentRepository = koin.get<EquipmentRepository>(),
                 workOrdersRepository = koin.get<WorkOrdersRepository>(),

@@ -35,6 +35,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.AttachmentsRepository
+import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.CreateWorkOrderRequest
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
@@ -94,6 +95,7 @@ fun TicketsScreen(
     repository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository,
     attachmentsRepository: AttachmentsRepository,
+    commentsRepository: CommentsRepository?,
     currentUserId: String?,
     userScopesRepository: UserScopesRepository? = null,
     onOpenAssetQr: (String) -> Unit = {},
@@ -193,6 +195,7 @@ fun TicketsScreen(
             repository = repository,
             orderId = orderId,
             attachmentsRepository = attachmentsRepository,
+            commentsRepository = commentsRepository,
             onBack = { selectedOrderId = null },
             equipmentRepository = equipmentRepository,
             currentUserId = currentUserId,

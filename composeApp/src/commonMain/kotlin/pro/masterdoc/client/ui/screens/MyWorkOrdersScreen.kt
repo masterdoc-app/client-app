@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.AttachmentsRepository
+import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
@@ -37,6 +38,7 @@ fun MyWorkOrdersScreen(
     repository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository?,
     attachmentsRepository: AttachmentsRepository? = null,
+    commentsRepository: CommentsRepository? = null,
     currentUserId: String?,
     onOpenEquipment: (String) -> Unit = {},
     locationTrackingController: LocationTrackingController? = null,
@@ -95,6 +97,7 @@ fun MyWorkOrdersScreen(
             currentUserId = currentUserId,
             equipmentRepository = equipmentRepository,
             attachmentsRepository = attachmentsRepository,
+            commentsRepository = commentsRepository,
             onOpenMentor = { mentorOpen = true },
             onOpenEquipment = onOpenEquipment,
             readOnly = false,

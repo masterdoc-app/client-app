@@ -32,6 +32,7 @@ import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AiMessagesRepository
 import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.BrowserNav
+import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.EngineerLocationsGateway
 import pro.masterdoc.client.auth.GeocodeRepository
@@ -77,6 +78,7 @@ fun MainShellContent(
     equipmentRepository: EquipmentRepository? = null,
     workOrdersRepository: WorkOrdersRepository? = null,
     attachmentsRepository: AttachmentsRepository? = null,
+    commentsRepository: CommentsRepository? = null,
     userScopesRepository: UserScopesRepository? = null,
     engineerLocationsGateway: EngineerLocationsGateway? = null,
     geocodeRepository: GeocodeRepository? = null,
@@ -131,6 +133,7 @@ fun MainShellContent(
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
                         attachmentsRepository = attachmentsRepository,
+                        commentsRepository = commentsRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsGateway,
                         geocodeRepository = geocodeRepository,
@@ -176,6 +179,7 @@ fun MainShellContent(
                         equipmentRepository = equipmentRepository,
                         workOrdersRepository = workOrdersRepository,
                         attachmentsRepository = attachmentsRepository,
+                        commentsRepository = commentsRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsGateway,
                         geocodeRepository = geocodeRepository,
@@ -218,6 +222,7 @@ private fun ActivePage(
     equipmentRepository: EquipmentRepository?,
     workOrdersRepository: WorkOrdersRepository?,
     attachmentsRepository: AttachmentsRepository?,
+    commentsRepository: CommentsRepository?,
     userScopesRepository: UserScopesRepository?,
     engineerLocationsGateway: EngineerLocationsGateway?,
     geocodeRepository: GeocodeRepository?,
@@ -250,6 +255,7 @@ private fun ActivePage(
                     repository = workOrdersRepository,
                     equipmentRepository = equipmentRepository,
                     attachmentsRepository = attachmentsRepository,
+                    commentsRepository = commentsRepository,
                     currentUserId = session.user?.id,
                     onOpenEquipment = onOpenEquipment,
                     locationTrackingController = locationTrackingController,
@@ -265,6 +271,7 @@ private fun ActivePage(
                             repository = workOrdersRepository,
                             equipmentRepository = equipmentRepository,
                             attachmentsRepository = attachmentsRepository,
+                            commentsRepository = commentsRepository,
                             currentUserId = session.user?.id,
                             userScopesRepository = userScopesRepository,
                             onOpenAssetQr = onOpenAssetQr,
@@ -356,6 +363,7 @@ private fun ActivePage(
                             userScopesRepository = userScopesRepository,
                             equipmentRepository = equipmentRepository,
                             attachmentsRepository = attachmentsRepository,
+                            commentsRepository = commentsRepository,
                             adminUsersRepository = adminUsersRepository,
                             hasAdminUsers = FeatureId.Users in session.features,
                             currentUserId = session.user?.id,
