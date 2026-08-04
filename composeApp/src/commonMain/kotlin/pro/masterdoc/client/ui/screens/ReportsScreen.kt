@@ -32,11 +32,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.AdminUser
+import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.DowntimeIntervalDto
+import pro.masterdoc.client.auth.EngineerWorkloadReport
 import pro.masterdoc.client.auth.EquipmentRepository
+import pro.masterdoc.client.auth.FailureFrequencyReport
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.IsoDates
+import pro.masterdoc.client.auth.KpiTrendsReport
 import pro.masterdoc.client.auth.ManagerKpis
+import pro.masterdoc.client.auth.ReactiveCompletionReport
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppButtonVariant
@@ -50,6 +56,16 @@ private const val TimelineDayWidth = 20
 private const val EquipmentLabelWidth = 148
 private val ClosedBarColor = Color(0xFF4F8A75)
 private val OpenBarColor = Color(0xFFD47A4A)
+
+private sealed interface MarketLeaderReport {
+    data class KpiTrends(val value: KpiTrendsReport) : MarketLeaderReport
+
+    data class ReactiveCompletion(val value: ReactiveCompletionReport) : MarketLeaderReport
+
+    data class EngineerWorkload(val value: EngineerWorkloadReport) : MarketLeaderReport
+
+    data class FailureFrequency(val value: FailureFrequencyReport) : MarketLeaderReport
+}
 
 internal data class DowntimeRow(
     val assetId: String,
@@ -103,6 +119,7 @@ internal fun buildDowntimeRows(
 fun ReportsScreen(
     reportsRepository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository,
+    adminUsersRepository: AdminUsersRepository? = null,
     modifier: Modifier = Modifier,
 ) {
     var selectedReport by remember { mutableStateOf<ReportId?>(null) }
@@ -112,6 +129,7 @@ fun ReportsScreen(
             reportId = reportId,
             reportsRepository = reportsRepository,
             equipmentRepository = equipmentRepository,
+            adminUsersRepository = adminUsersRepository,
             onBack = { selectedReport = null },
             modifier = modifier,
         )
@@ -146,6 +164,7 @@ private fun ReportDetailScreen(
     reportId: ReportId,
     reportsRepository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository,
+    adminUsersRepository: AdminUsersRepository?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -158,6 +177,10 @@ private fun ReportDetailScreen(
     var assets by remember { mutableStateOf<List<AssetDto>>(emptyList()) }
     var kpiLoading by remember { mutableStateOf(true) }
     var kpiError by remember { mutableStateOf<String?>(null) }
+    var marketLeaderReport by remember { mutableStateOf<MarketLeaderReport?>(null) }
+    var marketLeaderLoading by remember { mutableStateOf(false) }
+    var marketLeaderError by remember { mutableStateOf<String?>(null) }
+    var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     val today = localEpochDay()
     val fromDay = today - days + 1
 
@@ -168,6 +191,9 @@ private fun ReportDetailScreen(
         kpiLoading = true
         kpiError = null
         kpis = null
+        marketLeaderReport = null
+        marketLeaderError = null
+        marketLeaderLoading = reportId.isMarketLeaderReport()
         val from = IsoDates.formatEpochDay(fromDay)
         val to = IsoDates.formatEpochDay(today)
         val loadedAssets =
@@ -181,7 +207,7 @@ private fun ReportDetailScreen(
                 emptyList()
             }
         assets = loadedAssets
-        if (reportId != ReportId.EquipmentDowntime) {
+        if (reportId.isLegacyKpiReport()) {
             try {
                 kpis = reportsRepository.managerKpis(from = from, to = to)
             } catch (e: CancellationException) {
@@ -212,6 +238,32 @@ private fun ReportDetailScreen(
         } else {
             loading = false
         }
+        if (reportId.isMarketLeaderReport()) {
+            try {
+                marketLeaderReport =
+                    when (reportId) {
+                        ReportId.KpiTrends -> MarketLeaderReport.KpiTrends(reportsRepository.kpiTrends(from, to))
+                        ReportId.ReactiveCompletion ->
+                            MarketLeaderReport.ReactiveCompletion(reportsRepository.reactiveCompletion(from, to))
+                        ReportId.EngineerWorkload ->
+                            MarketLeaderReport.EngineerWorkload(reportsRepository.engineerWorkload(from, to))
+                        ReportId.FailureFrequency ->
+                            MarketLeaderReport.FailureFrequency(reportsRepository.failureFrequency(from, to))
+                        else -> null
+                    }
+                if (reportId == ReportId.EngineerWorkload && adminUsersRepository != null) {
+                    users = runCatching { adminUsersRepository.listUsers(limit = 200).items }.getOrDefault(emptyList())
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: GatewayHttpException) {
+                marketLeaderError = e.message ?: "Не удалось загрузить отчёт"
+            } catch (e: Exception) {
+                marketLeaderError = e.message ?: "Не удалось загрузить отчёт"
+            } finally {
+                marketLeaderLoading = false
+            }
+        }
     }
 
     AppScaffold(title = catalogItem.title, onNavigateBack = onBack, modifier = modifier) { padding ->
@@ -232,13 +284,21 @@ private fun ReportDetailScreen(
                     rows.isEmpty() -> EmptyReportsState()
                     else -> DowntimeTimeline(rows = rows, fromDay = fromDay, toDay = today)
                 }
-            } else {
+            } else if (reportId.isLegacyKpiReport()) {
                 ManagerKpiSections(
                     reportId = reportId,
                     kpis = kpis,
                     assets = assets,
                     loading = kpiLoading,
                     error = kpiError,
+                )
+            } else {
+                MarketLeaderReportSection(
+                    report = marketLeaderReport,
+                    assets = assets,
+                    users = users,
+                    loading = marketLeaderLoading,
+                    error = marketLeaderError,
                 )
             }
             ReportHelpFooter(text = catalogItem.description)
@@ -272,6 +332,7 @@ private fun ManagerKpiSections(
         ReportId.Backlog -> { kpis -> KpiBacklog(kpis) }
         ReportId.DowntimeRanking -> { kpis -> KpiDowntimeRanking(kpis, assets) }
         ReportId.EquipmentDowntime -> { _ -> }
+        else -> { _ -> }
     }
     AppText(
         text = reportCatalogItems().first { it.id == reportId }.title,
@@ -284,6 +345,113 @@ private fun ManagerKpiSections(
         else -> {
             AppText(text = "Период: с ${kpis.from} по ${kpis.to}", style = AppTextStyle.Label)
             section(kpis)
+        }
+    }
+}
+
+private fun ReportId.isLegacyKpiReport(): Boolean =
+    this in
+        setOf(
+            ReportId.KpiSummary,
+            ReportId.PlannedVsEmergency,
+            ReportId.PprCompliance,
+            ReportId.Backlog,
+            ReportId.DowntimeRanking,
+        )
+
+private fun ReportId.isMarketLeaderReport(): Boolean =
+    this in
+        setOf(
+            ReportId.KpiTrends,
+            ReportId.ReactiveCompletion,
+            ReportId.EngineerWorkload,
+            ReportId.FailureFrequency,
+        )
+
+@Composable
+private fun MarketLeaderReportSection(
+    report: MarketLeaderReport?,
+    assets: List<AssetDto>,
+    users: List<AdminUser>,
+    loading: Boolean,
+    error: String?,
+) {
+    when {
+        loading -> CircularProgressIndicator()
+        error != null -> AppText(text = error)
+        report == null -> EmptyKpiChartState()
+        else ->
+            when (report) {
+                is MarketLeaderReport.KpiTrends -> KpiTrends(report.value)
+                is MarketLeaderReport.ReactiveCompletion -> ReactiveCompletion(report.value)
+                is MarketLeaderReport.EngineerWorkload -> EngineerWorkload(report.value, users)
+                is MarketLeaderReport.FailureFrequency -> FailureFrequency(report.value, assets)
+            }
+    }
+}
+
+@Composable
+private fun KpiTrends(report: KpiTrendsReport) {
+    AppText(text = "Динамика MTTR", style = AppTextStyle.Title)
+    val last = report.points.lastOrNull()
+    KpiValue("Последний MTTR", last?.let { formatManagerKpiMetric(it.mttrHours, it.mttrSampleSize, " ч") } ?: "н/д")
+    KpiValue("Последний MTBF", last?.let { formatManagerKpiMetric(it.mtbfHours, it.mtbfSampleSize, " ч") } ?: "н/д")
+    KpiValue("Последняя готовность", last?.let { formatPercent(it.availabilityPercent) } ?: "н/д")
+    val points = kpiTrendChartPoints(report.points)
+    if (points.isEmpty()) {
+        EmptyKpiChartState()
+    } else {
+        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
+    }
+}
+
+@Composable
+private fun ReactiveCompletion(report: ReactiveCompletionReport) {
+    AppText(text = "Реактивность и закрытие", style = AppTextStyle.Title)
+    KpiValue("Создано", "${report.createdCount} заявок")
+    KpiValue("Закрыто", "${report.closedCount} заявок")
+    KpiValue(
+        "Доля закрытых",
+        if (report.createdCount == 0) "н/д" else formatPercent(report.completionRatePercent),
+    )
+    KpiValue(
+        "Аварийные",
+        if (report.emergencyCount + report.plannedCount == 0) "н/д" else formatPercent(report.reactivePercent),
+    )
+    val points = reactiveCompletionChartPoints(report.emergencyCount, report.plannedCount)
+    if (hasNonZeroChartSeries(points)) {
+        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
+    } else {
+        EmptyKpiChartState()
+    }
+}
+
+@Composable
+private fun EngineerWorkload(report: EngineerWorkloadReport, users: List<AdminUser>) {
+    AppText(text = "Нагрузка инженеров", style = AppTextStyle.Title)
+    val points = engineerWorkloadChartPoints(report.engineers) { userId ->
+        formatAssigneeLabel(userId, users).takeUnless { it == "Пользователь" } ?: "Инженер"
+    }
+    if (points.isEmpty()) {
+        EmptyKpiChartState()
+    } else {
+        ReportHorizontalBarChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
+        report.engineers.zip(points).forEach { (row, point) ->
+            KpiValue(point.label, "${row.closedCount} заявок · ${formatHours(row.hours)}")
+        }
+    }
+}
+
+@Composable
+private fun FailureFrequency(report: FailureFrequencyReport, assets: List<AssetDto>) {
+    AppText(text = "Частота отказов", style = AppTextStyle.Title)
+    val points = failureFrequencyChartPoints(report.assets, assets)
+    if (points.isEmpty()) {
+        EmptyKpiChartState()
+    } else {
+        ReportHorizontalBarChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
+        report.assets.zip(points).forEach { (row, point) ->
+            KpiValue(point.label, "${row.emergencyCount} аварийных заявок")
         }
     }
 }

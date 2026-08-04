@@ -7,6 +7,10 @@ enum class ReportId {
     Backlog,
     DowntimeRanking,
     EquipmentDowntime,
+    KpiTrends,
+    ReactiveCompletion,
+    EngineerWorkload,
+    FailureFrequency,
 }
 
 data class ReportCatalogItem(
@@ -66,5 +70,36 @@ fun reportCatalogItems(): List<ReportCatalogItem> =
             description =
                 "Шкала по дням: для каждого оборудования показаны интервалы простоя. " +
                     "Зелёный — закрытый ремонт, оранжевый — ещё в работе.",
+        ),
+        ReportCatalogItem(
+            id = ReportId.KpiTrends,
+            title = "Динамика KPI",
+            subtitle = "MTTR, MTBF, готовность во времени",
+            description =
+                "Показывает изменения MTTR, MTBF и готовности оборудования по дням или неделям " +
+                    "за выбранный период.",
+        ),
+        ReportCatalogItem(
+            id = ReportId.ReactiveCompletion,
+            title = "Реактивность и закрытие",
+            subtitle = "% аварийных и доля закрытых",
+            description =
+                "Показывает, какую долю созданных заявок составляют аварийные, " +
+                    "и сколько заявок удалось закрыть за выбранный период.",
+        ),
+        ReportCatalogItem(
+            id = ReportId.EngineerWorkload,
+            title = "Нагрузка инженеров",
+            subtitle = "Заявки и часы по людям",
+            description =
+                "Сравнивает нагрузку инженеров: сколько заявок каждый закрыл и сколько часов " +
+                    "заняла работа за выбранный период.",
+        ),
+        ReportCatalogItem(
+            id = ReportId.FailureFrequency,
+            title = "Частота отказов",
+            subtitle = "Топ оборудования по авариям",
+            description =
+                "Ранжирует оборудование по числу аварийных заявок, созданных за выбранный период.",
         ),
     )

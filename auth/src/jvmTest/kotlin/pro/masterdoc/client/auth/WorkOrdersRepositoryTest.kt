@@ -337,4 +337,40 @@ class WorkOrdersRepositoryTest {
             assertEquals("asset-1", report.downtimeRanking.single().assetId)
             assertEquals(18.5, report.downtimeRanking.single().downtimeHours)
         }
+
+    @Test
+    fun marketLeaderReportsUseExactEndpointsAndDecodeContracts() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val responses =
+                mapOf(
+                    "/reports/kpi-trends?from=2026-07-01&to=2026-07-31" to
+                        """{"bucket":"day","points":[{"bucketStart":"2026-07-01","mttrHours":4.5,"mttrSampleSize":3,"mtbfHours":80.0,"mtbfSampleSize":3,"availabilityPercent":92.1}]}""",
+                    "/reports/reactive-completion?from=2026-07-01&to=2026-07-31" to
+                        """{"createdCount":120,"closedCount":95,"completionRatePercent":79.2,"emergencyCount":40,"plannedCount":80,"reactivePercent":33.3}""",
+                    "/reports/engineer-workload?from=2026-07-01&to=2026-07-31" to
+                        """{"engineers":[{"userId":"engineer-1","closedCount":12,"hours":34.5}]}""",
+                    "/reports/failure-frequency?from=2026-07-01&to=2026-07-31" to
+                        """{"assets":[{"assetId":"asset-1","emergencyCount":7}]}""",
+                )
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    val path = url.removePrefix("https://api.test")
+                    GatewayHttpResponse(200, responses.getValue(path))
+                }
+            val repo = WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+
+            val trends = repo.kpiTrends("2026-07-01", "2026-07-31")
+            val reactive = repo.reactiveCompletion("2026-07-01", "2026-07-31")
+            val workload = repo.engineerWorkload("2026-07-01", "2026-07-31")
+            val frequency = repo.failureFrequency("2026-07-01", "2026-07-31")
+
+            assertEquals("day", trends.bucket)
+            assertEquals(4.5, trends.points.single().mttrHours)
+            assertEquals(79.2, reactive.completionRatePercent)
+            assertEquals("engineer-1", workload.engineers.single().userId)
+            assertEquals(7, frequency.assets.single().emergencyCount)
+        }
 }

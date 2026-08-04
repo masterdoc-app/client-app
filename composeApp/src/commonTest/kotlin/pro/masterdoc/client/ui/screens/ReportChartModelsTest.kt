@@ -3,6 +3,9 @@ package pro.masterdoc.client.ui.screens
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.EngineerWorkloadRow
+import pro.masterdoc.client.auth.FailureFrequencyRow
+import pro.masterdoc.client.auth.KpiTrendPoint
 import pro.masterdoc.client.auth.ManagerKpiDowntimeRow
 import pro.masterdoc.client.auth.ManagerKpis
 
@@ -60,6 +63,39 @@ class ReportChartModelsTest {
         assertEquals("Насос №1", points.single().label)
         assertEquals(false, points.single().label.contains("a1"))
         assertEquals(18.5f, points.single().value)
+    }
+
+    @Test
+    fun kpiTrendSeriesUsesMttrOnlyAndSkipsMissingSamples() {
+        val points =
+            kpiTrendChartPoints(
+                listOf(
+                    KpiTrendPoint("2026-07-01", 4.5, 2, 80.0, 2, 92.1),
+                    KpiTrendPoint("2026-07-02", 0.0, 0, 0.0, 0, 91.0),
+                ),
+            )
+
+        assertEquals(listOf("01.07"), points.map { it.label })
+        assertEquals(listOf(4.5f), points.map { it.value })
+    }
+
+    @Test
+    fun workloadAndFailureMappersUseHumanLabelsNeverIds() {
+        val workload =
+            engineerWorkloadChartPoints(
+                rows = listOf(EngineerWorkloadRow("engineer-uuid", 12, 34.5)),
+                labelForUser = { "Инженер" },
+            )
+        val failure =
+            failureFrequencyChartPoints(
+                rows = listOf(FailureFrequencyRow("asset-uuid", 7)),
+                assets = emptyList(),
+            )
+
+        assertEquals("Инженер", workload.single().label)
+        assertEquals(12f, workload.single().value)
+        assertEquals("Оборудование", failure.single().label)
+        assertEquals(7f, failure.single().value)
     }
 
     private fun sampleKpis(

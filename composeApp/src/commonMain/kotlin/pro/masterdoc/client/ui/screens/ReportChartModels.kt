@@ -1,6 +1,9 @@
 package pro.masterdoc.client.ui.screens
 
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.EngineerWorkloadRow
+import pro.masterdoc.client.auth.FailureFrequencyRow
+import pro.masterdoc.client.auth.KpiTrendPoint
 import pro.masterdoc.client.auth.ManagerKpis
 
 fun kpiSummaryChartPoints(kpis: ManagerKpis): List<ReportChartPoint> =
@@ -40,6 +43,49 @@ fun downtimeRankingChartPoints(
         ReportChartPoint(
             label = namesById[row.assetId] ?: "Оборудование",
             value = row.downtimeHours.toFloat(),
+        )
+    }
+}
+
+fun kpiTrendChartPoints(points: List<KpiTrendPoint>): List<ReportChartPoint> =
+    points.mapNotNull { point ->
+        point.mttrHours.takeIf { point.mttrSampleSize > 0 }?.let { mttrHours ->
+            ReportChartPoint(
+                label = point.bucketStart.takeLast(5).split("-").reversed().joinToString("."),
+                value = mttrHours.toFloat(),
+            )
+        }
+    }
+
+fun reactiveCompletionChartPoints(
+    emergencyCount: Int,
+    plannedCount: Int,
+): List<ReportChartPoint> =
+    listOf(
+        ReportChartPoint("Плановые", plannedCount.toFloat()),
+        ReportChartPoint("Аварийные", emergencyCount.toFloat()),
+    )
+
+fun engineerWorkloadChartPoints(
+    rows: List<EngineerWorkloadRow>,
+    labelForUser: (String) -> String,
+): List<ReportChartPoint> =
+    rows.map { row ->
+        ReportChartPoint(
+            label = labelForUser(row.userId),
+            value = row.closedCount.toFloat(),
+        )
+    }
+
+fun failureFrequencyChartPoints(
+    rows: List<FailureFrequencyRow>,
+    assets: List<AssetDto>,
+): List<ReportChartPoint> {
+    val namesById = assets.associate { it.id to it.displayName() }
+    return rows.map { row ->
+        ReportChartPoint(
+            label = namesById[row.assetId] ?: "Оборудование",
+            value = row.emergencyCount.toFloat(),
         )
     }
 }

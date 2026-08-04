@@ -158,6 +158,60 @@ class WorkOrdersRepository(
         return json.decodeFromString(ManagerKpis.serializer(), response.body)
     }
 
+    suspend fun kpiTrends(from: String, to: String): KpiTrendsReport =
+        getReport(
+            path = "kpi-trends",
+            from = from,
+            to = to,
+            serializer = KpiTrendsReport.serializer(),
+            failureMessage = "KPI trends report failed",
+        )
+
+    suspend fun reactiveCompletion(from: String, to: String): ReactiveCompletionReport =
+        getReport(
+            path = "reactive-completion",
+            from = from,
+            to = to,
+            serializer = ReactiveCompletionReport.serializer(),
+            failureMessage = "reactive completion report failed",
+        )
+
+    suspend fun engineerWorkload(from: String, to: String): EngineerWorkloadReport =
+        getReport(
+            path = "engineer-workload",
+            from = from,
+            to = to,
+            serializer = EngineerWorkloadReport.serializer(),
+            failureMessage = "engineer workload report failed",
+        )
+
+    suspend fun failureFrequency(from: String, to: String): FailureFrequencyReport =
+        getReport(
+            path = "failure-frequency",
+            from = from,
+            to = to,
+            serializer = FailureFrequencyReport.serializer(),
+            failureMessage = "failure frequency report failed",
+        )
+
+    private suspend fun <T> getReport(
+        path: String,
+        from: String,
+        to: String,
+        serializer: kotlinx.serialization.KSerializer<T>,
+        failureMessage: String,
+    ): T {
+        val response =
+            http.get(
+                url = "${base()}/reports/$path?from=$from&to=$to",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, response.body.ifBlank { failureMessage })
+        }
+        return json.decodeFromString(serializer, response.body)
+    }
+
     suspend fun create(request: CreateWorkOrderRequest): WorkOrderDto {
         val response =
             http.postForm(
