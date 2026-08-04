@@ -249,6 +249,7 @@ private fun ActivePage(
                 MyWorkOrdersScreen(
                     repository = workOrdersRepository,
                     equipmentRepository = equipmentRepository,
+                    attachmentsRepository = attachmentsRepository,
                     currentUserId = session.user?.id,
                     onOpenEquipment = onOpenEquipment,
                     locationTrackingController = locationTrackingController,
@@ -353,6 +354,7 @@ private fun ActivePage(
                             repository = workOrdersRepository,
                             userScopesRepository = userScopesRepository,
                             equipmentRepository = equipmentRepository,
+                            attachmentsRepository = attachmentsRepository,
                             adminUsersRepository = adminUsersRepository,
                             hasAdminUsers = FeatureId.Users in session.features,
                             currentUserId = session.user?.id,

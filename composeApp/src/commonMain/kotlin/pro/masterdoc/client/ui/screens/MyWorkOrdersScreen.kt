@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.GatewayHttpException
+import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
@@ -35,6 +36,7 @@ import pro.masterdoc.client.tracking.LocationTrackingController
 fun MyWorkOrdersScreen(
     repository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository?,
+    attachmentsRepository: AttachmentsRepository? = null,
     currentUserId: String?,
     onOpenEquipment: (String) -> Unit = {},
     locationTrackingController: LocationTrackingController? = null,
@@ -92,6 +94,7 @@ fun MyWorkOrdersScreen(
             locationTrackingController = locationTrackingController,
             currentUserId = currentUserId,
             equipmentRepository = equipmentRepository,
+            attachmentsRepository = attachmentsRepository,
             onOpenMentor = { mentorOpen = true },
             onOpenEquipment = onOpenEquipment,
             readOnly = false,

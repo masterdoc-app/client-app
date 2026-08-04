@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.EngineerLocationSnapshot
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
@@ -51,6 +52,7 @@ import pro.masterdoc.client.designsystem.components.AppTextField
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 import pro.masterdoc.client.tracking.LocationTrackingController
+import pro.masterdoc.client.platform.rememberImagePickerLaunchers
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -69,6 +71,7 @@ fun WorkOrderDetailScreen(
     editableAssignee: Boolean = false,
     locationTrackingController: LocationTrackingController? = null,
     readOnly: Boolean = false,
+    attachmentsRepository: AttachmentsRepository? = null,
     modifier: Modifier = Modifier,
 ) {
     var order by remember { mutableStateOf<WorkOrderDto?>(null) }
@@ -79,7 +82,36 @@ fun WorkOrderDetailScreen(
     var sites by remember { mutableStateOf<List<SiteDto>>(emptyList()) }
     var directoryUsers by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     var pprMap by remember { mutableStateOf<MaintenanceMapDto?>(null) }
+    var uploadingPhoto by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val imagePickers =
+        rememberImagePickerLaunchers(
+            onResult = { picked ->
+                if (picked != null && !uploadingPhoto && (order?.attachmentIds?.size ?: 0) < 10) {
+                    scope.launch {
+                        uploadingPhoto = true
+                        error = null
+                        try {
+                            val attachment =
+                                attachmentsRepository?.upload(
+                                    bytes = picked.bytes,
+                                    filename = picked.fileName,
+                                    contentType = picked.contentType,
+                                ) ?: return@launch
+                            repository.attach(orderId, listOf(attachment.id))
+                            order = repository.get(orderId)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            error = e.message ?: "Не удалось добавить фото"
+                        } finally {
+                            uploadingPhoto = false
+                        }
+                    }
+                }
+            },
+            onError = { error = it },
+        )
 
     fun reload() {
         scope.launch {
@@ -201,6 +233,32 @@ fun WorkOrderDetailScreen(
                     wo.description?.takeIf { it.isNotBlank() }?.let { desc ->
                         AppText(text = "Описание", style = AppTextStyle.Label)
                         AppText(text = desc)
+                    }
+                    if (wo.attachmentIds.isNotEmpty() || attachmentsRepository != null) {
+                        Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+                            AppText(text = "Фото", style = AppTextStyle.Label)
+                            if (wo.attachmentIds.isEmpty()) {
+                                AppText(text = "Нет фото")
+                            } else {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                                    verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
+                                ) {
+                                    wo.attachmentIds.forEachIndexed { index, _ ->
+                                        AppText(text = "Фото ${index + 1}", style = AppTextStyle.Body)
+                                    }
+                                }
+                            }
+                            if (attachmentsRepository != null && wo.attachmentIds.size < 10) {
+                                AppButton(
+                                    text = if (uploadingPhoto) "Загрузка…" else "Добавить фото",
+                                    onClick = imagePickers.openGallery,
+                                    enabled = !uploadingPhoto,
+                                    variant = AppButtonVariant.Secondary,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
                     }
                     if (wo.status == "closed" || readOnly) {
                         DetailRow("Длительность, ч", wo.durationHours.toString())

@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.BoardWeekDto
+import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.IsoDates
 import pro.masterdoc.client.auth.WeekClip
@@ -82,6 +83,7 @@ fun BoardScreen(
     repository: WorkOrdersRepository,
     userScopesRepository: UserScopesRepository? = null,
     equipmentRepository: EquipmentRepository? = null,
+    attachmentsRepository: AttachmentsRepository? = null,
     adminUsersRepository: AdminUsersRepository? = null,
     hasAdminUsers: Boolean = false,
     currentUserId: String? = null,
@@ -139,6 +141,7 @@ fun BoardScreen(
             userScopesRepository = userScopesRepository,
             adminUsersRepository = adminUsersRepository,
             equipmentRepository = equipmentRepository,
+            attachmentsRepository = attachmentsRepository,
             currentUserId = currentUserId,
             onOpenMentor = { mentorOpen = true },
             onOpenEquipment = onOpenEquipment,

@@ -192,6 +192,7 @@ fun TicketsScreen(
         WorkOrderDetailScreen(
             repository = repository,
             orderId = orderId,
+            attachmentsRepository = attachmentsRepository,
             onBack = { selectedOrderId = null },
             equipmentRepository = equipmentRepository,
             currentUserId = currentUserId,
