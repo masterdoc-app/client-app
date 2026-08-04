@@ -415,7 +415,7 @@ private fun ReactiveCompletion(report: ReactiveCompletionReport) {
         if (report.createdCount == 0) "н/д" else formatPercent(report.completionRatePercent),
     )
     KpiValue(
-        "Аварийные",
+        "Доля аварийных",
         if (report.emergencyCount + report.plannedCount == 0) "н/д" else formatPercent(report.reactivePercent),
     )
     val points = reactiveCompletionChartPoints(report.emergencyCount, report.plannedCount)
