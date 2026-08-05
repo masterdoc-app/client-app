@@ -265,7 +265,7 @@ fun WorkOrderDetailScreen(
                                 },
                         )
                     }
-                    AppText(text = wo.title, style = AppTextStyle.Title)
+                    AppText(text = formatWorkOrderDisplayTitle(wo.title), style = AppTextStyle.Title)
                     wo.description?.takeIf { it.isNotBlank() }?.let { desc ->
                         AppText(text = "Описание", style = AppTextStyle.Label)
                         AppText(text = desc)

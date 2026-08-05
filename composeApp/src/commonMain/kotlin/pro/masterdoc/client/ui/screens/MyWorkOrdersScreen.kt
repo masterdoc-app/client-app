@@ -126,7 +126,7 @@ fun MyWorkOrdersScreen(
                                     .padding(vertical = ClientSpacing.sm),
                             verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
                         ) {
-                            AppText(text = order.title, style = AppTextStyle.Title)
+                            AppText(text = formatWorkOrderDisplayTitle(order.title), style = AppTextStyle.Title)
                             AppText(text = "${workOrderTypeLabelRu(order.type)} · ${order.dueAt}")
                             AppStatusChip(
                                 text = workOrderStatusLabelRu(order.status),
