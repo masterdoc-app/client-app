@@ -50,3 +50,5 @@ fun afterSuccessfulCreate(step: TicketsCreateStep): TicketsCreateStep =
         TicketsCreateStep.Form -> TicketsCreateStep.List
         else -> step
     }
+
+fun togglePhotoSourceActions(expanded: Boolean): Boolean = !expanded

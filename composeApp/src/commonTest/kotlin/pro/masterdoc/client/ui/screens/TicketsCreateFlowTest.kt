@@ -43,4 +43,10 @@ class TicketsCreateFlowTest {
     fun afterSuccessfulCreateFromFormGoesToList() {
         assertEquals(TicketsCreateStep.List, afterSuccessfulCreate(TicketsCreateStep.Form))
     }
+
+    @Test
+    fun photoSourceActionsToggleOpenAndClosed() {
+        assertEquals(true, togglePhotoSourceActions(false))
+        assertEquals(false, togglePhotoSourceActions(true))
+    }
 }

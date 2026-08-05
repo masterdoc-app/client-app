@@ -116,6 +116,7 @@ fun TicketsScreen(
     var pendingQrToken by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableStateOf(0) }
     var createStep by remember { mutableStateOf(defaultTicketsCreateStep()) }
+    var photoSourceActionsExpanded by remember { mutableStateOf(false) }
     var cameraError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val imagePickers =
@@ -187,6 +188,12 @@ fun TicketsScreen(
             error = e.message ?: "Ошибка загрузки заявок"
         } finally {
             loading = false
+        }
+    }
+
+    LaunchedEffect(createStep) {
+        if (createStep != TicketsCreateStep.Form) {
+            photoSourceActionsExpanded = false
         }
     }
 
@@ -421,26 +428,38 @@ fun TicketsScreen(
                             }
                         }
                     }
-                    Row(
+                    val photoControlsEnabled = createFormEnabled && pendingPhotos.size < 10 && !acting
+                    AppButton(
+                        text = "Добавить фото",
+                        variant = AppButtonVariant.Secondary,
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
-                    ) {
-                        AppButton(
-                            text = "С диска",
-                            variant = AppButtonVariant.Secondary,
-                            modifier = Modifier.weight(1f),
-                            enabled = createFormEnabled && pendingPhotos.size < 10 && !acting,
-                            onClick = imagePickers.openGallery,
-                            fillMaxWidth = false,
-                        )
-                        AppButton(
-                            text = "Камера",
-                            variant = AppButtonVariant.Secondary,
-                            modifier = Modifier.weight(1f),
-                            enabled = createFormEnabled && pendingPhotos.size < 10 && !acting,
-                            onClick = imagePickers.openCamera,
-                            fillMaxWidth = false,
-                        )
+                        enabled = photoControlsEnabled,
+                        onClick = {
+                            photoSourceActionsExpanded = togglePhotoSourceActions(photoSourceActionsExpanded)
+                        },
+                    )
+                    if (photoSourceActionsExpanded) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+                        ) {
+                            AppButton(
+                                text = "С диска",
+                                variant = AppButtonVariant.Secondary,
+                                modifier = Modifier.weight(1f),
+                                enabled = photoControlsEnabled,
+                                onClick = imagePickers.openGallery,
+                                fillMaxWidth = false,
+                            )
+                            AppButton(
+                                text = "Камера",
+                                variant = AppButtonVariant.Secondary,
+                                modifier = Modifier.weight(1f),
+                                enabled = photoControlsEnabled,
+                                onClick = imagePickers.openCamera,
+                                fillMaxWidth = false,
+                            )
+                        }
                     }
                     AppButton(
                         text = if (acting) "Создание…" else "Создать",
