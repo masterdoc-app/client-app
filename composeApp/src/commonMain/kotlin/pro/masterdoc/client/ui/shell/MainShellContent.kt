@@ -369,6 +369,7 @@ private fun ActivePage(
                             currentUserId = session.user?.id,
                             dispatcherMode = FeatureId.Board in session.features,
                             onOpenEquipment = onOpenEquipment,
+                            modifier = Modifier.fillMaxSize(),
                         )
                     } else {
                         StubDestinationScreen(active.destination)

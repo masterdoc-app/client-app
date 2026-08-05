@@ -1,5 +1,6 @@
 package pro.masterdoc.client.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -26,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.AdminUser
@@ -173,14 +176,14 @@ fun BoardScreen(
         return
     }
 
-    AppScaffold(title = "Доска", modifier = modifier) { padding ->
+    AppScaffold(title = "Доска", modifier = modifier.fillMaxSize()) { padding ->
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = ClientSpacing.md, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(ClientSpacing.md),
+                    .padding(horizontal = ClientSpacing.sm, vertical = ClientSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
         ) {
             when {
                 loading && weeks.isEmpty() -> {
@@ -268,17 +271,26 @@ private fun WeekGrid(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
         DayHeaders(weekMonday)
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
             Row(Modifier.fillMaxSize()) {
-                repeat(7) {
+                repeat(7) { column ->
+                    val weekend = column >= 5
                     Box(
                         Modifier
                             .weight(1f)
                             .fillMaxHeight()
+                            .background(
+                                if (weekend) {
+                                    MaterialTheme.colorScheme.surfaceContainerLowest
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                },
+                            )
                             .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant),
                     )
                 }
@@ -314,10 +326,22 @@ private fun DayHeaders(weekMonday: String) {
     Row(Modifier.fillMaxWidth()) {
         weekdays.forEachIndexed { column, weekday ->
             val date = shiftWeek(weekMonday, column)
+            val weekend = column >= 5
             AppText(
                 text = "$weekday ${date.takeLast(2)}",
                 style = AppTextStyle.Label,
-                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .background(
+                            if (weekend) {
+                                MaterialTheme.colorScheme.surfaceContainerLowest
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                        )
+                        .padding(vertical = ClientSpacing.xs),
             )
         }
     }
