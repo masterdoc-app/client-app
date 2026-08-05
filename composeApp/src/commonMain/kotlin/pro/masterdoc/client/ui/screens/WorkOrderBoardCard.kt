@@ -23,18 +23,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
 import pro.masterdoc.client.auth.workOrderTypeLabelRu
-import pro.masterdoc.client.designsystem.components.AppStatusChip
-import pro.masterdoc.client.designsystem.components.AppStatusChipTone
 import pro.masterdoc.client.designsystem.components.AppText
 import pro.masterdoc.client.designsystem.components.AppTextStyle
 import pro.masterdoc.client.designsystem.theme.ClientSpacing
 
-/** Compact work-order card for the board with status and assignee metadata. */
+/** Compact work-order card for the board with themed status and assignee metadata. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WorkOrderBoardCard(
@@ -44,22 +43,44 @@ fun WorkOrderBoardCard(
     currentUserId: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val colors = MaterialTheme.colorScheme
+    val emergency = order.type == "emergency"
+    val closed = order.status == "closed"
+    val inProgress = order.status == "in_progress"
+
     val accent =
-        when (order.type) {
-            "emergency" -> MaterialTheme.colorScheme.error
-            else -> MaterialTheme.colorScheme.primary
+        when {
+            emergency -> colors.error
+            else -> colors.primary
         }
+    val cardColor =
+        when {
+            emergency && !closed -> colors.errorContainer
+            closed -> colors.tertiaryContainer
+            inProgress -> colors.primaryContainer
+            else -> colors.surfaceContainerLow
+        }
+    val borderColor =
+        when {
+            emergency && !closed -> colors.error.copy(alpha = 0.35f)
+            closed -> colors.tertiary.copy(alpha = 0.25f)
+            inProgress -> colors.primary.copy(alpha = 0.35f)
+            else -> colors.outline
+        }
+
     Surface(
         modifier =
             modifier
                 .fillMaxWidth()
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium)
+                .border(1.dp, borderColor, MaterialTheme.shapes.medium)
                 .clickable(onClick = onClick),
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface,
+        color = cardColor,
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp,
     ) {
         Row(Modifier.height(IntrinsicSize.Min)) {
-            Box(Modifier.width(4.dp).fillMaxHeight().background(accent))
+            Box(Modifier.width(5.dp).fillMaxHeight().background(accent))
             Column(
                 modifier = Modifier.padding(ClientSpacing.sm).weight(1f),
                 verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
@@ -67,6 +88,7 @@ fun WorkOrderBoardCard(
                 AppText(
                     text = order.title,
                     style = AppTextStyle.Body,
+                    color = colors.onSurface,
                     maxLines = 2,
                 )
                 Row(
@@ -79,25 +101,45 @@ fun WorkOrderBoardCard(
                         horizontalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
                         verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
                     ) {
-                        AppStatusChip(
+                        BoardMetaChip(
                             text = workOrderTypeLabelRu(order.type),
-                            tone =
-                                if (order.type == "emergency") {
-                                    AppStatusChipTone.Accent
+                            container =
+                                if (emergency) {
+                                    colors.error.copy(alpha = 0.12f)
                                 } else {
-                                    AppStatusChipTone.Muted
+                                    colors.primaryContainer
                                 },
-                            showDot = false,
+                            content =
+                                if (emergency) {
+                                    colors.error
+                                } else {
+                                    colors.onPrimaryContainer
+                                },
+                            dot = accent,
                         )
-                        AppStatusChip(
+                        BoardMetaChip(
                             text = workOrderStatusLabelRu(order.status),
-                            tone =
+                            container =
                                 when (order.status) {
-                                    "new" -> AppStatusChipTone.Accent
-                                    "in_progress" -> AppStatusChipTone.Neutral
-                                    else -> AppStatusChipTone.Muted
+                                    "new" -> colors.primaryContainer
+                                    "in_progress" -> colors.secondaryContainer
+                                    "closed" -> colors.tertiaryContainer
+                                    else -> colors.surfaceContainer
                                 },
-                            showDot = false,
+                            content =
+                                when (order.status) {
+                                    "new" -> colors.primary
+                                    "in_progress" -> colors.onSecondaryContainer
+                                    "closed" -> colors.onTertiaryContainer
+                                    else -> colors.onSurfaceVariant
+                                },
+                            dot =
+                                when (order.status) {
+                                    "new" -> colors.primary
+                                    "in_progress" -> colors.primary
+                                    "closed" -> colors.tertiary
+                                    else -> colors.onSurfaceVariant
+                                },
                         )
                     }
                     val assigneeId = order.assigneeId?.takeIf { it.isNotBlank() }
@@ -118,13 +160,17 @@ fun WorkOrderBoardCard(
                         Box(
                             modifier =
                                 Modifier
-                                    .size(18.dp)
+                                    .size(20.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (assigned) {
-                                            MaterialTheme.colorScheme.primaryContainer
+                                            if (emergency) {
+                                                colors.error.copy(alpha = 0.15f)
+                                            } else {
+                                                colors.primary
+                                            }
                                         } else {
-                                            MaterialTheme.colorScheme.surfaceContainer
+                                            colors.surfaceContainerHighest
                                         },
                                     ),
                             contentAlignment = Alignment.Center,
@@ -134,9 +180,9 @@ fun WorkOrderBoardCard(
                                 style = AppTextStyle.Label,
                                 color =
                                     if (assigned) {
-                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                        if (emergency) colors.error else colors.onPrimary
                                     } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                        colors.onSurfaceVariant
                                     },
                                 maxLines = 1,
                             )
@@ -145,11 +191,40 @@ fun WorkOrderBoardCard(
                             text = label,
                             modifier = Modifier.weight(1f, fill = false),
                             style = AppTextStyle.Label,
+                            color = colors.onSurfaceVariant,
                             maxLines = 1,
                         )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun BoardMetaChip(
+    text: String,
+    container: Color,
+    content: Color,
+    dot: Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .clip(MaterialTheme.shapes.extraLarge)
+                .background(container)
+                .padding(horizontal = ClientSpacing.sm, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(dot),
+        )
+        AppText(text = text, style = AppTextStyle.Label, color = content, maxLines = 1)
     }
 }
