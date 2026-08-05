@@ -99,7 +99,7 @@ Use `ClientTheme` / Fixaverse theme wrapper consistent with current design-syste
 |------|-----------------|----------------------|
 | `navRail_manyItems_profilePinned` | Short height (~320–400dp), ~8–10 rail items | Profile visible at bottom; upper items may clip into scroll |
 | `navBar_manyItems_profilePinned` | Narrow width (~320dp), many bottom items | Profile visible at trailing edge; leading items in scroll region |
-| Optional: `navRail_fewItems` / `navBar_fewItems` | Comfortable size, 3–4 items | No visual regression; Profile still trailing |
+| `navRail_fewItems` / `navBar_fewItems` | Comfortable size, 3–4 items | Baseline: Profile still trailing, no scroll chrome required |
 
 Rendering: `SessionParams.RenderingMode.SHRINK` (same pattern as former client / current `fixaverse-design` paparazzi).
 
