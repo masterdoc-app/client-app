@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
+import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.BoardWeekDto
 import pro.masterdoc.client.auth.AttachmentsRepository
 import pro.masterdoc.client.auth.CommentsRepository
@@ -101,6 +102,16 @@ fun BoardScreen(
     var mentorOpen by remember { mutableStateOf(false) }
     var weekMonday by remember { mutableStateOf(currentMondayIso()) }
     var reloadKey by remember { mutableStateOf(0) }
+    var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
+
+    LaunchedEffect(adminUsersRepository, hasAdminUsers) {
+        users =
+            if (hasAdminUsers && adminUsersRepository != null) {
+                runCatching { adminUsersRepository.listUsers(limit = 200).items }.getOrDefault(emptyList())
+            } else {
+                emptyList()
+            }
+    }
 
     LaunchedEffect(repository, weekMonday, reloadKey) {
         loading = true
@@ -199,6 +210,8 @@ fun BoardScreen(
                         weekMonday = weekMonday,
                         laneItems = laneItems,
                         onOpen = { selectedId = it },
+                        users = users,
+                        currentUserId = currentUserId,
                         modifier = Modifier.fillMaxWidth().weight(1f),
                     )
                 }
@@ -244,6 +257,8 @@ private fun WeekGrid(
     weekMonday: String,
     laneItems: List<BoardLaneItem>,
     onOpen: (String) -> Unit,
+    users: List<AdminUser>,
+    currentUserId: String?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -275,7 +290,12 @@ private fun WeekGrid(
                     .toList()
                     .sortedBy { (laneIndex, _) -> laneIndex }
                     .forEach { (_, lane) ->
-                        BoardLane(lane.sortedBy { it.clip.startColumn }, onOpen)
+                        BoardLane(
+                            items = lane.sortedBy { it.clip.startColumn },
+                            onOpen = onOpen,
+                            users = users,
+                            currentUserId = currentUserId,
+                        )
                     }
             }
         }
@@ -301,6 +321,8 @@ private fun DayHeaders(weekMonday: String) {
 private fun BoardLane(
     items: List<BoardLaneItem>,
     onOpen: (String) -> Unit,
+    users: List<AdminUser>,
+    currentUserId: String?,
 ) {
     Row(modifier = Modifier.fillMaxWidth()) {
         var nextColumn = 0
@@ -312,6 +334,8 @@ private fun BoardLane(
             WorkOrderBoardCard(
                 order = item.order,
                 onClick = { onOpen(item.order.id) },
+                users = users,
+                currentUserId = currentUserId,
                 modifier =
                     Modifier
                         .weight(item.clip.spanColumns.toFloat())
