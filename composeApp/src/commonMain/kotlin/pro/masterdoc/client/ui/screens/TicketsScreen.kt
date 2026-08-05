@@ -116,7 +116,7 @@ fun TicketsScreen(
     var pendingQrToken by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableStateOf(0) }
     var createStep by remember { mutableStateOf(defaultTicketsCreateStep()) }
-    var photoSourceActionsExpanded by remember { mutableStateOf(false) }
+    var photoSourceDialogOpen by remember { mutableStateOf(false) }
     var cameraError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val imagePickers =
@@ -193,7 +193,7 @@ fun TicketsScreen(
 
     LaunchedEffect(createStep) {
         if (createStep != TicketsCreateStep.Form) {
-            photoSourceActionsExpanded = false
+            photoSourceDialogOpen = false
         }
     }
 
@@ -435,31 +435,15 @@ fun TicketsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = photoControlsEnabled,
                         onClick = {
-                            photoSourceActionsExpanded = togglePhotoSourceActions(photoSourceActionsExpanded)
+                            photoSourceDialogOpen = togglePhotoSourceActions(photoSourceDialogOpen)
                         },
                     )
-                    if (photoSourceActionsExpanded) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
-                        ) {
-                            AppButton(
-                                text = "С диска",
-                                variant = AppButtonVariant.Secondary,
-                                modifier = Modifier.weight(1f),
-                                enabled = photoControlsEnabled,
-                                onClick = imagePickers.openGallery,
-                                fillMaxWidth = false,
-                            )
-                            AppButton(
-                                text = "Камера",
-                                variant = AppButtonVariant.Secondary,
-                                modifier = Modifier.weight(1f),
-                                enabled = photoControlsEnabled,
-                                onClick = imagePickers.openCamera,
-                                fillMaxWidth = false,
-                            )
-                        }
+                    if (photoSourceDialogOpen) {
+                        PhotoSourceDialog(
+                            onDismiss = { photoSourceDialogOpen = false },
+                            onFromDisk = imagePickers.openGallery,
+                            onCamera = imagePickers.openCamera,
+                        )
                     }
                     AppButton(
                         text = if (acting) "Создание…" else "Создать",

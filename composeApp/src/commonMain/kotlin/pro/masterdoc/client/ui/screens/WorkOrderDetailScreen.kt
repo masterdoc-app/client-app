@@ -1,7 +1,6 @@
 package pro.masterdoc.client.ui.screens
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -90,6 +88,8 @@ fun WorkOrderDetailScreen(
     var directoryUsers by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     var pprMap by remember { mutableStateOf<MaintenanceMapDto?>(null) }
     var uploadingPhoto by remember { mutableStateOf(false) }
+    var photoSourceDialogOpen by remember { mutableStateOf(false) }
+    var commentPhotoSourceDialogOpen by remember { mutableStateOf(false) }
     var comments by remember { mutableStateOf<List<WorkOrderCommentDto>>(emptyList()) }
     var commentsLoading by remember { mutableStateOf(false) }
     var commentDraft by remember { mutableStateOf("") }
@@ -284,11 +284,26 @@ fun WorkOrderDetailScreen(
                             if (attachmentsRepository != null && wo.attachmentIds.size < 10) {
                                 AppButton(
                                     text = if (uploadingPhoto) "Загрузка…" else "Добавить фото",
-                                    onClick = imagePickers.openGallery,
+                                    onClick = {
+                                        photoSourceDialogOpen = togglePhotoSourceActions(photoSourceDialogOpen)
+                                    },
                                     enabled = !uploadingPhoto,
                                     variant = AppButtonVariant.Secondary,
                                     modifier = Modifier.fillMaxWidth(),
                                 )
+                                if (photoSourceDialogOpen) {
+                                    PhotoSourceDialog(
+                                        onDismiss = { photoSourceDialogOpen = false },
+                                        onFromDisk = {
+                                            pickingCommentPhoto = false
+                                            imagePickers.openGallery()
+                                        },
+                                        onCamera = {
+                                            pickingCommentPhoto = false
+                                            imagePickers.openCamera()
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -303,13 +318,8 @@ fun WorkOrderDetailScreen(
                             sending = sendingComment,
                             onDraftChange = { commentDraft = it.take(2000) },
                             onRemovePhoto = { pendingCommentPhoto = null },
-                            onPickFromDisk = {
-                                pickingCommentPhoto = true
-                                imagePickers.openGallery()
-                            },
-                            onPickFromCamera = {
-                                pickingCommentPhoto = true
-                                imagePickers.openCamera()
+                            onAddPhoto = {
+                                commentPhotoSourceDialogOpen = togglePhotoSourceActions(commentPhotoSourceDialogOpen)
                             },
                             onSubmit = {
                                 if (!canSubmitWorkOrderComment(commentDraft, sendingComment)) return@WorkOrderCommentsSection
@@ -347,6 +357,19 @@ fun WorkOrderDetailScreen(
                                 }
                             },
                         )
+                        if (commentPhotoSourceDialogOpen) {
+                            PhotoSourceDialog(
+                                onDismiss = { commentPhotoSourceDialogOpen = false },
+                                onFromDisk = {
+                                    pickingCommentPhoto = true
+                                    imagePickers.openGallery()
+                                },
+                                onCamera = {
+                                    pickingCommentPhoto = true
+                                    imagePickers.openCamera()
+                                },
+                            )
+                        }
                     }
                     if (wo.status == "closed" || readOnly) {
                         DetailRow("Длительность, ч", wo.durationHours.toString())
@@ -674,8 +697,7 @@ private fun WorkOrderCommentsSection(
     sending: Boolean,
     onDraftChange: (String) -> Unit,
     onRemovePhoto: () -> Unit,
-    onPickFromDisk: () -> Unit,
-    onPickFromCamera: () -> Unit,
+    onAddPhoto: () -> Unit,
     onSubmit: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
@@ -723,25 +745,13 @@ private fun WorkOrderCommentsSection(
                 }
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm),
-        ) {
-            AppButton(
-                text = "С диска",
-                variant = AppButtonVariant.Secondary,
-                onClick = onPickFromDisk,
-                enabled = !sending,
-                fillMaxWidth = false,
-            )
-            AppButton(
-                text = "Камера",
-                variant = AppButtonVariant.Secondary,
-                onClick = onPickFromCamera,
-                enabled = !sending,
-                fillMaxWidth = false,
-            )
-        }
+        AppButton(
+            text = "Добавить фото",
+            variant = AppButtonVariant.Secondary,
+            onClick = onAddPhoto,
+            enabled = !sending,
+            modifier = Modifier.fillMaxWidth(),
+        )
         AppButton(
             text = if (sending) "Отправка…" else "Отправить",
             onClick = onSubmit,
