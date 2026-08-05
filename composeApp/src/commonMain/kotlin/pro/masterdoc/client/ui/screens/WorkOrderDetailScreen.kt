@@ -724,6 +724,31 @@ internal fun formatAssigneeShortLabel(
     }
 }
 
+private val trailingUuid =
+    Regex(
+        """\s*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\s*$""",
+    )
+private val trailingLongNumericId = Regex("""\s+\d{10,}\s*$""")
+private val onlyUuid =
+    Regex(
+        """^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$""",
+    )
+private val onlyLongNumericId = Regex("""^\d{10,}$""")
+
+/**
+ * Human work-order title for UI cards — strips trailing opaque ids/timestamps,
+ * never shows a bare UUID/snowflake as the label.
+ */
+internal fun formatWorkOrderDisplayTitle(title: String): String {
+    var text = title.trim()
+    text = text.replace(trailingUuid, "").trim()
+    text = text.replace(trailingLongNumericId, "").trim()
+    if (text.isBlank() || onlyUuid.matches(text) || onlyLongNumericId.matches(text)) {
+        return "Заявка"
+    }
+    return text
+}
+
 internal fun assigneeInitials(
     userId: String,
     users: List<AdminUser>,

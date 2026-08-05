@@ -86,7 +86,7 @@ fun WorkOrderBoardCard(
                 verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
             ) {
                 AppText(
-                    text = order.title,
+                    text = formatWorkOrderDisplayTitle(order.title),
                     style = AppTextStyle.Body,
                     color = colors.onSurface,
                     maxLines = 2,

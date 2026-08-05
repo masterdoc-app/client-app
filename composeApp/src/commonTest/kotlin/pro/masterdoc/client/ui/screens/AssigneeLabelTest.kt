@@ -105,6 +105,31 @@ class AssigneeLabelTest {
     }
 
     @Test
+    fun formatWorkOrderDisplayTitleStripsTrailingNumericId() {
+        assertEquals("UI cycle", formatWorkOrderDisplayTitle("UI cycle 1785922922898"))
+        assertEquals("Smoke cycle", formatWorkOrderDisplayTitle("Smoke cycle 1785922852221"))
+    }
+
+    @Test
+    fun formatWorkOrderDisplayTitleKeepsHumanTitles() {
+        assertEquals("Авария компрессора", formatWorkOrderDisplayTitle("Авария компрессора"))
+        assertEquals("Осмотр №12", formatWorkOrderDisplayTitle("Осмотр №12"))
+    }
+
+    @Test
+    fun formatWorkOrderDisplayTitleFallsBackWhenOnlyOpaqueId() {
+        assertEquals("Заявка", formatWorkOrderDisplayTitle("1785922922898"))
+        assertEquals(
+            "Заявка",
+            formatWorkOrderDisplayTitle("29eb1297-8603-4976-8b6e-d0520f05589c"),
+        )
+        assertEquals(
+            "Заявка",
+            formatWorkOrderDisplayTitle("  29eb1297-8603-4976-8b6e-d0520f05589c  "),
+        )
+    }
+
+    @Test
     fun assigneeInitialsUsesFirstLettersOfGivenAndFamilyName() {
         val users =
             listOf(
