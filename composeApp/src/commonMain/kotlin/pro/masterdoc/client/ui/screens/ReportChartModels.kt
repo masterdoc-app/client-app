@@ -57,15 +57,6 @@ fun kpiTrendChartPoints(points: List<KpiTrendPoint>): List<ReportChartPoint> =
         }
     }
 
-fun reactiveCompletionChartPoints(
-    emergencyCount: Int,
-    plannedCount: Int,
-): List<ReportChartPoint> =
-    listOf(
-        ReportChartPoint("Плановые", plannedCount.toFloat()),
-        ReportChartPoint("Аварийные", emergencyCount.toFloat()),
-    )
-
 fun engineerWorkloadChartPoints(
     rows: List<EngineerWorkloadRow>,
     labelForUser: (String) -> String,

@@ -418,12 +418,6 @@ private fun ReactiveCompletion(report: ReactiveCompletionReport) {
         "Доля аварийных",
         if (report.emergencyCount + report.plannedCount == 0) "н/д" else formatPercent(report.reactivePercent),
     )
-    val points = reactiveCompletionChartPoints(report.emergencyCount, report.plannedCount)
-    if (hasNonZeroChartSeries(points)) {
-        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
-    } else {
-        EmptyKpiChartState()
-    }
 }
 
 @Composable
