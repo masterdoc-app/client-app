@@ -455,12 +455,6 @@ private fun KpiSummary(kpis: ManagerKpis) {
     KpiValue("MTTR", formatManagerKpiMetric(kpis.mttrHours, kpis.mttrSampleSize, " ч"))
     KpiValue("MTBF", formatManagerKpiMetric(kpis.mtbfHours, kpis.mtbfSampleSize, " ч"))
     KpiValue("Готовность", formatPercent(kpis.availabilityPercent))
-    val points = kpiSummaryChartPoints(kpis)
-    if (hasNonZeroChartSeries(points)) {
-        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
-    } else {
-        EmptyKpiChartState()
-    }
 }
 
 @Composable
