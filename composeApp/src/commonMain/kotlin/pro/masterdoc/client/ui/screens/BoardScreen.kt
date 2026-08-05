@@ -107,7 +107,13 @@ fun BoardScreen(
     LaunchedEffect(adminUsersRepository, hasAdminUsers) {
         users =
             if (hasAdminUsers && adminUsersRepository != null) {
-                runCatching { adminUsersRepository.listUsers(limit = 200).items }.getOrDefault(emptyList())
+                try {
+                    adminUsersRepository.listUsers(limit = 200).items
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    emptyList()
+                }
             } else {
                 emptyList()
             }

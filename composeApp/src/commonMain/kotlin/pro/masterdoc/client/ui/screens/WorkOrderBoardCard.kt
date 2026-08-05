@@ -108,7 +108,10 @@ fun WorkOrderBoardCard(
                         assigneeId?.let { formatAssigneeShortLabel(it, users, currentUserId) }
                             ?: "Не назначен"
                     Row(
-                        modifier = Modifier.padding(start = ClientSpacing.xs),
+                        modifier =
+                            Modifier
+                                .weight(1f, fill = false)
+                                .padding(start = ClientSpacing.xs),
                         horizontalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -140,6 +143,7 @@ fun WorkOrderBoardCard(
                         }
                         AppText(
                             text = label,
+                            modifier = Modifier.weight(1f, fill = false),
                             style = AppTextStyle.Label,
                             maxLines = 1,
                         )
