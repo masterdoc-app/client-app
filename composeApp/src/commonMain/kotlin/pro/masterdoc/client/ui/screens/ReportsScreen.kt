@@ -468,12 +468,6 @@ private fun KpiPlannedVsEmergency(kpis: ManagerKpis) {
     AppText(text = "Плановые vs аварийные", style = AppTextStyle.Title)
     KpiValue("Плановые", "${kpis.plannedCount} заявок · ${formatHours(kpis.plannedHours)}")
     KpiValue("Аварийные", "${kpis.emergencyCount} заявок · ${formatHours(kpis.emergencyHours)}")
-    val points = plannedVsEmergencyChartPoints(kpis)
-    if (hasNonZeroChartSeries(points)) {
-        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
-    } else {
-        EmptyKpiChartState()
-    }
 }
 
 @Composable
