@@ -59,6 +59,8 @@ fun AssigneePickScreen(
                 if (hasAdminUsers && adminUsersRepository != null) {
                     try {
                         adminUsersRepository.listUsers(limit = 200).items
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (_: Exception) {
                         emptyList()
                     }
@@ -82,6 +84,8 @@ fun AssigneePickScreen(
             try {
                 val updated = repository.patch(workOrderId, assigneeId = userId)
                 onAssigned(updated)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 error = e.message ?: "Не удалось назначить исполнителя"
             } finally {
