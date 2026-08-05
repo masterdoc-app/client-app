@@ -1,6 +1,7 @@
 package pro.masterdoc.client.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,13 +16,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +26,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
@@ -550,7 +548,6 @@ internal fun findAssetById(
     assetId: String,
 ): AssetDto? = assets.find { it.id == assetId }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AssigneePickerRow(
     workOrder: WorkOrderDto,
@@ -568,7 +565,6 @@ private fun AssigneePickerRow(
     var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     var candidatesLoading by remember { mutableStateOf(true) }
     var candidatesError by remember { mutableStateOf<String?>(null) }
-    var menuExpanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(userScopesRepository, workOrder.assetId) {
@@ -633,63 +629,27 @@ private fun AssigneePickerRow(
             else -> {
                 val currentAssignee = workOrder.assigneeId?.takeIf { it.isNotBlank() }
                 val eligibleCandidates = filterEngineerEligibleAssignees(candidates, users)
-                val displayValue =
-                    when {
-                        acting -> "…"
-                        currentAssignee != null -> {
-                            val label = userLabel(currentAssignee)
-                            val outOfScope = currentAssignee !in eligibleCandidates
-                            // Fake seed ids / deleted users: never show a silent generic that looks "ok".
-                            if (outOfScope && (users.isEmpty() || users.none { it.id == currentAssignee })) {
-                                "Неизвестный исполнитель"
-                            } else {
-                                label
-                            }
-                        }
-                        else -> "не назначен"
-                    }
-                ExposedDropdownMenuBox(
-                    expanded = menuExpanded,
-                    onExpandedChange = { if (!acting) menuExpanded = it },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    OutlinedTextField(
-                        value = displayValue,
-                        onValueChange = {},
-                        readOnly = true,
+                // Inline radio list — ExposedDropdownMenu clicks often fail on Wasm + scroll.
+                if (acting) {
+                    AppText(text = "…", style = AppTextStyle.Label)
+                } else {
+                    AssigneeOptionRow(
+                        label = "не назначен",
+                        selected = currentAssignee == null,
                         enabled = !acting,
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = menuExpanded)
+                        onSelect = {
+                            if (currentAssignee != null) assignAssignee(null)
                         },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
                     )
-                    ExposedDropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("не назначен") },
-                            onClick = {
-                                menuExpanded = false
-                                if (currentAssignee != null) {
-                                    assignAssignee(null)
-                                }
+                    eligibleCandidates.forEach { userId ->
+                        AssigneeOptionRow(
+                            label = userLabel(userId),
+                            selected = userId == currentAssignee,
+                            enabled = !acting,
+                            onSelect = {
+                                if (userId != currentAssignee) assignAssignee(userId)
                             },
                         )
-                        eligibleCandidates.forEach { userId ->
-                            DropdownMenuItem(
-                                text = { Text(userLabel(userId)) },
-                                onClick = {
-                                    menuExpanded = false
-                                    if (userId != currentAssignee) {
-                                        assignAssignee(userId)
-                                    }
-                                },
-                            )
-                        }
                     }
                 }
                 if (currentAssignee != null && currentAssignee !in eligibleCandidates) {
@@ -705,6 +665,30 @@ private fun AssigneePickerRow(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun AssigneeOptionRow(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled, onClick = onSelect),
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onSelect,
+            enabled = enabled,
+        )
+        AppText(text = label)
     }
 }
 
