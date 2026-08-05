@@ -27,14 +27,6 @@ class ReportChartModelsTest {
     }
 
     @Test
-    fun pprSeriesUsesFourStatuses() {
-        val points = pprComplianceChartPoints(sampleKpis(pprOnTime = 8, pprLate = 2, pprOpenOverdue = 3, pprOpenPending = 5))
-
-        assertEquals(listOf("Вовремя", "С опозданием", "Просрочено", "В срок"), points.map { it.label })
-        assertEquals(listOf(8f, 2f, 3f, 5f), points.map { it.value })
-    }
-
-    @Test
     fun backlogSeriesUsesAgeBuckets() {
         val points = backlogChartPoints(sampleKpis(backlogUnder7d = 6, backlog7to30d = 4, backlogOver30d = 1))
 

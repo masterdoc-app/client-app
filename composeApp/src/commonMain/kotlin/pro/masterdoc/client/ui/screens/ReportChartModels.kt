@@ -19,14 +19,6 @@ fun plannedVsEmergencyChartPoints(kpis: ManagerKpis): List<ReportChartPoint> =
         ReportChartPoint("Аварийные", kpis.emergencyCount.toFloat()),
     )
 
-fun pprComplianceChartPoints(kpis: ManagerKpis): List<ReportChartPoint> =
-    listOf(
-        ReportChartPoint("Вовремя", kpis.pprOnTime.toFloat()),
-        ReportChartPoint("С опозданием", kpis.pprLate.toFloat()),
-        ReportChartPoint("Просрочено", kpis.pprOpenOverdue.toFloat()),
-        ReportChartPoint("В срок", kpis.pprOpenPending.toFloat()),
-    )
-
 fun backlogChartPoints(kpis: ManagerKpis): List<ReportChartPoint> =
     listOf(
         ReportChartPoint("<7 дн", kpis.backlogUnder7d.toFloat()),

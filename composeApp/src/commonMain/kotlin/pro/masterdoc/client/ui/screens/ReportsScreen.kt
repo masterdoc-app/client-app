@@ -483,12 +483,6 @@ private fun KpiPpr(kpis: ManagerKpis) {
     KpiValue("Выполнено с опозданием", kpis.pprLate.toString())
     KpiValue("Открытые просроченные", kpis.pprOpenOverdue.toString())
     KpiValue("Открытые в срок", kpis.pprOpenPending.toString())
-    val points = pprComplianceChartPoints(kpis)
-    if (hasNonZeroChartSeries(points)) {
-        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
-    } else {
-        EmptyKpiChartState()
-    }
 }
 
 @Composable
