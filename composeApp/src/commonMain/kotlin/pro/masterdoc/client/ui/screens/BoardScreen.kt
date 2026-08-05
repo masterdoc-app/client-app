@@ -160,7 +160,6 @@ fun BoardScreen(
                 selectedId = null
             },
             onChanged = { reloadKey++ },
-            userScopesRepository = userScopesRepository,
             adminUsersRepository = adminUsersRepository,
             equipmentRepository = equipmentRepository,
             attachmentsRepository = attachmentsRepository,

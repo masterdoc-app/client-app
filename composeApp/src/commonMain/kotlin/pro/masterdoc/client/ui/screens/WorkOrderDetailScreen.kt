@@ -40,7 +40,6 @@ import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.SiteDto
-import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrderCommentDto
 import pro.masterdoc.client.auth.WorkOrderDuration
 import pro.masterdoc.client.auth.WorkOrderDto
@@ -68,11 +67,11 @@ fun WorkOrderDetailScreen(
     orderId: String,
     onBack: () -> Unit,
     onChanged: () -> Unit = {},
-    userScopesRepository: UserScopesRepository? = null,
     adminUsersRepository: AdminUsersRepository? = null,
     equipmentRepository: EquipmentRepository? = null,
     currentUserId: String? = null,
     onOpenMentor: (() -> Unit)? = null,
+    onOpenAssigneePick: (() -> Unit)? = null,
     onOpenEquipment: (String) -> Unit = {},
     hasAdminUsers: Boolean = false,
     editableAssignee: Boolean = false,
@@ -403,22 +402,25 @@ fun WorkOrderDetailScreen(
                             onOpen = onOpenEquipment,
                         )
                     }
-                    if (editableAssignee && userScopesRepository != null) {
-                        AssigneePickerRow(
-                            workOrder = wo,
-                            repository = repository,
-                            userScopesRepository = userScopesRepository,
-                            adminUsersRepository = adminUsersRepository,
-                            hasAdminUsers = hasAdminUsers,
-                            currentUserId = currentUserId,
-                            acting = acting,
-                            onActingChange = { acting = it },
-                            onError = { error = it },
-                            onUpdated = { updated ->
-                                order = updated
-                                onChanged()
-                            },
-                        )
+                    if (editableAssignee && onOpenAssigneePick != null) {
+                        val assigneeLabel =
+                            wo.assigneeId?.takeIf { it.isNotBlank() }?.let { id ->
+                                formatAssigneeLabel(id, directoryUsers, currentUserId)
+                            } ?: "не назначен"
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            AppText(text = "Исполнитель", style = AppTextStyle.Label)
+                            AppButton(
+                                text = assigneeLabel,
+                                onClick = onOpenAssigneePick,
+                                variant =
+                                    if (wo.assigneeId.isNullOrBlank()) {
+                                        AppButtonVariant.Secondary
+                                    } else {
+                                        AppButtonVariant.Primary
+                                    },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     } else {
                         val assignee =
                             wo.assigneeId?.takeIf { it.isNotBlank() }?.let { id ->
@@ -544,141 +546,6 @@ internal fun findAssetById(
     assets: List<AssetDto>,
     assetId: String,
 ): AssetDto? = assets.find { it.id == assetId }
-
-@Composable
-private fun AssigneePickerRow(
-    workOrder: WorkOrderDto,
-    repository: WorkOrdersRepository,
-    userScopesRepository: UserScopesRepository,
-    adminUsersRepository: AdminUsersRepository?,
-    hasAdminUsers: Boolean,
-    currentUserId: String?,
-    acting: Boolean,
-    onActingChange: (Boolean) -> Unit,
-    onError: (String?) -> Unit,
-    onUpdated: (WorkOrderDto) -> Unit,
-) {
-    var candidates by remember { mutableStateOf<List<String>>(emptyList()) }
-    var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
-    var candidatesLoading by remember { mutableStateOf(true) }
-    var candidatesError by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(userScopesRepository, workOrder.assetId) {
-        candidatesLoading = true
-        candidatesError = null
-        try {
-            candidates = userScopesRepository.getCandidates(workOrder.assetId)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: GatewayHttpException) {
-            candidatesError = e.message ?: "Ошибка загрузки кандидатов"
-        } catch (e: Exception) {
-            candidatesError = e.message ?: "Ошибка загрузки кандидатов"
-        } finally {
-            candidatesLoading = false
-        }
-    }
-
-    LaunchedEffect(adminUsersRepository, hasAdminUsers) {
-        if (hasAdminUsers && adminUsersRepository != null) {
-            try {
-                users = adminUsersRepository.listUsers(limit = 200).items
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                users = emptyList()
-            }
-        } else {
-            users = emptyList()
-        }
-    }
-
-    fun userLabel(userId: String): String = formatAssigneeLabel(userId, users, currentUserId)
-
-    fun assignAssignee(userId: String?) {
-        scope.launch {
-            onActingChange(true)
-            onError(null)
-            try {
-                val updated =
-                    if (userId == null) {
-                        repository.patch(workOrder.id, clearAssignee = true)
-                    } else {
-                        repository.patch(workOrder.id, assigneeId = userId)
-                    }
-                onUpdated(updated)
-            } catch (e: GatewayHttpException) {
-                onError(e.message ?: "Не удалось назначить исполнителя")
-            } catch (e: Exception) {
-                onError(e.message ?: "Не удалось назначить исполнителя")
-            } finally {
-                onActingChange(false)
-            }
-        }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        AppText(text = "Исполнитель", style = AppTextStyle.Label)
-        when {
-            candidatesLoading -> CircularProgressIndicator()
-            candidatesError != null -> AppText(text = candidatesError!!)
-            else -> {
-                val currentAssignee = workOrder.assigneeId?.takeIf { it.isNotBlank() }
-                val eligibleCandidates = filterEngineerEligibleAssignees(candidates, users)
-                // AppButton list — Material RadioButton clicks fail on Wasm + scroll.
-                AssigneeOptionRow(
-                    label = "не назначен",
-                    selected = currentAssignee == null,
-                    enabled = !acting,
-                    onSelect = {
-                        if (currentAssignee != null) assignAssignee(null)
-                    },
-                )
-                eligibleCandidates.forEach { userId ->
-                    AssigneeOptionRow(
-                        label = userLabel(userId),
-                        selected = userId == currentAssignee,
-                        enabled = !acting,
-                        onSelect = {
-                            if (userId != currentAssignee) assignAssignee(userId)
-                        },
-                    )
-                }
-                if (currentAssignee != null && currentAssignee !in eligibleCandidates) {
-                    AppText(
-                        text =
-                            if (users.none { it.id == currentAssignee }) {
-                                "Исполнитель не найден в справочнике — выберите инженера из зоны ответственности"
-                            } else {
-                                "Текущий исполнитель вне зоны ответственности для этого оборудования"
-                            },
-                        style = AppTextStyle.Label,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AssigneeOptionRow(
-    label: String,
-    selected: Boolean,
-    enabled: Boolean,
-    onSelect: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    // AppButton — reliable on Compose Wasm inside verticalScroll.
-    // Material RadioButton + nested Row.clickable swallowed taps (assignee stuck on «не назначен»).
-    AppButton(
-        text = if (selected) "●  $label" else "○  $label",
-        onClick = onSelect,
-        enabled = enabled,
-        variant = if (selected) AppButtonVariant.Primary else AppButtonVariant.Secondary,
-        modifier = modifier,
-    )
-}
 
 internal fun formatAssigneeLabel(
     userId: String,
