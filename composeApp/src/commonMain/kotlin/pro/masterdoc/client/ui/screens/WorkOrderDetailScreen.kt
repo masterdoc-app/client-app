@@ -10,15 +10,20 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -676,19 +682,31 @@ private fun AssigneeOptionRow(
     onSelect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Single clickable row — nested RadioButton(onClick) + Row.clickable fails on Compose Wasm.
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             modifier
                 .fillMaxWidth()
-                .clickable(enabled = enabled, onClick = onSelect),
+                .heightIn(min = 48.dp)
+                .clickable(enabled = enabled, onClick = onSelect, role = Role.RadioButton)
+                .padding(vertical = 4.dp),
     ) {
-        RadioButton(
-            selected = selected,
-            onClick = onSelect,
-            enabled = enabled,
+        Icon(
+            imageVector = if (selected) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked,
+            contentDescription = null,
+            tint =
+                when {
+                    !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    selected -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            modifier = Modifier.size(24.dp),
         )
-        AppText(text = label)
+        AppText(
+            text = label,
+            modifier = Modifier.padding(start = ClientSpacing.sm),
+        )
     }
 }
 
