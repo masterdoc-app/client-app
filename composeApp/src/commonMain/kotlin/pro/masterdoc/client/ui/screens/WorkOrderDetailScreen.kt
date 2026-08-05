@@ -1,7 +1,6 @@
 package pro.masterdoc.client.ui.screens
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,20 +9,13 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.RadioButtonChecked
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -635,28 +626,24 @@ private fun AssigneePickerRow(
             else -> {
                 val currentAssignee = workOrder.assigneeId?.takeIf { it.isNotBlank() }
                 val eligibleCandidates = filterEngineerEligibleAssignees(candidates, users)
-                // Inline radio list — ExposedDropdownMenu clicks often fail on Wasm + scroll.
-                if (acting) {
-                    AppText(text = "…", style = AppTextStyle.Label)
-                } else {
+                // AppButton list — Material RadioButton clicks fail on Wasm + scroll.
+                AssigneeOptionRow(
+                    label = "не назначен",
+                    selected = currentAssignee == null,
+                    enabled = !acting,
+                    onSelect = {
+                        if (currentAssignee != null) assignAssignee(null)
+                    },
+                )
+                eligibleCandidates.forEach { userId ->
                     AssigneeOptionRow(
-                        label = "не назначен",
-                        selected = currentAssignee == null,
+                        label = userLabel(userId),
+                        selected = userId == currentAssignee,
                         enabled = !acting,
                         onSelect = {
-                            if (currentAssignee != null) assignAssignee(null)
+                            if (userId != currentAssignee) assignAssignee(userId)
                         },
                     )
-                    eligibleCandidates.forEach { userId ->
-                        AssigneeOptionRow(
-                            label = userLabel(userId),
-                            selected = userId == currentAssignee,
-                            enabled = !acting,
-                            onSelect = {
-                                if (userId != currentAssignee) assignAssignee(userId)
-                            },
-                        )
-                    }
                 }
                 if (currentAssignee != null && currentAssignee !in eligibleCandidates) {
                     AppText(
@@ -682,32 +669,15 @@ private fun AssigneeOptionRow(
     onSelect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Single clickable row — nested RadioButton(onClick) + Row.clickable fails on Compose Wasm.
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .clickable(enabled = enabled, onClick = onSelect, role = Role.RadioButton)
-                .padding(vertical = 4.dp),
-    ) {
-        Icon(
-            imageVector = if (selected) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked,
-            contentDescription = null,
-            tint =
-                when {
-                    !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    selected -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            modifier = Modifier.size(24.dp),
-        )
-        AppText(
-            text = label,
-            modifier = Modifier.padding(start = ClientSpacing.sm),
-        )
-    }
+    // AppButton — reliable on Compose Wasm inside verticalScroll.
+    // Material RadioButton + nested Row.clickable swallowed taps (assignee stuck on «не назначен»).
+    AppButton(
+        text = if (selected) "●  $label" else "○  $label",
+        onClick = onSelect,
+        enabled = enabled,
+        variant = if (selected) AppButtonVariant.Primary else AppButtonVariant.Secondary,
+        modifier = modifier,
+    )
 }
 
 internal fun formatAssigneeLabel(
