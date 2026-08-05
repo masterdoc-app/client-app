@@ -114,7 +114,7 @@ fun AssigneePickScreen(
                     val current = wo.assigneeId?.takeIf { it.isNotBlank() }
                     val eligible = filterEngineerEligibleAssignees(candidates, users)
                     if (error != null) AppText(text = error!!)
-                    if (eligible.isEmpty()) {
+                    if (error == null && eligible.isEmpty()) {
                         AppText(text = "Нет инженеров в зоне ответственности")
                     }
                     eligible.forEach { userId ->
