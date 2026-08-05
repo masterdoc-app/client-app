@@ -242,8 +242,27 @@ class AssigneeLabelTest {
                 ),
             )
         assertEquals(
-            listOf("eng", "unknown"),
+            listOf("eng"),
             filterEngineerEligibleAssignees(listOf("eng", "disp", "unknown"), users),
+        )
+    }
+
+    @Test
+    fun filterEngineerEligibleAssigneesDropsUnknownWhenUsersKnown() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "eng",
+                    email = "e@x.com",
+                    givenName = "E",
+                    familyName = "N",
+                    features = listOf("engineer"),
+                    state = "active",
+                ),
+            )
+        assertEquals(
+            listOf("eng"),
+            filterEngineerEligibleAssignees(listOf("eng", "ghost-scope-user"), users),
         )
     }
 

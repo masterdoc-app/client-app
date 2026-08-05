@@ -761,9 +761,10 @@ internal fun resolvePprLabels(
 }
 
 /**
- * When admin user directory is available, hide board-only candidates (no `engineer`).
- * Unknown ids (not in [users]) are kept — server hard-enforces on PATCH.
- * If [users] is empty (no admin access), return candidates unchanged.
+ * When admin user directory is available, keep only known users with `engineer`.
+ * Unknown ids (not in [users]) are dropped — they cannot be labeled and PATCH rejects
+ * non-engineers / out-of-org scope ghosts.
+ * If [users] is empty (no admin access), return candidates unchanged (server still enforces).
  */
 internal fun filterEngineerEligibleAssignees(
     candidates: List<String>,
@@ -772,7 +773,7 @@ internal fun filterEngineerEligibleAssignees(
     if (users.isEmpty()) return candidates
     val byId = users.associateBy { it.id }
     return candidates.filter { id ->
-        val user = byId[id] ?: return@filter true
+        val user = byId[id] ?: return@filter false
         "engineer" in user.features
     }
 }
