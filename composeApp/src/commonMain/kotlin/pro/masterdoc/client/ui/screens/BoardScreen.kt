@@ -103,6 +103,7 @@ fun BoardScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var selectedId by remember { mutableStateOf<String?>(null) }
     var mentorOpen by remember { mutableStateOf(false) }
+    var assigneePickOpen by remember { mutableStateOf(false) }
     var weekMonday by remember { mutableStateOf(currentMondayIso()) }
     var reloadKey by remember { mutableStateOf(0) }
     var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
@@ -150,6 +151,24 @@ fun BoardScreen(
         return
     }
 
+    if (assigneePickOpen && selectedId != null && userScopesRepository != null) {
+        AssigneePickScreen(
+            workOrderId = selectedId!!,
+            repository = repository,
+            userScopesRepository = userScopesRepository,
+            adminUsersRepository = adminUsersRepository,
+            hasAdminUsers = hasAdminUsers,
+            currentUserId = currentUserId,
+            onBack = { assigneePickOpen = false },
+            onAssigned = {
+                assigneePickOpen = false
+                reloadKey++
+            },
+            modifier = modifier,
+        )
+        return
+    }
+
     val detailId = selectedId
     if (detailId != null) {
         WorkOrderDetailScreen(
@@ -157,6 +176,7 @@ fun BoardScreen(
             orderId = detailId,
             onBack = {
                 mentorOpen = false
+                assigneePickOpen = false
                 selectedId = null
             },
             onChanged = { reloadKey++ },
@@ -166,6 +186,12 @@ fun BoardScreen(
             commentsRepository = commentsRepository,
             currentUserId = currentUserId,
             onOpenMentor = { mentorOpen = true },
+            onOpenAssigneePick =
+                if (dispatcherMode && userScopesRepository != null) {
+                    { assigneePickOpen = true }
+                } else {
+                    null
+                },
             onOpenEquipment = onOpenEquipment,
             hasAdminUsers = hasAdminUsers,
             editableAssignee = dispatcherMode && userScopesRepository != null,
