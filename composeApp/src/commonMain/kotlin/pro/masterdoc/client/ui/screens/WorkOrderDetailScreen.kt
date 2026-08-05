@@ -632,13 +632,22 @@ private fun AssigneePickerRow(
             candidatesError != null -> AppText(text = candidatesError!!)
             else -> {
                 val currentAssignee = workOrder.assigneeId?.takeIf { it.isNotBlank() }
+                val eligibleCandidates = filterEngineerEligibleAssignees(candidates, users)
                 val displayValue =
                     when {
                         acting -> "…"
-                        currentAssignee != null -> userLabel(currentAssignee)
+                        currentAssignee != null -> {
+                            val label = userLabel(currentAssignee)
+                            val outOfScope = currentAssignee !in eligibleCandidates
+                            // Fake seed ids / deleted users: never show a silent generic that looks "ok".
+                            if (outOfScope && (users.isEmpty() || users.none { it.id == currentAssignee })) {
+                                "Неизвестный исполнитель"
+                            } else {
+                                label
+                            }
+                        }
                         else -> "не назначен"
                     }
-                val eligibleCandidates = filterEngineerEligibleAssignees(candidates, users)
                 ExposedDropdownMenuBox(
                     expanded = menuExpanded,
                     onExpandedChange = { if (!acting) menuExpanded = it },
@@ -685,7 +694,12 @@ private fun AssigneePickerRow(
                 }
                 if (currentAssignee != null && currentAssignee !in eligibleCandidates) {
                     AppText(
-                        text = "Текущий исполнитель вне зоны ответственности для этого оборудования",
+                        text =
+                            if (users.none { it.id == currentAssignee }) {
+                                "Исполнитель не найден в справочнике — выберите инженера из зоны ответственности"
+                            } else {
+                                "Текущий исполнитель вне зоны ответственности для этого оборудования"
+                            },
                         style = AppTextStyle.Label,
                     )
                 }
