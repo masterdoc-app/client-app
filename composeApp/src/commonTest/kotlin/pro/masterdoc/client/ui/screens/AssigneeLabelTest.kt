@@ -48,6 +48,148 @@ class AssigneeLabelTest {
     }
 
     @Test
+    fun formatAssigneeShortLabelUsesNameOnlyNotEmailCompound() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "u1",
+                    email = "a@example.com",
+                    givenName = "Ivan",
+                    familyName = "Petrov",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        assertEquals("Ivan Petrov", formatAssigneeShortLabel("u1", users))
+    }
+
+    @Test
+    fun formatAssigneeShortLabelFallsBackToEmailWhenNoName() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "u1",
+                    email = "a@example.com",
+                    givenName = "",
+                    familyName = "",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        assertEquals("a@example.com", formatAssigneeShortLabel("u1", users))
+    }
+
+    @Test
+    fun formatAssigneeShortLabelFallsBackToGenericLabelNeverUuid() {
+        assertEquals(
+            "Пользователь",
+            formatAssigneeShortLabel("29eb1297-8603-4976-8b6e-d0520f05589c", emptyList()),
+        )
+    }
+
+    @Test
+    fun formatAssigneeShortLabelUsesYouForCurrentUser() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "u1",
+                    email = "a@example.com",
+                    givenName = "Ivan",
+                    familyName = "Petrov",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        assertEquals("Вы", formatAssigneeShortLabel("u1", users, currentUserId = "u1"))
+        assertEquals("Ivan Petrov", formatAssigneeShortLabel("u1", users, currentUserId = "other"))
+    }
+
+    @Test
+    fun assigneeInitialsUsesFirstLettersOfGivenAndFamilyName() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "u1",
+                    email = "a@example.com",
+                    givenName = "Ivan",
+                    familyName = "Petrov",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        assertEquals("IP", assigneeInitials("u1", users))
+    }
+
+    @Test
+    fun assigneeInitialsUsesSingleLetterWhenOnlyGivenName() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "u1",
+                    email = "a@example.com",
+                    givenName = "Ivan",
+                    familyName = "",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        assertEquals("I", assigneeInitials("u1", users))
+    }
+
+    @Test
+    fun assigneeInitialsUsesEmailFirstLetterWhenNoName() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "u1",
+                    email = "a@example.com",
+                    givenName = "",
+                    familyName = "",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        assertEquals("A", assigneeInitials("u1", users))
+    }
+
+    @Test
+    fun assigneeInitialsReturnsQuestionMarkForMissingUser() {
+        assertEquals("?", assigneeInitials("29eb1297-8603-4976-8b6e-d0520f05589c", emptyList()))
+    }
+
+    @Test
+    fun assigneeInitialsUsesInitialsForCurrentUserNotYou() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "u1",
+                    email = "a@example.com",
+                    givenName = "Ivan",
+                    familyName = "Petrov",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        assertEquals("IP", assigneeInitials("u1", users, currentUserId = "u1"))
+    }
+
+    @Test
+    fun assigneeInitialsFallsBackToCyrillicVForCurrentUserWithoutNameOrEmail() {
+        val users =
+            listOf(
+                AdminUser(
+                    id = "u1",
+                    email = "",
+                    givenName = "",
+                    familyName = "",
+                    features = emptyList(),
+                    state = "active",
+                ),
+            )
+        assertEquals("В", assigneeInitials("u1", users, currentUserId = "u1"))
+    }
+
+    @Test
     fun resolvePprLabelsPreferTitles() {
         assertEquals(
             "Карта ТО" to "Смазка",

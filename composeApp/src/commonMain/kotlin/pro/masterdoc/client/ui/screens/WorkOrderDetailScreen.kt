@@ -709,6 +709,41 @@ internal fun formatAssigneeLabel(
     }
 }
 
+internal fun formatAssigneeShortLabel(
+    userId: String,
+    users: List<AdminUser>,
+    currentUserId: String? = null,
+): String {
+    if (currentUserId != null && userId == currentUserId) return "Вы"
+    val user = users.find { it.id == userId } ?: return "Пользователь"
+    val name = listOf(user.givenName, user.familyName).filter { it.isNotBlank() }.joinToString(" ")
+    return when {
+        name.isNotBlank() -> name
+        user.email.isNotBlank() -> user.email
+        else -> "Пользователь"
+    }
+}
+
+internal fun assigneeInitials(
+    userId: String,
+    users: List<AdminUser>,
+    currentUserId: String? = null,
+): String {
+    val user = users.find { it.id == userId } ?: return "?"
+    val nameParts = listOf(user.givenName, user.familyName).filter { it.isNotBlank() }
+    val initialsFromName =
+        nameParts
+            .mapNotNull { part -> part.firstOrNull()?.uppercaseChar()?.toString() }
+            .joinToString("")
+            .take(2)
+    return when {
+        initialsFromName.isNotBlank() -> initialsFromName
+        user.email.isNotBlank() -> user.email.first().uppercaseChar().toString()
+        currentUserId != null && userId == currentUserId -> "В"
+        else -> "?"
+    }
+}
+
 /** Human-readable ППР labels — never raw map/item ids. */
 internal fun resolvePprLabels(
     mapTitle: String?,
