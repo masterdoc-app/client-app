@@ -30,11 +30,17 @@ data class AppNavItem(
     val onClick: () -> Unit,
 )
 
+/**
+ * Bottom bar. When many destinations are granted (e.g. smoke admin), the primary list scrolls
+ * horizontally and the trailing item (Profile) stays pinned so it is never clipped off-screen.
+ */
 @Composable
 fun AppNavBar(
     items: List<AppNavItem>,
     modifier: Modifier = Modifier,
+    pinnedTrailingCount: Int = 1,
 ) {
+    val (scrollable, pinned) = splitPinnedTrailing(items, pinnedTrailingCount)
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
@@ -43,18 +49,34 @@ fun AppNavBar(
     ) {
         Column {
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-            val scroll = rememberScrollState()
             Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .height(64.dp)
-                        .horizontalScroll(scroll)
                         .padding(horizontal = ClientSpacing.xs),
                 horizontalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                items.forEach { item ->
+                Row(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    scrollable.forEach { item ->
+                        AppNavButton(
+                            label = item.label,
+                            icon = item.icon,
+                            selected = item.selected,
+                            onClick = item.onClick,
+                            layout = AppNavButtonLayout.Bottom,
+                        )
+                    }
+                }
+                pinned.forEach { item ->
                     AppNavButton(
                         label = item.label,
                         icon = item.icon,
@@ -71,6 +93,7 @@ fun AppNavBar(
 /**
  * Side rail. When many destinations are granted (e.g. smoke admin), the primary list scrolls
  * and the trailing item (Profile) stays pinned so it is never clipped off-screen.
+ * Same pin model as [AppNavBar].
  */
 @Composable
 fun AppNavRail(
