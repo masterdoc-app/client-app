@@ -286,7 +286,7 @@ private fun WeekGrid(
                             .fillMaxHeight()
                             .background(
                                 if (weekend) {
-                                    MaterialTheme.colorScheme.surfaceContainerLowest
+                                    MaterialTheme.colorScheme.surfaceContainer
                                 } else {
                                     MaterialTheme.colorScheme.surface
                                 },
@@ -336,7 +336,7 @@ private fun DayHeaders(weekMonday: String) {
                         .weight(1f)
                         .background(
                             if (weekend) {
-                                MaterialTheme.colorScheme.surfaceContainerLowest
+                                MaterialTheme.colorScheme.surfaceContainer
                             } else {
                                 MaterialTheme.colorScheme.surface
                             },
