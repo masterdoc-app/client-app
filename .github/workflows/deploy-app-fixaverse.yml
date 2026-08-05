@@ -45,6 +45,8 @@ jobs:
           ./gradlew \
             :auth:jvmTest \
             :shared:jvmTest \
+            :design-system:jvmTest \
+            :design-system-paparazzi:verifyPaparazziDebug \
             :composeApp:desktopTest \
             :composeApp:assembleDebug \
             --stacktrace
