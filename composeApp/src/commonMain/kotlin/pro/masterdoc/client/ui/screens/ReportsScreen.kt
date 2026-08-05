@@ -480,12 +480,6 @@ private fun KpiBacklog(kpis: ManagerKpis) {
     KpiValue("От 7 до 30 дней", kpis.backlog7to30d.toString())
     KpiValue("Старше 30 дней", kpis.backlogOver30d.toString())
     KpiValue("Просроченные", kpis.backlogOverdue.toString())
-    val points = backlogChartPoints(kpis)
-    if (hasNonZeroChartSeries(points)) {
-        ReportColumnChart(points = points, modifier = Modifier.fillMaxWidth().height(220.dp))
-    } else {
-        EmptyKpiChartState()
-    }
 }
 
 @Composable
