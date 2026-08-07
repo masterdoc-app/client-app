@@ -158,16 +158,25 @@ def load_listing_from_copy() -> dict[str, Any]:
     with open(copy_path, encoding="utf-8") as f:
         text = f.read()
 
-    def block(section: str) -> str:
+    def block(section_prefix: str) -> str:
         import re
 
-        pattern = rf"## {re.escape(section)}\s*\n\n```\n(.*?)\n```"
+        pattern = rf"## {re.escape(section_prefix)}[^\n]*\s*\n\n```\n(.*?)\n```"
         match = re.search(pattern, text, re.DOTALL)
         return match.group(1).strip() if match else ""
 
+    short = block("Краткое описание")
+    if not (1 <= len(short) <= 80):
+        raise RuntimeError(
+            f"shortDescription must be 1..80 chars, got {len(short)}: {short!r}"
+        )
+    app_name = block("Название")
+    if not (1 <= len(app_name) <= 50):
+        raise RuntimeError(f"appName must be 1..50 chars, got {len(app_name)}: {app_name!r}")
+
     return {
-        "appName": block("Название (≤50 символов, ASO)"),
-        "shortDescription": block("Краткое описание"),
+        "appName": app_name,
+        "shortDescription": short,
         "fullDescription": block("Полное описание"),
         "moderInfo": block("Комментарий модератору"),
         "appType": "MAIN",
