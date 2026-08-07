@@ -176,6 +176,7 @@ jobs:
           python3 scripts/rustore_publish.py
 
       - name: Upload AAB artifact
+        if: always() && env.AAB_PATH != ''
         uses: actions/upload-artifact@v4
         with:
           name: client-app-release-aab
@@ -183,6 +184,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload APK artifact
+        if: always() && env.APK_PATH != ''
         uses: actions/upload-artifact@v4
         with:
           name: client-app-release-apk

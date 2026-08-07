@@ -68,16 +68,28 @@ def api_json(method: str, path: str, token: str, body: dict | None = None) -> An
         raise RuntimeError(f"{method} {path} -> HTTP {e.code}: {detail}") from e
 
 
+def content_type_for(file_path: str) -> str:
+    lower = file_path.lower()
+    if lower.endswith(".png"):
+        return "image/png"
+    if lower.endswith(".jpg") or lower.endswith(".jpeg"):
+        return "image/jpeg"
+    if lower.endswith(".aab"):
+        return "application/octet-stream"
+    return "application/octet-stream"
+
+
 def api_multipart(path: str, token: str, file_path: str) -> Any:
     boundary = "----FixaverseRuStoreBoundary"
     filename = os.path.basename(file_path)
     with open(file_path, "rb") as f:
         file_bytes = f.read()
+    ctype = content_type_for(file_path)
 
     body = (
         f"--{boundary}\r\n"
         f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
-        f"Content-Type: application/octet-stream\r\n\r\n"
+        f"Content-Type: {ctype}\r\n\r\n"
     ).encode("utf-8") + file_bytes + f"\r\n--{boundary}--\r\n".encode("utf-8")
 
     req = urllib.request.Request(
@@ -201,6 +213,41 @@ def upload_aab(token: str, version_id: int, aab_path: str) -> None:
     print(f"AAB uploaded ({os.path.getsize(aab_path) // 1024} KB)")
 
 
+def upload_icon(token: str, version_id: int, icon_path: str) -> None:
+    data = api_multipart(
+        f"/public/v1/application/{PACKAGE}/version/{version_id}/image/icon",
+        token,
+        icon_path,
+    )
+    if data.get("code") != "OK":
+        raise RuntimeError(f"Icon upload failed: {data}")
+    print(f"Icon uploaded: {os.path.basename(icon_path)}")
+
+
+def upload_screenshots(token: str, version_id: int, shots_dir: str) -> None:
+    if not os.path.isdir(shots_dir):
+        print(f"No screenshots dir: {shots_dir}")
+        return
+    shots = sorted(
+        p
+        for p in os.listdir(shots_dir)
+        if p.lower().endswith((".png", ".jpg", ".jpeg"))
+    )
+    if not shots:
+        print("No screenshots to upload")
+        return
+    for ordinal, name in enumerate(shots[:10]):
+        path = os.path.join(shots_dir, name)
+        data = api_multipart(
+            f"/public/v1/application/{PACKAGE}/version/{version_id}/image/screenshot/PORTRAIT/{ordinal}",
+            token,
+            path,
+        )
+        if data.get("code") != "OK":
+            raise RuntimeError(f"Screenshot upload failed ({name}): {data}")
+        print(f"Screenshot uploaded [{ordinal}]: {name}")
+
+
 def send_for_moderation(token: str, version_id: int) -> None:
     data = api_json(
         "POST",
@@ -216,6 +263,17 @@ def main() -> None:
     key_id = env("RUSTORE_KEY_ID")
     private_key = env("RUSTORE_PRIVATE_KEY")
     aab_path = AAB_PATH or env("AAB_PATH")
+    store_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "store", "rustore")
+    )
+    icon_path = os.environ.get("RUSTORE_ICON_PATH") or os.path.join(
+        store_dir, "icon-512-opaque.png"
+    )
+    if not os.path.isfile(icon_path):
+        icon_path = os.path.join(store_dir, "icon-512.png")
+    shots_dir = os.environ.get("RUSTORE_SCREENSHOTS_DIR") or os.path.join(
+        store_dir, "upload"
+    )
 
     if not os.path.isfile(aab_path):
         print(f"AAB not found: {aab_path}", file=sys.stderr)
@@ -231,6 +289,11 @@ def main() -> None:
     print("RuStore auth OK")
 
     version_id = resolve_version_id(token)
+    if os.path.isfile(icon_path):
+        upload_icon(token, version_id, icon_path)
+    else:
+        print(f"WARNING: icon missing at {icon_path}", file=sys.stderr)
+    upload_screenshots(token, version_id, shots_dir)
     upload_aab(token, version_id, aab_path)
     send_for_moderation(token, version_id)
     print(f"Done. versionId={version_id}")
