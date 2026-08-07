@@ -13,6 +13,16 @@ RuStore API **не создаёт** новое приложение. Package б�
 4. Заполнить карточку из `copy.md`, иконку и скриншоты
 5. Дальше публикации — через workflow **без** `skip_publish` или MCP `publish_aab`
 
+## Совпадение витрины и APK (модерация)
+
+Название и иконка **на устройстве** должны совпадать с карточкой:
+
+- `composeApp/.../res/values/strings.xml` → `app_name` = `Fixaverse` (как в Console)
+- `AndroidManifest` → `@mipmap/ic_launcher` из `store/rustore/icon-512-opaque.png`
+- В Console — то же имя `Fixaverse` и тот же `icon-512.png`
+
+Если API версий даёт `403` на `pro.masterdoc.client`: Console → Разработчик → API RuStore → ключ → добавить приложение Fixaverse (ключ, созданный до появления приложения, его не покрывает).
+
 ## Перед загрузкой
 
 - [x] Приложение с package `pro.masterdoc.client` видно в Console (после первого AAB)

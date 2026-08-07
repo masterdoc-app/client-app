@@ -160,7 +160,7 @@ def load_listing_from_copy() -> dict[str, Any]:
         "moderInfo": block("Комментарий модератору"),
         "appType": "MAIN",
         "categories": ["tools"],
-        "ageLegal": "0+",
+        "ageLegal": "18+",
     }
 
 
