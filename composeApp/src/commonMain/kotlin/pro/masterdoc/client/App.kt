@@ -32,6 +32,7 @@ import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.EngineerLocationsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GeocodeRepository
+import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.parseQueryParams
@@ -42,10 +43,16 @@ import pro.masterdoc.client.platform.AppTextSelection
 import pro.masterdoc.client.presentation.shell.DefaultRootComponent
 import pro.masterdoc.client.presentation.shell.RootComponent
 import pro.masterdoc.client.session.ClientSession
+import pro.masterdoc.client.ui.LoginScreen
 import pro.masterdoc.client.ui.shell.MainShellContent
 
 private sealed interface ShellUiState {
     data object Loading : ShellUiState
+
+    data class Login(
+        val isLoading: Boolean = false,
+        val error: String? = null,
+    ) : ShellUiState
 
     data class Ready(val root: RootComponent) : ShellUiState
 
@@ -94,6 +101,11 @@ fun AuthenticatedApp(
 
             fun logoutAndRestart() {
                 scope.launch {
+                    if (usesInAppPasswordLogin()) {
+                        coordinator.logout()
+                        state = ShellUiState.Login()
+                        return@launch
+                    }
                     state = ShellUiState.Loading
                     runCatching { coordinator.logoutRedirectUrl() }
                         .onSuccess { BrowserNav.navigateTo(it) }
@@ -102,6 +114,22 @@ fun AuthenticatedApp(
                             coordinator.logout()
                             state = ShellUiState.Error(it.message ?: "Не удалось выйти")
                         }
+                }
+            }
+
+            fun loginWithPassword(
+                email: String,
+                password: String,
+            ) {
+                scope.launch {
+                    state = ShellUiState.Login(isLoading = true)
+                    try {
+                        val me = coordinator.loginWithPassword(email, password)
+                        state = ShellUiState.Ready(rootForSession(ClientSession.fromMe(me), analyticsSink))
+                    } catch (error: Exception) {
+                        coordinator.logout()
+                        state = ShellUiState.Login(error = loginErrorMessage(error))
+                    }
                 }
             }
 
@@ -114,6 +142,12 @@ fun AuthenticatedApp(
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
+                is ShellUiState.Login ->
+                    LoginScreen(
+                        isLoading = s.isLoading,
+                        error = s.error,
+                        onSubmit = ::loginWithPassword,
+                    )
                 is ShellUiState.Ready ->
                     MainShellContent(
                         component = s.root.shell,
@@ -169,10 +203,36 @@ private fun rootForSession(
         analyticsSink = analyticsSink,
     )
 
+internal enum class UnauthenticatedEntry {
+    PasswordForm,
+    OidcRedirect,
+}
+
+internal fun unauthenticatedEntry(usesInAppPasswordLogin: Boolean): UnauthenticatedEntry =
+    if (usesInAppPasswordLogin) {
+        UnauthenticatedEntry.PasswordForm
+    } else {
+        UnauthenticatedEntry.OidcRedirect
+    }
+
 private suspend fun bootstrap(
     coordinator: AuthCoordinator,
     analyticsSink: AnalyticsSink,
 ): ShellUiState {
+    val usesPasswordLogin = usesInAppPasswordLogin()
+    if (usesPasswordLogin) {
+        if (!coordinator.hasSession()) {
+            return enterUnauthenticated(coordinator, usesPasswordLogin)
+        }
+        return try {
+            val me = coordinator.loadMe()
+            ShellUiState.Ready(rootForSession(ClientSession.fromMe(me), analyticsSink))
+        } catch (_: Exception) {
+            coordinator.logout()
+            ShellUiState.Login()
+        }
+    }
+
     val path = BrowserNav.currentPath()
     if (path.contains("/auth/callback")) {
         val params = parseQueryParams(BrowserNav.currentSearch())
@@ -193,7 +253,7 @@ private suspend fun bootstrap(
     }
 
     if (!coordinator.hasSession()) {
-        return startLoginOrError(coordinator)
+        return enterUnauthenticated(coordinator, usesPasswordLogin)
     }
 
     return try {
@@ -204,6 +264,23 @@ private suspend fun bootstrap(
         startLoginOrError(coordinator)
     }
 }
+
+private suspend fun enterUnauthenticated(
+    coordinator: AuthCoordinator,
+    usesInAppPasswordLogin: Boolean,
+): ShellUiState =
+    when (unauthenticatedEntry(usesInAppPasswordLogin)) {
+        UnauthenticatedEntry.PasswordForm -> ShellUiState.Login()
+        UnauthenticatedEntry.OidcRedirect -> startLoginOrError(coordinator)
+    }
+
+internal fun loginErrorMessage(error: Throwable): String =
+    when ((error as? GatewayHttpException)?.status) {
+        401 -> "Неверный email или пароль"
+        502 -> "Сервис входа временно недоступен"
+        null -> "Сервис входа временно недоступен"
+        else -> "Не удалось войти. Попробуйте ещё раз"
+    }
 
 private suspend fun startLoginOrError(coordinator: AuthCoordinator): ShellUiState {
     pendingDeepLinkHash(BrowserNav.currentHash())?.let(BrowserNav::savePendingDeepLink)

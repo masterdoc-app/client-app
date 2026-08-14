@@ -8,6 +8,113 @@ import kotlinx.coroutines.runBlocking
 
 class AuthRepositoryTest {
     @Test
+    fun coordinatorLoginWithPassword_loadsMeAfterPersistingTokens() =
+        runBlocking {
+            val http =
+                FakeGatewayHttpClient { method, url, headers, _ ->
+                    when {
+                        method == "POST" && url.endsWith("/auth/login") ->
+                            GatewayHttpResponse(
+                                200,
+                                """{"access_token":"at","refresh_token":"rt","token_type":"Bearer"}""",
+                            )
+                        method == "GET" && url.endsWith("/me") -> {
+                            assertEquals("Bearer at", headers["Authorization"])
+                            GatewayHttpResponse(
+                                200,
+                                """{"userInfo":{"id":"user-1","email":"a@b.c"},"features":[]}""",
+                            )
+                        }
+                        else -> error("Unexpected request: $method $url")
+                    }
+                }
+            val config = AuthConfig(clientId = "native-client")
+            val tokens = InMemoryTokenStore()
+            val coordinator =
+                AuthCoordinator(
+                    authRepository =
+                        AuthRepository(
+                            config = config,
+                            http = http,
+                            tokenStore = tokens,
+                            pkceStore = InMemoryPkceSessionStore(),
+                        ),
+                    meRepository =
+                        MeRepository(
+                            config = config,
+                            http = http,
+                            tokenStore = tokens,
+                        ),
+                )
+
+            val me = coordinator.loginWithPassword("a@b.c", "secret")
+
+            assertEquals("a@b.c", me.userInfo.email)
+        }
+
+    @Test
+    fun loginWithPassword_postsJsonAndPersistsTokens() =
+        runBlocking {
+            val http =
+                FakeGatewayHttpClient { method, url, headers, body ->
+                    assertEquals("POST", method)
+                    assertTrue(url.endsWith("/auth/login"))
+                    assertEquals("application/json", headers["Content-Type"])
+                    assertEquals(
+                        """{"email":"a@b.c","password":"secret","client_id":"native-client"}""",
+                        body,
+                    )
+                    GatewayHttpResponse(
+                        200,
+                        """{"access_token":"at","refresh_token":"rt","id_token":"id","token_type":"Bearer"}""",
+                    )
+                }
+            val tokens = InMemoryTokenStore()
+            val repo =
+                AuthRepository(
+                    config = AuthConfig(clientId = "native-client"),
+                    http = http,
+                    tokenStore = tokens,
+                    pkceStore = InMemoryPkceSessionStore(),
+                )
+
+            val result = repo.loginWithPassword(" a@b.c ", "secret")
+
+            assertEquals("at", result.accessToken)
+            assertEquals("rt", result.refreshToken)
+            assertEquals("id", result.idToken)
+            assertEquals("at", tokens.read()?.accessToken)
+        }
+
+    @Test
+    fun loginWithPassword_unauthorizedThrowsAndDoesNotPersistTokens() =
+        runBlocking {
+            val http =
+                FakeGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("POST", method)
+                    assertTrue(url.endsWith("/auth/login"))
+                    GatewayHttpResponse(401, """{"error":"invalid_credentials"}""")
+                }
+            val tokens = InMemoryTokenStore()
+            val repo =
+                AuthRepository(
+                    config = AuthConfig(clientId = "native-client"),
+                    http = http,
+                    tokenStore = tokens,
+                    pkceStore = InMemoryPkceSessionStore(),
+                )
+
+            val ex =
+                assertFailsWith<GatewayHttpException> {
+                    repo.loginWithPassword("a@b.c", "wrong")
+                }
+
+            assertEquals(401, ex.status)
+            assertTrue(ex.message.contains("Login failed"))
+            assertEquals(null, tokens.read())
+        }
+
+    @Test
     fun buildAuthorizeUrl_storesPkceAndIncludesChallenge() =
         runBlocking {
             val http =
@@ -262,7 +369,7 @@ private class FakeGatewayHttpClient(
         url: String,
         body: ByteArray,
         headers: Map<String, String>,
-    ): GatewayHttpResponse = handler("POST", url, headers, "<bytes:${body.size}>")
+    ): GatewayHttpResponse = handler("POST", url, headers, body.decodeToString())
 
     override suspend fun delete(
         url: String,

@@ -15,6 +15,11 @@ val oidcWebClientId: String =
         ?: System.getenv("FIXAVERSE_OIDC_WEB_CLIENT_ID")
         ?: "unset-web-client-id"
 
+val oidcNativeClientId: String =
+    (findProperty("fixaverse.oidc.nativeClientId") as String?)
+        ?: System.getenv("FIXAVERSE_OIDC_NATIVE_CLIENT_ID")
+        ?: "unset-native-client-id"
+
 kotlin {
     applyDefaultHierarchyTemplate()
 
@@ -138,6 +143,7 @@ compose.desktop {
 tasks.register("generateAuthDefaults") {
     val outputDir = layout.buildDirectory.dir("generated/authDefaults/kotlin")
     inputs.property("oidcWebClientId", oidcWebClientId)
+    inputs.property("oidcNativeClientId", oidcNativeClientId)
     outputs.dir(outputDir)
     doLast {
         val dir = outputDir.get().asFile.resolve("pro/masterdoc/client")
@@ -148,6 +154,7 @@ tasks.register("generateAuthDefaults") {
 
             internal object GeneratedAuthDefaults {
                 const val WEB_CLIENT_ID: String = "$oidcWebClientId"
+                const val NATIVE_CLIENT_ID: String = "$oidcNativeClientId"
             }
             """.trimIndent() + "\n",
         )

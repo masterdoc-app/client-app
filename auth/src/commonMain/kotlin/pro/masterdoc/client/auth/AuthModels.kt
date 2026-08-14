@@ -9,6 +9,13 @@ data class AuthUrlResponse(
 )
 
 @Serializable
+data class AuthLoginRequest(
+    val email: String,
+    val password: String,
+    @SerialName("client_id") val clientId: String,
+)
+
+@Serializable
 data class TokenResponse(
     @SerialName("access_token") val accessToken: String,
     @SerialName("refresh_token") val refreshToken: String? = null,

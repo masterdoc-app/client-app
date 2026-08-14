@@ -3,3 +3,6 @@
 
 # Zitadel web OIDC client id (terraform output web_client_id)
 # fixaverse.oidc.webClientId=YOUR_WEB_CLIENT_ID
+
+# Zitadel native OIDC client id (terraform output native_client_id)
+# fixaverse.oidc.nativeClientId=YOUR_NATIVE_CLIENT_ID
