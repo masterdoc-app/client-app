@@ -203,13 +203,26 @@ private fun rootForSession(
         analyticsSink = analyticsSink,
     )
 
+internal enum class UnauthenticatedEntry {
+    PasswordForm,
+    OidcRedirect,
+}
+
+internal fun unauthenticatedEntry(usesInAppPasswordLogin: Boolean): UnauthenticatedEntry =
+    if (usesInAppPasswordLogin) {
+        UnauthenticatedEntry.PasswordForm
+    } else {
+        UnauthenticatedEntry.OidcRedirect
+    }
+
 private suspend fun bootstrap(
     coordinator: AuthCoordinator,
     analyticsSink: AnalyticsSink,
 ): ShellUiState {
-    if (usesInAppPasswordLogin()) {
+    val usesPasswordLogin = usesInAppPasswordLogin()
+    if (usesPasswordLogin) {
         if (!coordinator.hasSession()) {
-            return ShellUiState.Login()
+            return enterUnauthenticated(coordinator, usesPasswordLogin)
         }
         return try {
             val me = coordinator.loadMe()
@@ -240,7 +253,7 @@ private suspend fun bootstrap(
     }
 
     if (!coordinator.hasSession()) {
-        return startLoginOrError(coordinator)
+        return enterUnauthenticated(coordinator, usesPasswordLogin)
     }
 
     return try {
@@ -251,6 +264,15 @@ private suspend fun bootstrap(
         startLoginOrError(coordinator)
     }
 }
+
+private suspend fun enterUnauthenticated(
+    coordinator: AuthCoordinator,
+    usesInAppPasswordLogin: Boolean,
+): ShellUiState =
+    when (unauthenticatedEntry(usesInAppPasswordLogin)) {
+        UnauthenticatedEntry.PasswordForm -> ShellUiState.Login()
+        UnauthenticatedEntry.OidcRedirect -> startLoginOrError(coordinator)
+    }
 
 internal fun loginErrorMessage(error: Throwable): String =
     when ((error as? GatewayHttpException)?.status) {
