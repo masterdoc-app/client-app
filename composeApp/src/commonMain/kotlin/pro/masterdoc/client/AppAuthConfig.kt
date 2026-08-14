@@ -4,9 +4,13 @@ import pro.masterdoc.client.auth.AuthConfig
 
 fun appAuthConfig(): AuthConfig {
     return AuthConfig(
-        clientId = GeneratedAuthDefaults.WEB_CLIENT_ID,
+        clientId = platformAuthClientId(),
         redirectUri = platformAuthRedirectUri(),
     )
 }
 
+expect fun platformAuthClientId(): String
+
 expect fun platformAuthRedirectUri(): String
+
+expect fun usesInAppPasswordLogin(): Boolean

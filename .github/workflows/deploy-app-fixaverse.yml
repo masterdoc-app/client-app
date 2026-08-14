@@ -41,6 +41,9 @@ jobs:
       - run: chmod +x gradlew
 
       - name: JVM / Desktop tests and Android compile
+        env:
+          FIXAVERSE_OIDC_WEB_CLIENT_ID: ${{ secrets.FIXAVERSE_OIDC_WEB_CLIENT_ID }}
+          FIXAVERSE_OIDC_NATIVE_CLIENT_ID: ${{ secrets.FIXAVERSE_OIDC_NATIVE_CLIENT_ID }}
         run: |
           ./gradlew \
             :auth:jvmTest \
