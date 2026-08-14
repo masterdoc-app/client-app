@@ -12,6 +12,14 @@ class AuthCoordinator(
 
     suspend fun startLogin(): String = authRepository.buildAuthorizeUrl()
 
+    suspend fun loginWithPassword(
+        email: String,
+        password: String,
+    ): MeResponse {
+        authRepository.loginWithPassword(email, password)
+        return meRepository.getMe()
+    }
+
     suspend fun completeCallback(
         code: String,
         state: String?,

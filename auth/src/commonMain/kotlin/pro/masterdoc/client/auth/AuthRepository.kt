@@ -1,5 +1,6 @@
 package pro.masterdoc.client.auth
 
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class AuthRepository(
@@ -9,6 +10,32 @@ class AuthRepository(
     private val pkceStore: PkceSessionStore,
     private val json: Json = defaultJson,
 ) {
+    suspend fun loginWithPassword(
+        email: String,
+        password: String,
+    ): AuthTokens {
+        val payload =
+            json.encodeToString(
+                AuthLoginRequest(
+                    email = email.trim(),
+                    password = password,
+                    clientId = config.clientId,
+                ),
+            )
+        val response =
+            http.postBytes(
+                url = "${config.gatewayBaseUrl.trimEnd('/')}/auth/login",
+                body = payload.encodeToByteArray(),
+                headers = mapOf("Content-Type" to "application/json"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(response.status, "Login failed: ${response.body}")
+        }
+        val tokens = AuthTokens.from(json.decodeFromString<TokenResponse>(response.body))
+        tokenStore.write(tokens)
+        return tokens
+    }
+
     suspend fun buildAuthorizeUrl(prompt: String? = null): String {
         val authorizeBase = fetchAuthorizeBase().trimEnd('/')
         val verifier = Pkce.generateVerifier()
