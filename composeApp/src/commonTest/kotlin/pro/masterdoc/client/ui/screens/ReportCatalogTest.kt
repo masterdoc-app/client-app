@@ -6,9 +6,9 @@ import kotlin.test.assertTrue
 
 class ReportCatalogTest {
     @Test
-    fun catalogHasFifteenReportsInStableOrder() {
+    fun catalogHasSixteenReportsInStableOrder() {
         val items = reportCatalogItems()
-        assertEquals(15, items.size)
+        assertEquals(16, items.size)
         assertEquals(
             listOf(
                 ReportId.KpiSummary,
@@ -26,15 +26,17 @@ class ReportCatalogTest {
                 ReportId.SiteWorkOrders,
                 ReportId.TimeToFirstAction,
                 ReportId.PprPlanFact,
+                ReportId.ClosuresWithoutPhotos,
             ),
             items.map { it.id },
         )
         assertEquals("Сводка KPI", items.first().title)
-        assertEquals("Детальный отчёт", items[items.lastIndex - 4].title)
-        assertEquals("Просроченные", items[items.lastIndex - 3].title)
-        assertEquals("По площадке", items[items.lastIndex - 2].title)
-        assertEquals("Время реакции", items[items.lastIndex - 1].title)
-        assertEquals("ППР: план и факт", items.last().title)
+        assertEquals("Детальный отчёт", items[items.lastIndex - 5].title)
+        assertEquals("Просроченные", items[items.lastIndex - 4].title)
+        assertEquals("По площадке", items[items.lastIndex - 3].title)
+        assertEquals("Время реакции", items[items.lastIndex - 2].title)
+        assertEquals("ППР: план и факт", items[items.lastIndex - 1].title)
+        assertEquals("Закрытия без фото", items.last().title)
         items.forEach { item ->
             assertTrue(item.description.isNotBlank(), "description missing for ${item.id}")
         }

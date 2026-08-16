@@ -490,4 +490,28 @@ class WorkOrdersRepositoryTest {
             assertEquals("wo-1", items.single().id)
             assertEquals("Осмотр", items.single().title)
         }
+
+    @Test
+    fun closuresWithoutPhotosHitsExactPath() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertEquals(
+                        "https://api.test/reports/closures-without-photos?from=2026-07-01&to=2026-07-31",
+                        url,
+                    )
+                    GatewayHttpResponse(
+                        200,
+                        """[{"id":"wo-1","orgId":"o","type":"emergency","status":"closed","title":"Утечка","assetId":"pump-1","siteId":"s","dueAt":"2026-07-01","source":"api","createdAt":"2026-07-01T00:00:00Z","closedAt":"2026-07-15T00:00:00Z","updatedAt":"t"}]""",
+                    )
+                }
+            val items =
+                WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+                    .closuresWithoutPhotos(from = "2026-07-01", to = "2026-07-31")
+            assertEquals("wo-1", items.single().id)
+            assertEquals("Утечка", items.single().title)
+        }
 }

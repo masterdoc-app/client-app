@@ -189,6 +189,19 @@ fun ReportsScreen(
         return
     }
 
+    if (selectedReport == ReportId.ClosuresWithoutPhotos) {
+        ClosuresWithoutPhotosReportScreen(
+            reportsRepository = reportsRepository,
+            equipmentRepository = equipmentRepository,
+            adminUsersRepository = adminUsersRepository,
+            attachmentsRepository = attachmentsRepository,
+            commentsRepository = commentsRepository,
+            onBack = { selectedReport = null },
+            modifier = modifier,
+        )
+        return
+    }
+
     selectedReport?.let { reportId ->
         ReportDetailScreen(
             reportId = reportId,

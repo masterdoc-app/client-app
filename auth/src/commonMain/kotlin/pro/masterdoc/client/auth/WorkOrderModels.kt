@@ -269,6 +269,21 @@ class WorkOrdersRepository(
         return json.decodeFromString(response.body)
     }
 
+    suspend fun closuresWithoutPhotos(from: String, to: String): List<WorkOrderDto> {
+        val response =
+            http.get(
+                url = "${base()}/reports/closures-without-photos?from=$from&to=$to",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(
+                response.status,
+                response.body.ifBlank { "closures without photos report failed" },
+            )
+        }
+        return json.decodeFromString(response.body)
+    }
+
     private suspend fun <T> getReport(
         path: String,
         from: String,
