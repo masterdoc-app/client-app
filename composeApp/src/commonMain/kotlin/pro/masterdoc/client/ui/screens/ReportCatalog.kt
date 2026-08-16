@@ -15,6 +15,7 @@ enum class ReportId {
     OverdueOpenWorkOrders,
     SiteWorkOrders,
     TimeToFirstAction,
+    PprPlanFact,
 }
 
 data class ReportCatalogItem(
@@ -137,5 +138,13 @@ fun reportCatalogItems(): List<ReportCatalogItem> =
             description =
                 "Показывает заявки, созданные за период, и сколько времени прошло до перевода в работу. " +
                     "Нажмите строку, чтобы открыть карточку.",
+        ),
+        ReportCatalogItem(
+            id = ReportId.PprPlanFact,
+            title = "ППР: план и факт",
+            subtitle = "Пункты ТО за период",
+            description =
+                "Показывает пункты планово-предупредительных работ с исходом: просрочен, ожидает, " +
+                    "вовремя или с опозданием. Нажмите строку, чтобы открыть карточку.",
         ),
     )

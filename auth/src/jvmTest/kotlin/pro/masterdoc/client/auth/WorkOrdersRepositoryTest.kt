@@ -466,4 +466,28 @@ class WorkOrdersRepositoryTest {
             assertEquals("wo-1", items.single().id)
             assertEquals("Утечка", items.single().title)
         }
+
+    @Test
+    fun pprPlanFactHitsExactPath() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertEquals(
+                        "https://api.test/reports/ppr-plan-fact?from=2026-07-01&to=2026-07-31",
+                        url,
+                    )
+                    GatewayHttpResponse(
+                        200,
+                        """[{"id":"wo-1","orgId":"o","type":"ppr","status":"closed","title":"Осмотр","assetId":"pump-1","siteId":"s","dueAt":"2026-07-15","source":"api","createdAt":"2026-07-01T00:00:00Z","closedAt":"2026-07-14T00:00:00Z","updatedAt":"t"}]""",
+                    )
+                }
+            val items =
+                WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+                    .pprPlanFact(from = "2026-07-01", to = "2026-07-31")
+            assertEquals("wo-1", items.single().id)
+            assertEquals("Осмотр", items.single().title)
+        }
 }
