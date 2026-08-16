@@ -12,4 +12,10 @@ class WorkOrderCommentsTest {
         assertFalse(canSubmitWorkOrderComment(text = "   ", sending = false))
         assertFalse(canSubmitWorkOrderComment(text = "Комментарий", sending = true))
     }
+
+    @Test
+    fun composerHiddenWhenComposeDisabled() {
+        assertTrue(shouldShowWorkOrderCommentComposer(composeEnabled = true))
+        assertFalse(shouldShowWorkOrderCommentComposer(composeEnabled = false))
+    }
 }

@@ -75,6 +75,7 @@ fun WorkOrderDetailScreen(
     editableAssignee: Boolean = false,
     locationTrackingController: LocationTrackingController? = null,
     readOnly: Boolean = false,
+    allowMediaMutations: Boolean = true,
     attachmentsRepository: AttachmentsRepository? = null,
     commentsRepository: CommentsRepository? = null,
     modifier: Modifier = Modifier,
@@ -281,7 +282,7 @@ fun WorkOrderDetailScreen(
                                     }
                                 }
                             }
-                            if (attachmentsRepository != null && wo.attachmentIds.size < 10) {
+                            if (attachmentsRepository != null && allowMediaMutations && wo.attachmentIds.size < 10) {
                                 AppButton(
                                     text = if (uploadingPhoto) "Загрузка…" else "Добавить фото",
                                     onClick = {
@@ -313,6 +314,7 @@ fun WorkOrderDetailScreen(
                             loading = commentsLoading,
                             users = directoryUsers,
                             currentUserId = currentUserId,
+                            composeEnabled = allowMediaMutations,
                             draft = commentDraft,
                             pendingPhoto = pendingCommentPhoto,
                             sending = sendingComment,
@@ -686,12 +688,15 @@ internal fun canSubmitWorkOrderComment(
     sending: Boolean,
 ): Boolean = text.isNotBlank() && !sending
 
+internal fun shouldShowWorkOrderCommentComposer(composeEnabled: Boolean): Boolean = composeEnabled
+
 @Composable
 private fun WorkOrderCommentsSection(
     comments: List<WorkOrderCommentDto>,
     loading: Boolean,
     users: List<AdminUser>,
     currentUserId: String?,
+    composeEnabled: Boolean,
     draft: String,
     pendingPhoto: PickedImage?,
     sending: Boolean,
@@ -719,45 +724,47 @@ private fun WorkOrderCommentsSection(
                     }
                 }
         }
-        AppTextField(
-            value = draft,
-            onValueChange = onDraftChange,
-            label = "Комментарий",
-            singleLine = false,
-            enabled = !sending,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        pendingPhoto?.let { photo ->
-            Box(modifier = Modifier.size(96.dp)) {
-                val bitmap = remember(photo) { decodePickedImage(photo.bytes) }
-                if (bitmap != null) {
-                    Image(
-                        bitmap = bitmap,
-                        contentDescription = "Фото",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(96.dp).padding(ClientSpacing.xs),
-                    )
-                } else {
-                    AppText(text = "Фото", modifier = Modifier.padding(ClientSpacing.sm))
-                }
-                IconButton(onClick = onRemovePhoto, enabled = !sending) {
-                    AppText(text = "×")
+        if (shouldShowWorkOrderCommentComposer(composeEnabled)) {
+            AppTextField(
+                value = draft,
+                onValueChange = onDraftChange,
+                label = "Комментарий",
+                singleLine = false,
+                enabled = !sending,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            pendingPhoto?.let { photo ->
+                Box(modifier = Modifier.size(96.dp)) {
+                    val bitmap = remember(photo) { decodePickedImage(photo.bytes) }
+                    if (bitmap != null) {
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = "Фото",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(96.dp).padding(ClientSpacing.xs),
+                        )
+                    } else {
+                        AppText(text = "Фото", modifier = Modifier.padding(ClientSpacing.sm))
+                    }
+                    IconButton(onClick = onRemovePhoto, enabled = !sending) {
+                        AppText(text = "×")
+                    }
                 }
             }
+            AppButton(
+                text = "Добавить фото",
+                variant = AppButtonVariant.Secondary,
+                onClick = onAddPhoto,
+                enabled = !sending,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            AppButton(
+                text = if (sending) "Отправка…" else "Отправить",
+                onClick = onSubmit,
+                enabled = canSubmitWorkOrderComment(draft, sending),
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
-        AppButton(
-            text = "Добавить фото",
-            variant = AppButtonVariant.Secondary,
-            onClick = onAddPhoto,
-            enabled = !sending,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        AppButton(
-            text = if (sending) "Отправка…" else "Отправить",
-            onClick = onSubmit,
-            enabled = canSubmitWorkOrderComment(draft, sending),
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 

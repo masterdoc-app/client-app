@@ -34,6 +34,8 @@ import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.AttachmentsRepository
+import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.DowntimeIntervalDto
 import pro.masterdoc.client.auth.EngineerWorkloadReport
 import pro.masterdoc.client.auth.EquipmentRepository
@@ -120,9 +122,23 @@ fun ReportsScreen(
     reportsRepository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository,
     adminUsersRepository: AdminUsersRepository? = null,
+    attachmentsRepository: AttachmentsRepository? = null,
+    commentsRepository: CommentsRepository? = null,
     modifier: Modifier = Modifier,
 ) {
     var selectedReport by remember { mutableStateOf<ReportId?>(null) }
+
+    if (selectedReport == ReportId.EquipmentWorkOrders) {
+        EquipmentWorkOrdersReportScreen(
+            reportsRepository = reportsRepository,
+            equipmentRepository = equipmentRepository,
+            attachmentsRepository = attachmentsRepository,
+            commentsRepository = commentsRepository,
+            onBack = { selectedReport = null },
+            modifier = modifier,
+        )
+        return
+    }
 
     selectedReport?.let { reportId ->
         ReportDetailScreen(
@@ -307,7 +323,7 @@ private fun ReportDetailScreen(
 }
 
 @Composable
-private fun ReportHelpFooter(text: String) {
+internal fun ReportHelpFooter(text: String) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(top = ClientSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs),
@@ -517,7 +533,7 @@ private fun KpiValue(label: String, value: String) {
 }
 
 @Composable
-private fun PeriodSelector(selected: Int, onSelected: (Int) -> Unit) {
+internal fun PeriodSelector(selected: Int, onSelected: (Int) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
         listOf(7, 30, 90).forEach { period ->
             AppButton(
