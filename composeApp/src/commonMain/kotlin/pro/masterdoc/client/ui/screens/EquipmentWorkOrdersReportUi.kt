@@ -74,7 +74,7 @@ internal fun EquipmentWorkOrdersReportScreen(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            assetsError = e.message ?: "Не удалось загрузить оборудование"
+            assetsError = "Не удалось загрузить оборудование"
             assets = emptyList()
         } finally {
             assetsLoading = false
@@ -101,10 +101,10 @@ internal fun EquipmentWorkOrdersReportScreen(
         } catch (e: CancellationException) {
             throw e
         } catch (e: GatewayHttpException) {
-            ordersError = e.message ?: "Не удалось загрузить отчёт"
+            ordersError = "Не удалось загрузить отчёт"
             orders = emptyList()
         } catch (e: Exception) {
-            ordersError = e.message ?: "Не удалось загрузить отчёт"
+            ordersError = "Не удалось загрузить отчёт"
             orders = emptyList()
         } finally {
             ordersLoading = false
