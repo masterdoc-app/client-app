@@ -6,9 +6,9 @@ import kotlin.test.assertTrue
 
 class ReportCatalogTest {
     @Test
-    fun catalogHasTenReportsInStableOrder() {
+    fun catalogHasElevenReportsInStableOrder() {
         val items = reportCatalogItems()
-        assertEquals(10, items.size)
+        assertEquals(11, items.size)
         assertEquals(
             listOf(
                 ReportId.KpiSummary,
@@ -21,11 +21,12 @@ class ReportCatalogTest {
                 ReportId.ReactiveCompletion,
                 ReportId.EngineerWorkload,
                 ReportId.FailureFrequency,
+                ReportId.EquipmentWorkOrders,
             ),
             items.map { it.id },
         )
         assertEquals("Сводка KPI", items.first().title)
-        assertEquals("Частота отказов", items.last().title)
+        assertEquals("Детальный отчёт", items.last().title)
         items.forEach { item ->
             assertTrue(item.description.isNotBlank(), "description missing for ${item.id}")
         }

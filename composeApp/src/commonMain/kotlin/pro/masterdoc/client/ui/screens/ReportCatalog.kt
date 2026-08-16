@@ -11,6 +11,7 @@ enum class ReportId {
     ReactiveCompletion,
     EngineerWorkload,
     FailureFrequency,
+    EquipmentWorkOrders,
 }
 
 data class ReportCatalogItem(
@@ -101,5 +102,13 @@ fun reportCatalogItems(): List<ReportCatalogItem> =
             subtitle = "Топ оборудования по авариям",
             description =
                 "Ранжирует оборудование по числу аварийных заявок, созданных за выбранный период.",
+        ),
+        ReportCatalogItem(
+            id = ReportId.EquipmentWorkOrders,
+            title = "Детальный отчёт",
+            subtitle = "Заявки по единице оборудования",
+            description =
+                "По выбранному оборудованию показывает все заявки, которые пересекают выбранный период: " +
+                    "открытые и закрытые. Нажмите строку, чтобы открыть карточку.",
         ),
     )

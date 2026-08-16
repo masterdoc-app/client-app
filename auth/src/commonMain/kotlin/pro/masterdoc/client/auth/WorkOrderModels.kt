@@ -194,6 +194,21 @@ class WorkOrdersRepository(
             failureMessage = "failure frequency report failed",
         )
 
+    suspend fun equipmentWorkOrders(assetId: String, from: String, to: String): List<WorkOrderDto> {
+        val response =
+            http.get(
+                url = "${base()}/reports/equipment-work-orders?assetId=$assetId&from=$from&to=$to",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(
+                response.status,
+                response.body.ifBlank { "equipment work orders report failed" },
+            )
+        }
+        return json.decodeFromString(response.body)
+    }
+
     private suspend fun <T> getReport(
         path: String,
         from: String,

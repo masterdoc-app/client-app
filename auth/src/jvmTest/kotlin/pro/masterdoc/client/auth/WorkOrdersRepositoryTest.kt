@@ -373,4 +373,28 @@ class WorkOrdersRepositoryTest {
             assertEquals("engineer-1", workload.engineers.single().userId)
             assertEquals(7, frequency.assets.single().emergencyCount)
         }
+
+    @Test
+    fun equipmentWorkOrdersUsesAssetAndPeriod() =
+        runBlocking {
+            val tokens = InMemoryTokenStore()
+            tokens.write(AuthTokens(accessToken = "at"))
+            val http =
+                RecordingGatewayHttpClient { method, url, _, _ ->
+                    assertEquals("GET", method)
+                    assertEquals(
+                        "https://api.test/reports/equipment-work-orders?assetId=pump-1&from=2026-07-01&to=2026-07-31",
+                        url,
+                    )
+                    GatewayHttpResponse(
+                        200,
+                        """[{"id":"wo-1","orgId":"o","type":"emergency","status":"new","title":"Утечка","assetId":"pump-1","siteId":"s","dueAt":"2026-07-22","source":"api","createdAt":"2026-07-10T00:00:00Z","updatedAt":"t"}]""",
+                    )
+                }
+            val items =
+                WorkOrdersRepository(config = config, http = http, tokenStore = tokens)
+                    .equipmentWorkOrders(assetId = "pump-1", from = "2026-07-01", to = "2026-07-31")
+            assertEquals("wo-1", items.single().id)
+            assertEquals("Утечка", items.single().title)
+        }
 }
