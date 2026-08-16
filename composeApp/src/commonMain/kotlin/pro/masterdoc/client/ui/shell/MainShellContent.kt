@@ -352,8 +352,6 @@ private fun ActivePage(
                             reportsRepository = workOrdersRepository,
                             equipmentRepository = equipmentRepository,
                             adminUsersRepository = adminUsersRepository,
-                            attachmentsRepository = attachmentsRepository,
-                            commentsRepository = commentsRepository,
                         )
                     } else {
                         StubDestinationScreen(active.destination)
