@@ -239,6 +239,21 @@ class WorkOrdersRepository(
         return json.decodeFromString(response.body)
     }
 
+    suspend fun timeToFirstAction(from: String, to: String): List<WorkOrderDto> {
+        val response =
+            http.get(
+                url = "${base()}/reports/time-to-first-action?from=$from&to=$to",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(
+                response.status,
+                response.body.ifBlank { "time to first action report failed" },
+            )
+        }
+        return json.decodeFromString(response.body)
+    }
+
     private suspend fun <T> getReport(
         path: String,
         from: String,

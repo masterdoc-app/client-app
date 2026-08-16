@@ -165,6 +165,18 @@ fun ReportsScreen(
         return
     }
 
+    if (selectedReport == ReportId.TimeToFirstAction) {
+        TimeToFirstActionReportScreen(
+            reportsRepository = reportsRepository,
+            equipmentRepository = equipmentRepository,
+            attachmentsRepository = attachmentsRepository,
+            commentsRepository = commentsRepository,
+            onBack = { selectedReport = null },
+            modifier = modifier,
+        )
+        return
+    }
+
     selectedReport?.let { reportId ->
         ReportDetailScreen(
             reportId = reportId,
