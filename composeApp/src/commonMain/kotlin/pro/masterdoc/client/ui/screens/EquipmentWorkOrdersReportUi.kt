@@ -24,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.AssetDto
+import pro.masterdoc.client.auth.AttachmentsRepository
+import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.IsoDates
@@ -44,6 +46,8 @@ import pro.masterdoc.client.platform.localEpochDay
 internal fun EquipmentWorkOrdersReportScreen(
     reportsRepository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository,
+    attachmentsRepository: AttachmentsRepository? = null,
+    commentsRepository: CommentsRepository? = null,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -113,9 +117,10 @@ internal fun EquipmentWorkOrdersReportScreen(
             orderId = orderId,
             onBack = { selectedOrderId = null },
             equipmentRepository = equipmentRepository,
-            attachmentsRepository = null,
-            commentsRepository = null,
+            attachmentsRepository = attachmentsRepository,
+            commentsRepository = commentsRepository,
             readOnly = true,
+            allowMediaMutations = false,
             modifier = modifier,
         )
         return

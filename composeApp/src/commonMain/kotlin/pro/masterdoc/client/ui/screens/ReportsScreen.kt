@@ -34,6 +34,8 @@ import kotlinx.coroutines.CancellationException
 import pro.masterdoc.client.auth.AssetDto
 import pro.masterdoc.client.auth.AdminUser
 import pro.masterdoc.client.auth.AdminUsersRepository
+import pro.masterdoc.client.auth.AttachmentsRepository
+import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.DowntimeIntervalDto
 import pro.masterdoc.client.auth.EngineerWorkloadReport
 import pro.masterdoc.client.auth.EquipmentRepository
@@ -120,6 +122,8 @@ fun ReportsScreen(
     reportsRepository: WorkOrdersRepository,
     equipmentRepository: EquipmentRepository,
     adminUsersRepository: AdminUsersRepository? = null,
+    attachmentsRepository: AttachmentsRepository? = null,
+    commentsRepository: CommentsRepository? = null,
     modifier: Modifier = Modifier,
 ) {
     var selectedReport by remember { mutableStateOf<ReportId?>(null) }
@@ -128,6 +132,8 @@ fun ReportsScreen(
         EquipmentWorkOrdersReportScreen(
             reportsRepository = reportsRepository,
             equipmentRepository = equipmentRepository,
+            attachmentsRepository = attachmentsRepository,
+            commentsRepository = commentsRepository,
             onBack = { selectedReport = null },
             modifier = modifier,
         )
