@@ -209,6 +209,21 @@ class WorkOrdersRepository(
         return json.decodeFromString(response.body)
     }
 
+    suspend fun overdueOpenWorkOrders(): List<WorkOrderDto> {
+        val response =
+            http.get(
+                url = "${base()}/reports/overdue-open-work-orders",
+                headers = mapOf("Authorization" to "Bearer ${bearer()}"),
+            )
+        if (!response.isSuccessful) {
+            throw GatewayHttpException(
+                response.status,
+                response.body.ifBlank { "overdue open work orders report failed" },
+            )
+        }
+        return json.decodeFromString(response.body)
+    }
+
     private suspend fun <T> getReport(
         path: String,
         from: String,
