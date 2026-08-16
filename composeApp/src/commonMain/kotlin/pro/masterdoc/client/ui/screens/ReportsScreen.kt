@@ -177,6 +177,18 @@ fun ReportsScreen(
         return
     }
 
+    if (selectedReport == ReportId.PprPlanFact) {
+        PprPlanFactReportScreen(
+            reportsRepository = reportsRepository,
+            equipmentRepository = equipmentRepository,
+            attachmentsRepository = attachmentsRepository,
+            commentsRepository = commentsRepository,
+            onBack = { selectedReport = null },
+            modifier = modifier,
+        )
+        return
+    }
+
     selectedReport?.let { reportId ->
         ReportDetailScreen(
             reportId = reportId,
