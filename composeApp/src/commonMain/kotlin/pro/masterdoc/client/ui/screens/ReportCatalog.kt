@@ -16,6 +16,7 @@ enum class ReportId {
     SiteWorkOrders,
     TimeToFirstAction,
     PprPlanFact,
+    ClosuresWithoutPhotos,
 }
 
 data class ReportCatalogItem(
@@ -146,5 +147,14 @@ fun reportCatalogItems(): List<ReportCatalogItem> =
             description =
                 "Показывает пункты планово-предупредительных работ с исходом: просрочен, ожидает, " +
                     "вовремя или с опозданием. Нажмите строку, чтобы открыть карточку.",
+        ),
+        ReportCatalogItem(
+            id = ReportId.ClosuresWithoutPhotos,
+            title = "Закрытия без фото",
+            subtitle = "Закрыты без вложений",
+            description =
+                "Показывает заявки, закрытые за период без вложений (фото). " +
+                    "Учитываются только вложения (фото). Комментарии в v1 не проверяются. " +
+                    "Нажмите строку, чтобы открыть карточку.",
         ),
     )
