@@ -12,6 +12,7 @@ enum class ReportId {
     EngineerWorkload,
     FailureFrequency,
     EquipmentWorkOrders,
+    OverdueOpenWorkOrders,
 }
 
 data class ReportCatalogItem(
@@ -110,5 +111,13 @@ fun reportCatalogItems(): List<ReportCatalogItem> =
             description =
                 "По выбранному оборудованию показывает все заявки, которые пересекают выбранный период: " +
                     "открытые и закрытые. Нажмите строку, чтобы открыть карточку.",
+        ),
+        ReportCatalogItem(
+            id = ReportId.OverdueOpenWorkOrders,
+            title = "Просроченные",
+            subtitle = "Открытые с истёкшим сроком",
+            description =
+                "Показывает открытые заявки, у которых срок уже прошёл. " +
+                    "Нажмите строку, чтобы открыть карточку.",
         ),
     )
