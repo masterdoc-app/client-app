@@ -11,7 +11,7 @@ data class WarehousePartDto(
     val sku: String? = null,
     val vendorCode: String? = null,
     val unitCost: Double? = null,
-    val onHand: Int? = null,
+    val onHand: Double = 0.0,
 )
 
 @Serializable
@@ -25,42 +25,37 @@ data class CreateWarehousePartRequest(
 
 @Serializable
 data class StockBalanceDto(
-    val orgId: String,
     val siteId: String,
     val partId: String,
-    val onHand: Int,
+    val onHand: Double,
+    val orgId: String? = null,
 )
 
 @Serializable
 data class StockReceiptRequest(
     val partId: String,
     val siteId: String,
-    val qty: Int,
+    val qty: Double,
 )
 
 @Serializable
 data class StockIssueRequest(
     val partId: String,
     val siteId: String,
-    val qty: Int,
+    val qty: Double,
     val workOrderId: String,
     val assetId: String,
 )
 
 @Serializable
-data class StockMovementDto(
-    val id: String,
-    val partId: String,
-    val siteId: String,
-    val type: String,
-    val qty: Int,
-)
+data class WarehouseOkDto(val ok: Boolean = true)
 
 @Serializable
 data class AssetPartDto(
     val partId: String,
-    val qtyHint: Int? = null,
+    val qtyHint: Double? = null,
     val critical: Boolean = false,
+    val assetId: String? = null,
 )
 
 @Serializable
@@ -72,6 +67,9 @@ data class ReplenishAdviceDto(
     val partIds: List<String> = emptyList(),
     val computedAt: String? = null,
 )
+
+fun formatWarehouseQty(value: Double): String =
+    if (value % 1.0 == 0.0) value.toInt().toString() else value.toString()
 
 class WarehouseRepository(
     private val config: AuthConfig,
@@ -111,44 +109,40 @@ class WarehouseRepository(
         return json.decodeFromString(requireSuccess(http.get("${base()}/stock$suffix", authHeaders()), "list stock failed"))
     }
 
-    suspend fun receipt(request: StockReceiptRequest): StockMovementDto =
-        movement("/stock/receipt", StockReceiptRequest.serializer(), request, "receipt failed")
+    suspend fun receipt(request: StockReceiptRequest) {
+        postOk("/stock/receipt", json.encodeToString(StockReceiptRequest.serializer(), request), "receipt failed")
+    }
 
-    suspend fun issue(request: StockIssueRequest): StockMovementDto =
-        movement("/stock/issue", StockIssueRequest.serializer(), request, "issue failed")
+    suspend fun issue(request: StockIssueRequest) {
+        postOk("/stock/issue", json.encodeToString(StockIssueRequest.serializer(), request), "issue failed")
+    }
 
     suspend fun assetParts(assetId: String): List<AssetPartDto> =
         json.decodeFromString(
             requireSuccess(http.get("${base()}/assets/${encodeQuery(assetId)}/parts", authHeaders()), "list asset parts failed"),
         )
 
-    suspend fun replaceAssetParts(assetId: String, parts: List<AssetPartDto>): List<AssetPartDto> {
+    suspend fun replaceAssetParts(assetId: String, parts: List<AssetPartDto>) {
         val response =
             http.put(
                 "${base()}/assets/${encodeQuery(assetId)}/parts",
                 json.encodeToString(AssetPartsUpdateRequest(items = parts)),
                 authHeaders() + ("Content-Type" to "application/json"),
             )
-        return json.decodeFromString(requireSuccess(response, "update asset parts failed"))
+        requireSuccess(response, "update asset parts failed")
     }
 
     suspend fun latestAdvice(): ReplenishAdviceDto =
         json.decodeFromString(requireSuccess(http.get("${base()}/advice/latest", authHeaders()), "advice failed"))
 
-    private suspend fun <T> movement(
-        path: String,
-        serializer: kotlinx.serialization.KSerializer<T>,
-        request: T,
-        fallback: String,
-    ): StockMovementDto =
-        json.decodeFromString(
-            requireSuccess(
-                http.postForm(
-                    "${base()}$path",
-                    json.encodeToString(serializer, request),
-                    authHeaders() + ("Content-Type" to "application/json"),
-                ),
-                fallback,
+    private suspend fun postOk(path: String, body: String, fallback: String) {
+        requireSuccess(
+            http.postForm(
+                "${base()}$path",
+                body,
+                authHeaders() + ("Content-Type" to "application/json"),
             ),
+            fallback,
         )
+    }
 }

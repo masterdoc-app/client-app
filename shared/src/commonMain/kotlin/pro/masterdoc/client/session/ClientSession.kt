@@ -20,6 +20,8 @@ object FeatureSetFixtures {
     fun usersAdmin(): Set<FeatureId> = setOf(FeatureId.Users, FeatureId.Profile)
 
     fun blackBox(): Set<FeatureId> = setOf(FeatureId.BlackBox, FeatureId.Profile)
+
+    fun warehouse(): Set<FeatureId> = setOf(FeatureId.Warehouse, FeatureId.Profile)
 }
 
 /**

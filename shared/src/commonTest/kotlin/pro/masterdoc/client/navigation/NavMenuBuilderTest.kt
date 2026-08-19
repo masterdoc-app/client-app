@@ -81,10 +81,10 @@ class NavMenuBuilderTest {
     }
 
     @Test
-    fun blackBox_hasBlackBoxAndProfile() {
-        val items = builder.build(FeatureSetFixtures.blackBox())
+    fun warehouse_hasWarehouseAndProfile() {
+        val items = builder.build(FeatureSetFixtures.warehouse())
         assertEquals(
-            listOf(NavDestinationId.BlackBox, NavDestinationId.Profile),
+            listOf(NavDestinationId.Warehouse, NavDestinationId.Profile),
             items.map { it.destination },
         )
     }

@@ -403,7 +403,8 @@ fun EquipmentDetailScreen(
                         val updated =
                             (compatibleParts + AssetPartDto(partId = selected.id))
                                 .distinctBy { it.partId }
-                        compatibleParts = warehouseRepository?.replaceAssetParts(assetId, updated).orEmpty()
+                        warehouseRepository?.replaceAssetParts(assetId, updated)
+                        compatibleParts = warehouseRepository?.assetParts(assetId).orEmpty()
                         partDialogOpen = false
                     } catch (e: Exception) {
                         error = e.message ?: "Не удалось привязать запчасть"

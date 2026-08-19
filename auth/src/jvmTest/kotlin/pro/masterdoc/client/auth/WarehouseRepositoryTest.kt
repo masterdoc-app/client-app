@@ -42,11 +42,11 @@ class WarehouseRepositoryTest {
             assertEquals("POST", method)
             assertEquals("https://api.test/warehouse/stock/receipt", url)
             assertEquals("application/json", headers["Content-Type"])
-            assertEquals("""{"partId":"part-1","siteId":"site-1","qty":3}""", body)
-            GatewayHttpResponse(201, """{"id":"movement-1","partId":"part-1","siteId":"site-1","type":"receipt","qty":3}""")
+            assertEquals("""{"partId":"part-1","siteId":"site-1","qty":3.0}""", body)
+            GatewayHttpResponse(200, """{"ok":true}""")
         }
 
-        assertEquals(3, repo.receipt(StockReceiptRequest("part-1", "site-1", 3)).qty)
+        repo.receipt(StockReceiptRequest("part-1", "site-1", 3.0))
     }
 
     @Test
@@ -55,13 +55,13 @@ class WarehouseRepositoryTest {
             assertEquals("POST", method)
             assertEquals("https://api.test/warehouse/stock/issue", url)
             assertEquals(
-                """{"partId":"part-1","siteId":"site-1","qty":2,"workOrderId":"wo-1","assetId":"asset-1"}""",
+                """{"partId":"part-1","siteId":"site-1","qty":2.0,"workOrderId":"wo-1","assetId":"asset-1"}""",
                 body,
             )
-            GatewayHttpResponse(201, """{"id":"movement-2","partId":"part-1","siteId":"site-1","type":"issue","qty":2}""")
+            GatewayHttpResponse(200, """{"ok":true}""")
         }
 
-        assertEquals("issue", repo.issue(StockIssueRequest("part-1", "site-1", 2, "wo-1", "asset-1")).type)
+        repo.issue(StockIssueRequest("part-1", "site-1", 2.0, "wo-1", "asset-1"))
     }
 
     @Test
@@ -86,14 +86,11 @@ class WarehouseRepositoryTest {
             assertEquals("PUT", method)
             assertEquals("https://api.test/warehouse/assets/asset-1/parts", url)
             assertEquals("application/json", headers["Content-Type"])
-            assertEquals("""{"items":[{"partId":"part-1","qtyHint":2,"critical":true}]}""", body)
-            GatewayHttpResponse(200, """[{"partId":"part-1","qtyHint":2,"critical":true}]""")
+            assertEquals("""{"items":[{"partId":"part-1","qtyHint":2.0,"critical":true}]}""", body)
+            GatewayHttpResponse(200, """{"ok":true}""")
         }
 
-        assertEquals(
-            "part-1",
-            repo.replaceAssetParts("asset-1", listOf(AssetPartDto("part-1", qtyHint = 2, critical = true))).single().partId,
-        )
+        repo.replaceAssetParts("asset-1", listOf(AssetPartDto("part-1", qtyHint = 2.0, critical = true)))
     }
 
     private suspend fun repository(

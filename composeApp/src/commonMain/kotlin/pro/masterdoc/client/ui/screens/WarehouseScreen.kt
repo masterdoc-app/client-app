@@ -28,6 +28,7 @@ import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.StockReceiptRequest
 import pro.masterdoc.client.auth.WarehousePartDto
 import pro.masterdoc.client.auth.WarehouseRepository
+import pro.masterdoc.client.auth.formatWarehouseQty
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppButtonVariant
 import pro.masterdoc.client.designsystem.components.AppScaffold
@@ -114,7 +115,7 @@ fun WarehouseScreen(
                 if (parts.isEmpty()) AppText("Нет запчастей") else parts.forEach { part ->
                     Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs)) {
                         AppText(part.name.ifBlank { "Запчасть" }, style = AppTextStyle.Title)
-                        AppText("В наличии: ${part.onHand ?: 0} ${part.uom.ifBlank { "ед." }}")
+                        AppText("В наличии: ${formatWarehouseQty(part.onHand)} ${part.uom.ifBlank { "ед." }}")
                         linkedAssetNames[part.id]
                             ?.distinct()
                             ?.takeIf { it.isNotEmpty() }
@@ -149,7 +150,7 @@ fun WarehouseScreen(
             onSubmit = { part, site, qty ->
                 scope.launch {
                     try {
-                        repository.receipt(StockReceiptRequest(part.id, site.id, qty))
+                        repository.receipt(StockReceiptRequest(part.id, site.id, qty.toDouble()))
                         dialog = null
                         reload()
                     } catch (e: Exception) {

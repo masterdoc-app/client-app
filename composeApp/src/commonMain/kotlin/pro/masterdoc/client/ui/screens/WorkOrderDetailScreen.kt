@@ -44,6 +44,7 @@ import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
 import pro.masterdoc.client.auth.WarehousePartDto
 import pro.masterdoc.client.auth.WarehouseRepository
+import pro.masterdoc.client.auth.formatWarehouseQty
 import pro.masterdoc.client.auth.AssetPartDto
 import pro.masterdoc.client.auth.StockIssueRequest
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
@@ -456,8 +457,8 @@ fun WorkOrderDetailScreen(
                                 val part = warehouseParts.find { it.id == link.partId } ?: return@forEach
                                 Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs)) {
                                     AppText(text = part.name.ifBlank { "Запчасть" })
-                                    AppText(text = "В наличии: ${part.onHand ?: 0} ${part.uom.ifBlank { "ед." }}")
-                                    if (!readOnly && (part.onHand ?: 0) > 0) {
+                                    AppText(text = "В наличии: ${formatWarehouseQty(part.onHand)} ${part.uom.ifBlank { "ед." }}")
+                                    if (!readOnly && part.onHand > 0) {
                                         AppButton(
                                             text = "Взять",
                                             onClick = {
@@ -467,7 +468,7 @@ fun WorkOrderDetailScreen(
                                                             StockIssueRequest(
                                                                 partId = part.id,
                                                                 siteId = wo.siteId,
-                                                                qty = 1,
+                                                                qty = 1.0,
                                                                 workOrderId = wo.id,
                                                                 assetId = wo.assetId,
                                                             ),
