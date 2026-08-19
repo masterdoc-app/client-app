@@ -12,8 +12,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +40,9 @@ import pro.masterdoc.client.auth.MaintenanceMapDto
 import pro.masterdoc.client.auth.SiteDto
 import pro.masterdoc.client.auth.TechnologistJobDto
 import pro.masterdoc.client.auth.UpdateAssetRequest
+import pro.masterdoc.client.auth.AssetPartDto
+import pro.masterdoc.client.auth.WarehousePartDto
+import pro.masterdoc.client.auth.WarehouseRepository
 import pro.masterdoc.client.designsystem.components.AppScaffold
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppButtonVariant
@@ -51,6 +56,8 @@ fun EquipmentDetailScreen(
     assetId: String,
     repository: EquipmentRepository,
     canManageQr: Boolean,
+    warehouseRepository: WarehouseRepository? = null,
+    canManageParts: Boolean = false,
     onBack: () -> Unit,
     onOpenLinkedPpr: (MaintenanceMapDto) -> Unit = {},
     onPprDraftReady: (mapId: String) -> Unit = {},
@@ -65,6 +72,9 @@ fun EquipmentDetailScreen(
     var acting by remember(assetId) { mutableStateOf(false) }
     var error by remember(assetId) { mutableStateOf<String?>(null) }
     var qrUrl by remember(assetId) { mutableStateOf<String?>(null) }
+    var compatibleParts by remember(assetId) { mutableStateOf<List<AssetPartDto>>(emptyList()) }
+    var partCatalog by remember(assetId) { mutableStateOf<List<WarehousePartDto>>(emptyList()) }
+    var partDialogOpen by remember(assetId) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     suspend fun reload() {
@@ -185,6 +195,16 @@ fun EquipmentDetailScreen(
     }
 
     LaunchedEffect(assetId, repository) { reload() }
+    LaunchedEffect(assetId, warehouseRepository) {
+        val warehouse = warehouseRepository ?: return@LaunchedEffect
+        try {
+            compatibleParts = warehouse.assetParts(assetId)
+            partCatalog = warehouse.listParts()
+        } catch (_: Exception) {
+            compatibleParts = emptyList()
+            partCatalog = emptyList()
+        }
+    }
 
     AppScaffold(
         title = asset?.name ?: "Оборудование",
@@ -340,6 +360,27 @@ fun EquipmentDetailScreen(
                                 null
                             },
                     )
+                    if (warehouseRepository != null) {
+                        Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+                            AppText(text = "Совместимые запчасти", style = AppTextStyle.Title)
+                            val names =
+                                compatibleParts.mapNotNull { link ->
+                                    partCatalog.find { it.id == link.partId }?.name?.trim()?.ifBlank { "Запчасть" }
+                                }
+                            if (names.isEmpty()) {
+                                AppText(text = "Нет привязанных запчастей")
+                            } else {
+                                names.forEach { AppText(text = it) }
+                            }
+                            if (canManageParts) {
+                                AppButton(
+                                    text = "Привязать",
+                                    onClick = { partDialogOpen = true },
+                                    variant = AppButtonVariant.Secondary,
+                                )
+                            }
+                        }
+                    }
                     if (shouldShowEquipmentQr(canManageQr, current.status)) {
                         EquipmentQrBlock(
                             assetName = current.name.ifBlank { "Оборудование" },
@@ -352,6 +393,52 @@ fun EquipmentDetailScreen(
             }
         }
     }
+    if (partDialogOpen) {
+        BindCompatiblePartDialog(
+            parts = partCatalog,
+            onDismiss = { partDialogOpen = false },
+            onBind = { selected ->
+                scope.launch {
+                    try {
+                        val updated =
+                            (compatibleParts + AssetPartDto(partId = selected.id))
+                                .distinctBy { it.partId }
+                        compatibleParts = warehouseRepository?.replaceAssetParts(assetId, updated).orEmpty()
+                        partDialogOpen = false
+                    } catch (e: Exception) {
+                        error = e.message ?: "Не удалось привязать запчасть"
+                    }
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun BindCompatiblePartDialog(
+    parts: List<WarehousePartDto>,
+    onDismiss: () -> Unit,
+    onBind: (WarehousePartDto) -> Unit,
+) {
+    var selectedIndex by remember(parts) { mutableStateOf(0) }
+    val selected = parts.getOrNull(selectedIndex)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { AppText("Привязать запчасть") },
+        text = {
+            AppButton(
+                text = selected?.name?.trim()?.ifBlank { "Запчасть" } ?: "Нет запчастей",
+                onClick = { if (parts.isNotEmpty()) selectedIndex = (selectedIndex + 1) % parts.size },
+                variant = AppButtonVariant.Secondary,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { selected?.let(onBind) }, enabled = selected != null) {
+                AppText("Привязать")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { AppText("Отмена") } },
+    )
 }
 
 @Suppress("DEPRECATION")

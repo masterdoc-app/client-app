@@ -15,6 +15,7 @@ import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GeocodeRepository
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
+import pro.masterdoc.client.auth.WarehouseRepository
 import pro.masterdoc.client.auth.authModule
 import pro.masterdoc.client.auth.createDefaultGatewayHttpClient
 
@@ -47,6 +48,7 @@ fun main() {
             coordinator = coordinator,
             attachmentsRepository = koinApp.koin.get<AttachmentsRepository>(),
             commentsRepository = koinApp.koin.get<CommentsRepository>(),
+            warehouseRepository = koinApp.koin.get<WarehouseRepository>(),
             adminUsersRepository = adminUsers,
             equipmentRepository = equipment,
             workOrdersRepository = workOrders,

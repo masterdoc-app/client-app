@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.PrecisionManufacturing
 import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -38,6 +39,7 @@ import pro.masterdoc.client.auth.EngineerLocationsGateway
 import pro.masterdoc.client.auth.GeocodeRepository
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
+import pro.masterdoc.client.auth.WarehouseRepository
 import pro.masterdoc.client.navigation.FeatureId
 import pro.masterdoc.client.designsystem.components.AppNavBar
 import pro.masterdoc.client.designsystem.components.AppNavItem
@@ -63,6 +65,7 @@ import pro.masterdoc.client.ui.screens.MyWorkOrdersScreen
 import pro.masterdoc.client.ui.screens.TicketsScreen
 import pro.masterdoc.client.ui.screens.StubDestinationScreen
 import pro.masterdoc.client.ui.screens.UsersScreen
+import pro.masterdoc.client.ui.screens.WarehouseScreen
 import pro.masterdoc.client.ui.screens.destinationTitle
 import pro.masterdoc.client.tracking.LocationTrackingController
 import pro.masterdoc.client.tracking.createEngineerLocationPingSource
@@ -79,6 +82,7 @@ fun MainShellContent(
     workOrdersRepository: WorkOrdersRepository? = null,
     attachmentsRepository: AttachmentsRepository? = null,
     commentsRepository: CommentsRepository? = null,
+    warehouseRepository: WarehouseRepository? = null,
     userScopesRepository: UserScopesRepository? = null,
     engineerLocationsGateway: EngineerLocationsGateway? = null,
     geocodeRepository: GeocodeRepository? = null,
@@ -134,6 +138,7 @@ fun MainShellContent(
                         workOrdersRepository = workOrdersRepository,
                         attachmentsRepository = attachmentsRepository,
                         commentsRepository = commentsRepository,
+                        warehouseRepository = warehouseRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsGateway,
                         geocodeRepository = geocodeRepository,
@@ -180,6 +185,7 @@ fun MainShellContent(
                         workOrdersRepository = workOrdersRepository,
                         attachmentsRepository = attachmentsRepository,
                         commentsRepository = commentsRepository,
+                        warehouseRepository = warehouseRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsGateway,
                         geocodeRepository = geocodeRepository,
@@ -223,6 +229,7 @@ private fun ActivePage(
     workOrdersRepository: WorkOrdersRepository?,
     attachmentsRepository: AttachmentsRepository?,
     commentsRepository: CommentsRepository?,
+    warehouseRepository: WarehouseRepository?,
     userScopesRepository: UserScopesRepository?,
     engineerLocationsGateway: EngineerLocationsGateway?,
     geocodeRepository: GeocodeRepository?,
@@ -256,6 +263,7 @@ private fun ActivePage(
                     equipmentRepository = equipmentRepository,
                     attachmentsRepository = attachmentsRepository,
                     commentsRepository = commentsRepository,
+                    warehouseRepository = warehouseRepository,
                     currentUserId = session.user?.id,
                     onOpenEquipment = onOpenEquipment,
                     locationTrackingController = locationTrackingController,
@@ -321,6 +329,8 @@ private fun ActivePage(
                                 assetId = focus,
                                 repository = equipmentRepository,
                                 canManageQr = FeatureId.Equipment in session.features,
+                                warehouseRepository = warehouseRepository,
+                                canManageParts = FeatureId.Equipment in session.features,
                                 onBack = onEquipmentBack,
                                 onOpenLinkedPpr = onOpenLinkedPpr,
                                 onPprDraftReady = onPprDraftReady,
@@ -333,6 +343,16 @@ private fun ActivePage(
                                 onPprDraftReady = onPprDraftReady,
                             )
                         }
+                    } else {
+                        StubDestinationScreen(active.destination)
+                    }
+                NavDestinationId.Warehouse ->
+                    if (warehouseRepository != null) {
+                        WarehouseScreen(
+                            repository = warehouseRepository,
+                            equipmentRepository = equipmentRepository,
+                            canWrite = FeatureId.Warehouse in session.features,
+                        )
                     } else {
                         StubDestinationScreen(active.destination)
                     }
@@ -366,6 +386,7 @@ private fun ActivePage(
                             equipmentRepository = equipmentRepository,
                             attachmentsRepository = attachmentsRepository,
                             commentsRepository = commentsRepository,
+                            warehouseRepository = warehouseRepository,
                             adminUsersRepository = adminUsersRepository,
                             hasAdminUsers = FeatureId.Users in session.features,
                             currentUserId = session.user?.id,
@@ -416,6 +437,7 @@ private fun iconFor(destination: NavDestinationId): ImageVector =
         NavDestinationId.Charts -> Icons.Filled.BarChart
         NavDestinationId.Reports -> Icons.Filled.Assessment
         NavDestinationId.Equipment -> Icons.Filled.PrecisionManufacturing
+        NavDestinationId.Warehouse -> Icons.Filled.Inventory2
         NavDestinationId.Profile -> Icons.Filled.Person
         NavDestinationId.BlackBox -> Icons.Filled.History
         NavDestinationId.Ai -> Icons.Filled.History

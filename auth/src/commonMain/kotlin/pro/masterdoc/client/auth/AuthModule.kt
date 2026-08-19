@@ -65,6 +65,13 @@ fun authModule(
             )
         }
         single {
+            WarehouseRepository(
+                config = get(),
+                http = get(),
+                tokenStore = get(),
+            )
+        }
+        single {
             AiMessagesRepository(
                 config = get(),
                 http = get(),

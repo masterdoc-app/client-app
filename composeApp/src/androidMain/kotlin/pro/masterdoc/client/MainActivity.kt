@@ -19,6 +19,7 @@ import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.GeocodeRepository
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
+import pro.masterdoc.client.auth.WarehouseRepository
 import pro.masterdoc.client.auth.authModule
 import pro.masterdoc.client.auth.configureAndroidAuthPlatform
 import pro.masterdoc.client.auth.createDefaultGatewayHttpClient
@@ -52,6 +53,7 @@ class MainActivity : ComponentActivity() {
                 coordinator = koin.get(),
                 attachmentsRepository = koin.get(),
                 commentsRepository = koin.get<CommentsRepository>(),
+                warehouseRepository = koin.get<WarehouseRepository>(),
                 adminUsersRepository = koin.get<AdminUsersRepository>(),
                 equipmentRepository = koin.get<EquipmentRepository>(),
                 workOrdersRepository = koin.get<WorkOrdersRepository>(),

@@ -44,6 +44,7 @@ import pro.masterdoc.client.auth.AdminUsersRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
+import pro.masterdoc.client.auth.WarehouseRepository
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppIcon
 import pro.masterdoc.client.designsystem.components.AppScaffold
@@ -90,6 +91,7 @@ fun BoardScreen(
     equipmentRepository: EquipmentRepository? = null,
     attachmentsRepository: AttachmentsRepository? = null,
     commentsRepository: CommentsRepository? = null,
+    warehouseRepository: WarehouseRepository? = null,
     adminUsersRepository: AdminUsersRepository? = null,
     hasAdminUsers: Boolean = false,
     currentUserId: String? = null,
@@ -184,6 +186,7 @@ fun BoardScreen(
             equipmentRepository = equipmentRepository,
             attachmentsRepository = attachmentsRepository,
             commentsRepository = commentsRepository,
+            warehouseRepository = warehouseRepository,
             currentUserId = currentUserId,
             onOpenMentor = { mentorOpen = true },
             onOpenAssigneePick =

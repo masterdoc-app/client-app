@@ -42,6 +42,10 @@ import pro.masterdoc.client.auth.WorkOrderCommentDto
 import pro.masterdoc.client.auth.WorkOrderDuration
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
+import pro.masterdoc.client.auth.WarehousePartDto
+import pro.masterdoc.client.auth.WarehouseRepository
+import pro.masterdoc.client.auth.AssetPartDto
+import pro.masterdoc.client.auth.StockIssueRequest
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
 import pro.masterdoc.client.auth.workOrderTypeLabelRu
 import pro.masterdoc.client.designsystem.components.AppButton
@@ -78,6 +82,7 @@ fun WorkOrderDetailScreen(
     allowMediaMutations: Boolean = true,
     attachmentsRepository: AttachmentsRepository? = null,
     commentsRepository: CommentsRepository? = null,
+    warehouseRepository: WarehouseRepository? = null,
     modifier: Modifier = Modifier,
 ) {
     var order by remember { mutableStateOf<WorkOrderDto?>(null) }
@@ -97,6 +102,9 @@ fun WorkOrderDetailScreen(
     var pendingCommentPhoto by remember { mutableStateOf<PickedImage?>(null) }
     var sendingComment by remember { mutableStateOf(false) }
     var pickingCommentPhoto by remember { mutableStateOf(false) }
+    var compatibleParts by remember { mutableStateOf<List<AssetPartDto>>(emptyList()) }
+    var warehouseParts by remember { mutableStateOf<List<WarehousePartDto>>(emptyList()) }
+    var warehouseVisible by remember { mutableStateOf(warehouseRepository != null) }
     val scope = rememberCoroutineScope()
     val imagePickers =
         rememberImagePickerLaunchers(
@@ -218,6 +226,20 @@ fun WorkOrderDetailScreen(
             } catch (_: Exception) {
                 emptyList()
             }
+    }
+
+    LaunchedEffect(warehouseRepository, order?.assetId) {
+        val warehouse = warehouseRepository ?: return@LaunchedEffect
+        val assetId = order?.assetId ?: return@LaunchedEffect
+        try {
+            compatibleParts = warehouse.assetParts(assetId)
+            warehouseParts = warehouse.listParts()
+            warehouseVisible = true
+        } catch (e: GatewayHttpException) {
+            if (e.status == 403) warehouseVisible = false else error = e.message
+        } catch (_: Exception) {
+            warehouseVisible = false
+        }
     }
 
     AppScaffold(
@@ -426,6 +448,45 @@ fun WorkOrderDetailScreen(
                             assetId = wo.assetId,
                             onOpen = onOpenEquipment,
                         )
+                    }
+                    if (warehouseVisible && warehouseRepository != null && compatibleParts.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.sm)) {
+                            AppText(text = "Запчасти", style = AppTextStyle.Label)
+                            compatibleParts.forEach { link ->
+                                val part = warehouseParts.find { it.id == link.partId } ?: return@forEach
+                                Column(verticalArrangement = Arrangement.spacedBy(ClientSpacing.xs)) {
+                                    AppText(text = part.name.ifBlank { "Запчасть" })
+                                    AppText(text = "В наличии: ${part.onHand ?: 0} ${part.uom.ifBlank { "ед." }}")
+                                    if (!readOnly && (part.onHand ?: 0) > 0) {
+                                        AppButton(
+                                            text = "Взять",
+                                            onClick = {
+                                                scope.launch {
+                                                    try {
+                                                        warehouseRepository.issue(
+                                                            StockIssueRequest(
+                                                                partId = part.id,
+                                                                siteId = wo.siteId,
+                                                                qty = 1,
+                                                                workOrderId = wo.id,
+                                                                assetId = wo.assetId,
+                                                            ),
+                                                        )
+                                                        warehouseParts = warehouseRepository.listParts()
+                                                    } catch (e: GatewayHttpException) {
+                                                        if (e.status == 403) warehouseVisible = false else error = e.message
+                                                    } catch (e: Exception) {
+                                                        error = e.message ?: "Не удалось выдать запчасть"
+                                                    }
+                                                }
+                                            },
+                                            variant = AppButtonVariant.Secondary,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                     if (editableAssignee && onOpenAssigneePick != null) {
                         val assigneeLabel =

@@ -35,6 +35,7 @@ import pro.masterdoc.client.auth.GeocodeRepository
 import pro.masterdoc.client.auth.GatewayHttpException
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrdersRepository
+import pro.masterdoc.client.auth.WarehouseRepository
 import pro.masterdoc.client.auth.parseQueryParams
 import pro.masterdoc.client.designsystem.components.AppButton
 import pro.masterdoc.client.designsystem.components.AppText
@@ -84,6 +85,7 @@ fun AuthenticatedApp(
     workOrdersRepository: WorkOrdersRepository,
     attachmentsRepository: AttachmentsRepository,
     commentsRepository: CommentsRepository,
+    warehouseRepository: WarehouseRepository,
     userScopesRepository: UserScopesRepository,
     clientEventsRepository: ClientEventsRepository? = null,
     engineerLocationsRepository: EngineerLocationsRepository? = null,
@@ -157,6 +159,7 @@ fun AuthenticatedApp(
                         workOrdersRepository = workOrdersRepository,
                         attachmentsRepository = attachmentsRepository,
                         commentsRepository = commentsRepository,
+                        warehouseRepository = warehouseRepository,
                         userScopesRepository = userScopesRepository,
                         engineerLocationsGateway = engineerLocationsRepository,
                         geocodeRepository = geocodeRepository,

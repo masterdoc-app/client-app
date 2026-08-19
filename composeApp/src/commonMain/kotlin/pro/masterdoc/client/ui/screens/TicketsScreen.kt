@@ -44,6 +44,7 @@ import pro.masterdoc.client.auth.UserScopeDto
 import pro.masterdoc.client.auth.UserScopesRepository
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
+import pro.masterdoc.client.auth.WarehouseRepository
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
 import pro.masterdoc.client.auth.workOrderTypeLabelRu
 import pro.masterdoc.client.designsystem.components.AppButton
@@ -96,6 +97,7 @@ fun TicketsScreen(
     equipmentRepository: EquipmentRepository,
     attachmentsRepository: AttachmentsRepository,
     commentsRepository: CommentsRepository?,
+    warehouseRepository: WarehouseRepository? = null,
     currentUserId: String?,
     userScopesRepository: UserScopesRepository? = null,
     onOpenAssetQr: (String) -> Unit = {},
@@ -203,6 +205,7 @@ fun TicketsScreen(
             orderId = orderId,
             attachmentsRepository = attachmentsRepository,
             commentsRepository = commentsRepository,
+            warehouseRepository = warehouseRepository,
             onBack = { selectedOrderId = null },
             equipmentRepository = equipmentRepository,
             currentUserId = currentUserId,

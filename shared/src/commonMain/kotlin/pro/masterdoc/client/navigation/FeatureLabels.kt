@@ -10,6 +10,7 @@ fun FeatureId.titleRu(): String =
         FeatureId.Charts -> "ППР"
         FeatureId.Reports -> "Отчёты"
         FeatureId.Equipment -> "Оборудование"
+        FeatureId.Warehouse -> "Склад"
         FeatureId.Profile -> "Профиль"
         FeatureId.BlackBox -> "Чёрный ящик"
         FeatureId.Ai -> "ИИ"

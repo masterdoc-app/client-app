@@ -55,6 +55,13 @@ object NavCatalog {
             order = 50,
         ),
         NavItemSpec(
+            destination = NavDestinationId.Warehouse,
+            featureId = FeatureId.Warehouse,
+            titleKey = "nav.warehouse",
+            iconKey = "warehouse",
+            order = 55,
+        ),
+        NavItemSpec(
             destination = NavDestinationId.BlackBox,
             featureId = FeatureId.BlackBox,
             titleKey = "nav.black_box",

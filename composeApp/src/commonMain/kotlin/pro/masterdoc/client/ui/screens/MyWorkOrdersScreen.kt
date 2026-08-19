@@ -23,6 +23,7 @@ import pro.masterdoc.client.auth.CommentsRepository
 import pro.masterdoc.client.auth.EquipmentRepository
 import pro.masterdoc.client.auth.WorkOrderDto
 import pro.masterdoc.client.auth.WorkOrdersRepository
+import pro.masterdoc.client.auth.WarehouseRepository
 import pro.masterdoc.client.auth.workOrderStatusLabelRu
 import pro.masterdoc.client.auth.workOrderTypeLabelRu
 import pro.masterdoc.client.designsystem.components.AppScaffold
@@ -39,6 +40,7 @@ fun MyWorkOrdersScreen(
     equipmentRepository: EquipmentRepository?,
     attachmentsRepository: AttachmentsRepository? = null,
     commentsRepository: CommentsRepository? = null,
+    warehouseRepository: WarehouseRepository? = null,
     currentUserId: String?,
     onOpenEquipment: (String) -> Unit = {},
     locationTrackingController: LocationTrackingController? = null,
@@ -98,6 +100,7 @@ fun MyWorkOrdersScreen(
             equipmentRepository = equipmentRepository,
             attachmentsRepository = attachmentsRepository,
             commentsRepository = commentsRepository,
+            warehouseRepository = warehouseRepository,
             onOpenMentor = { mentorOpen = true },
             onOpenEquipment = onOpenEquipment,
             readOnly = false,

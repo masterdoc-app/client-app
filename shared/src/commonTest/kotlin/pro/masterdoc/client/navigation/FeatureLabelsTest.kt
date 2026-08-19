@@ -14,6 +14,7 @@ class FeatureLabelsTest {
         assertEquals("ППР", FeatureId.Charts.titleRu())
         assertEquals("Отчёты", FeatureId.Reports.titleRu())
         assertEquals("Оборудование", FeatureId.Equipment.titleRu())
+        assertEquals("Склад", FeatureId.Warehouse.titleRu())
         assertEquals("Профиль", FeatureId.Profile.titleRu())
         assertEquals("Чёрный ящик", FeatureId.BlackBox.titleRu())
         assertEquals("ИИ", FeatureId.Ai.titleRu())

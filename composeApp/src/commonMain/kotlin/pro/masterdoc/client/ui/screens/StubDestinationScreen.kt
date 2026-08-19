@@ -39,6 +39,7 @@ fun destinationTitle(destination: NavDestinationId): String =
         NavDestinationId.Charts -> "ППР"
         NavDestinationId.Reports -> "Отчёты"
         NavDestinationId.Equipment -> "Оборудование"
+        NavDestinationId.Warehouse -> "Склад"
         NavDestinationId.Profile -> "Профиль"
         NavDestinationId.BlackBox -> "Чёрный ящик"
         NavDestinationId.Ai -> "ИИ"
